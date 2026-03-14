@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     const response = await fetch(`https://api.geminigen.ai/uapi/v1/history/${uuid}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'X-Api-Key': apiKey,
       },
     });
 
