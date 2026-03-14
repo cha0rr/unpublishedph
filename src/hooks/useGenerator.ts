@@ -30,9 +30,8 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
   }, []);
 
   const pollHistory = useCallback(async (uuid: string) => {
-    const maxAttempts = type === "video" ? 60 : 40;
-    const interval = type === "video" ? 5000 : 4000;
-    const label = type === "image" ? "imagem" : "vídeo";
+    const maxAttempts = 60;
+    const interval = 5000;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (cancelledRef.current) return;
@@ -47,18 +46,12 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       const status = data.status;
       const pct = data.status_percentage ?? 0;
       setProgress(pct);
-      setStatusText(`Processando ${label}... ${pct}%`);
+      setStatusText(`Processando vídeo... ${pct}%`);
 
       if (status === 2) {
-        // Extract URL from the response
         let finalUrl = data.generate_result;
 
-        if (!finalUrl && type === "image" && data.generated_image?.length > 0) {
-          const img = data.generated_image[0];
-          finalUrl = img.image_url || img.file_download_url || img.image_uri;
-        }
-
-        if (!finalUrl && type === "video" && data.generated_video?.length > 0) {
+        if (!finalUrl && data.generated_video?.length > 0) {
           const vid = data.generated_video[0];
           finalUrl = vid.video_url || vid.file_download_url;
         }
@@ -71,14 +64,14 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       }
 
       if (status === 3) {
-        throw new Error(data.error_message || `Falha ao gerar ${label}.`);
+        throw new Error(data.error_message || "Falha ao gerar vídeo.");
       }
 
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
 
-    throw new Error(`Tempo limite excedido ao gerar ${label}.`);
-  }, [type]);
+    throw new Error("Tempo limite excedido ao gerar vídeo.");
+  }, []);
 
   const generate = useCallback(async (prompt: string, aspectRatio: string) => {
     cancelledRef.current = false;
@@ -89,23 +82,13 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
     setStatusText("Enviando solicitação...");
 
     try {
-      const functionName = type === "image" ? "geminigen-image" : "geminigen-video";
+      const body = {
+        prompt,
+        resolution: "720p",
+        aspect_ratio: aspectRatio,
+      };
 
-      const body = type === "image"
-        ? {
-            prompt,
-            aspect_ratio: aspectRatio,
-            output_format: "jpeg",
-            resolution: "1K",
-            style: "Photorealistic",
-          }
-        : {
-            prompt,
-            resolution: "720p",
-            aspect_ratio: aspectRatio,
-          };
-
-      const { data, error: fnError } = await supabase.functions.invoke(functionName, { body });
+      const { data, error: fnError } = await supabase.functions.invoke("geminigen-video", { body });
 
       if (fnError) throw new Error(fnError.message);
 
@@ -120,7 +103,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       if (finalUrl) {
         setResultUrl(finalUrl);
         setState("success");
-        setStatusText(type === "image" ? "Imagem pronta." : "Vídeo pronto.");
+        setStatusText("Vídeo pronto.");
       } else {
         throw new Error("URL do resultado não encontrada.");
       }
@@ -129,7 +112,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       setState("error");
       setStatusText("");
     }
-  }, [type, pollHistory]);
+  }, [pollHistory]);
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
