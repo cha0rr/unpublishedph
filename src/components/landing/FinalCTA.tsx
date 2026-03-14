@@ -10,7 +10,7 @@ export function FinalCTA() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-primary/[0.06] blur-[120px]" />
 
       <motion.div
-        className="relative mx-auto max-w-3xl px-6 text-center"
+        className="relative mx-auto max-w-3xl px-4 sm:px-6 text-center"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
