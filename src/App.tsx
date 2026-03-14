@@ -22,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/gerar-video" element={<GerarVideo />} />
+          <Route path="/gerar-video-frame" element={<GerarVideoFrame />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/admin" element={<Admin />} />
