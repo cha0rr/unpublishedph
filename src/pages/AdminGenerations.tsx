@@ -21,6 +21,7 @@ interface Generation {
   uuid: string;
   status: string;
   used_credit: number;
+  file_size: number | null;
   created_at: string;
 }
 
