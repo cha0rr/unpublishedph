@@ -31,12 +31,16 @@ const GerarVideo = () => {
   if (!user || (!isApproved && !isAdmin)) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Ambient glow effects */}
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-0 w-[400px] h-[300px] bg-primary/3 rounded-full blur-[100px]" />
+
       <Navbar />
-      <div className="mx-auto max-w-2xl px-4 pt-28 pb-20">
-        <div className="mb-8 text-center">
+      <div className="relative mx-auto max-w-2xl px-4 pt-28 pb-20">
+        <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Gerador de <span className="text-gradient-cyan">Vídeos</span>
+            Gerador de <span className="text-neon-cyan">Vídeos</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Veo 3.1 — Geração ilimitada de vídeos com IA

@@ -105,11 +105,6 @@ export function Navbar() {
             <div className="flex gap-3 pt-2">
               {user ? (
                 <>
-                  {(isApproved || isAdmin) && (
-                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
-                      Gerar Vídeo
-                    </Button>
-                  )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
                   </Button>
