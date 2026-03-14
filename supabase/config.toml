@@ -1,1 +1,10 @@
 project_id = "fcyggyminzsgrlxooveu"
+
+[functions.geminigen-image]
+verify_jwt = false
+
+[functions.geminigen-video]
+verify_jwt = false
+
+[functions.geminigen-history]
+verify_jwt = false
