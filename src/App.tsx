@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import GerarVideo from "./pages/GerarVideo.tsx";
+import GerarVideoFrame from "./pages/GerarVideoFrame.tsx";
 import Login from "./pages/Login.tsx";
 import Registro from "./pages/Registro.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -21,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/gerar-video" element={<GerarVideo />} />
+          <Route path="/gerar-video-frame" element={<GerarVideoFrame />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/admin" element={<Admin />} />
