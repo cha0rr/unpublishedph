@@ -9,10 +9,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { prompt, aspect_ratio } = await req.json();
+    const {
+      prompt,
+      aspect_ratio = "1:1",
+      output_format = "jpeg",
+      resolution = "1K",
+      style = "None",
+    } = await req.json();
 
     if (!prompt) {
-      return new Response(JSON.stringify({ error: 'prompt is required' }), {
+      return new Response(JSON.stringify({ error: 'prompt é obrigatório.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -20,37 +26,36 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const requestBody = { model: 'nano-banana-2', prompt, aspectRatio: aspect_ratio || '16:9' };
-    console.log('Request body:', JSON.stringify(requestBody));
-
     const response = await fetch('https://api.geminigen.ai/uapi/v1/generate_image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-Key': apiKey,
+        'x-api-key': apiKey,
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        prompt,
+        model: 'nano-banana-2',
+        aspect_ratio,
+        output_format,
+        resolution,
+        style,
+      }),
     });
 
-    const responseText = await response.text();
-    console.log('GeminiGen response status:', response.status);
-    console.log('GeminiGen response body:', responseText);
-
-    let data;
-    try { data = JSON.parse(responseText); } catch { data = { raw: responseText }; }
+    const data = await response.json();
 
     return new Response(JSON.stringify(data), {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Erro interno ao gerar imagem.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

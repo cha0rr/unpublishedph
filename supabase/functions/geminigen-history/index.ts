@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const { uuid } = await req.json();
 
     if (!uuid) {
-      return new Response(JSON.stringify({ error: 'uuid is required' }), {
+      return new Response(JSON.stringify({ error: 'uuid é obrigatório.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     const response = await fetch(`https://api.geminigen.ai/uapi/v1/history/${uuid}`, {
       method: 'GET',
       headers: {
-        'X-Api-Key': apiKey,
+        'x-api-key': apiKey,
       },
     });
 
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Erro ao consultar histórico.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

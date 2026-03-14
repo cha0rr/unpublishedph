@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Progress } from "@/components/ui/progress";
 import { ImageIcon, Loader2, RotateCcw } from "lucide-react";
 
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
-  const { state, resultUrl, error, progress, generate, reset } = useGenerator({ type: "image" });
+  const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator({ type: "image" });
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
@@ -44,12 +45,9 @@ export function ImageGenerator() {
               onValueChange={(v) => v && setAspectRatio(v)}
               className="justify-start"
             >
-              <ToggleGroupItem value="16:9" className="text-xs px-3">
-                16:9
-              </ToggleGroupItem>
-              <ToggleGroupItem value="9:16" className="text-xs px-3">
-                9:16
-              </ToggleGroupItem>
+              <ToggleGroupItem value="16:9" className="text-xs px-3">16:9</ToggleGroupItem>
+              <ToggleGroupItem value="9:16" className="text-xs px-3">9:16</ToggleGroupItem>
+              <ToggleGroupItem value="1:1" className="text-xs px-3">1:1</ToggleGroupItem>
             </ToggleGroup>
           </div>
 
@@ -72,10 +70,13 @@ export function ImageGenerator() {
           </div>
         </div>
 
-        {progress && (
-          <div className="flex items-center gap-2 rounded-md bg-muted p-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{progress}</p>
+        {isLoading && statusText && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">{statusText}</p>
+            </div>
+            {progress > 0 && <Progress value={progress} className="h-2" />}
           </div>
         )}
 
@@ -86,16 +87,19 @@ export function ImageGenerator() {
         )}
 
         {state === "success" && resultUrl && (
-          <div
-            className={`overflow-hidden rounded-lg border bg-muted ${
-              aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16] max-w-sm mx-auto"
-            }`}
-          >
-            <img
-              src={resultUrl}
-              alt="Imagem gerada"
-              className="h-full w-full object-cover"
-            />
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">{statusText}</p>
+            <div
+              className={`overflow-hidden rounded-lg border bg-muted ${
+                aspectRatio === "16:9"
+                  ? "aspect-video"
+                  : aspectRatio === "9:16"
+                  ? "aspect-[9/16] max-w-sm mx-auto"
+                  : "aspect-square max-w-md mx-auto"
+              }`}
+            >
+              <img src={resultUrl} alt="Imagem gerada" className="h-full w-full object-cover" />
+            </div>
           </div>
         )}
       </CardContent>
