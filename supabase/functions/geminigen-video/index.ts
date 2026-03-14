@@ -13,6 +13,7 @@ Deno.serve(async (req) => {
       prompt,
       resolution = "720p",
       aspect_ratio = "16:9",
+      reference_image,
     } = await req.json();
 
     if (!prompt) {
