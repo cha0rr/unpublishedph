@@ -80,7 +80,7 @@ export function PricingSection() {
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className={`glass-card p-8 flex flex-col ${
+              className={`glass-card p-5 sm:p-8 flex flex-col ${
                 plan.highlighted ? "border-primary/30 glow-cyan" : ""
               }`}
             >

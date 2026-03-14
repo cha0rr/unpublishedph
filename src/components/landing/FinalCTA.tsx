@@ -20,7 +20,7 @@ export function FinalCTA() {
           Crie com velocidade.{" "}
           <span className="text-gradient-cyan">Publique com impacto.</span>
         </h2>
-        <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto">
+        <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
           Comece a gerar vídeos agora mesmo. Sem limites, sem complicação.
         </p>
         <div className="mt-10">

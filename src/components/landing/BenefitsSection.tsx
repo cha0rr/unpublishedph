@@ -39,7 +39,7 @@ export function BenefitsSection() {
     <section className="relative py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          className="mb-16 text-center"
+          className="mb-10 sm:mb-16 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}

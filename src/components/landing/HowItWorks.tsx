@@ -39,7 +39,7 @@ export function HowItWorks() {
           <p className="mt-4 text-muted-foreground">Três passos simples para criar vídeos incríveis.</p>
         </motion.div>
 
-        <div className="relative grid gap-8 md:grid-cols-3">
+        <div className="relative grid gap-6 sm:gap-8 md:grid-cols-3">
           <div className="absolute top-16 left-[16.66%] right-[16.66%] hidden h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent md:block" />
 
           {steps.map((step, i) => (

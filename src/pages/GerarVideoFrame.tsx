@@ -38,9 +38,9 @@ const GerarVideoFrame = () => {
       <div className="pointer-events-none absolute bottom-0 right-0 w-[400px] h-[300px] bg-primary/3 rounded-full blur-[100px]" />
 
       <Navbar />
-      <div className="relative mx-auto max-w-2xl px-4 pt-28 pb-20">
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+      <div className="relative mx-auto w-full max-w-2xl px-4 pt-24 sm:pt-28 pb-20">
+        <div className="mb-8 sm:mb-10 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Gerador de <span className="text-neon-cyan">Vídeos</span> — Frame Mode
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">

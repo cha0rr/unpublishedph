@@ -43,7 +43,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-16 border-t border-white/[0.06] pt-8 text-center">
+        <div className="mt-10 sm:mt-16 border-t border-white/[0.06] pt-6 sm:pt-8 text-center">
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} PH Labs. Todos os direitos reservados.</p>
         </div>
       </div>
