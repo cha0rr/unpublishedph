@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 const plans = [
   {
     name: "Básico",
-    price: "R$ 59",
+    price: "R$ 69",
     period: "/mês",
     slug: "basico",
     description: "Para começar a criar vídeos com IA.",
