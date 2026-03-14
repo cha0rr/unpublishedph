@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
     const requestBody = {
       model: 'nano-banana-2',
-      prompt,
+      text: prompt,
       aspectRatio: aspect_ratio || '16:9',
       api_key: apiKey,
     };
