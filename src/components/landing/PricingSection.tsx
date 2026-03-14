@@ -32,7 +32,7 @@ const plans = [
   },
   {
     name: "Business",
-    price: "R$ 199",
+    price: "R$ 99",
     period: "/mês",
     description: "Para equipes e empresas que querem resultado.",
     features: [
