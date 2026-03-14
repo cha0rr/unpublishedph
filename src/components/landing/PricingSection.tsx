@@ -27,6 +27,7 @@ const plans = [
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
+      "Gerador com Frame Mode",
       "Sem marca d'água",
       "Uso comercial",
       "Suporte 24 horas",
@@ -35,14 +36,16 @@ const plans = [
   },
   {
     name: "Business",
-    price: "R$ 99",
+    price: "R$ 129",
     period: "/mês",
     slug: "business",
     description: "Para equipes e empresas que querem resultado.",
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
-      "Gerador de roteiros com IA",
+      "Gerador com Frame Mode",
+      "Gerador de roteiros com IA (em breve)",
+      "Gerador de imagens com IA (em breve)",
       "Sem marca d'água",
       "Uso comercial",
       "Suporte exclusivo",
