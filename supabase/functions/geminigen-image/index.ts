@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     formData.append('prompt', prompt);
     formData.append('model', model);
     if (aspect_ratio) formData.append('aspect_ratio', aspect_ratio);
-    if (resolution && resolution.trim()) formData.append('resolution', resolution);
+    if (resolution && resolution.trim() && resolution !== 'auto') formData.append('resolution', resolution);
     if (output_format) formData.append('output_format', output_format);
     if (style) formData.append('style', style);
     if (ref_history) formData.append('ref_history', ref_history);
