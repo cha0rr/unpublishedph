@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.geminigen-history]
 verify_jwt = false
+
+[functions.geminigen-webhook]
+verify_jwt = false
