@@ -46,7 +46,7 @@ export default function AdminGenerations() {
     setLoading(true);
     const { data } = await supabase
       .from("image_generations" as any)
-      .select("id, email, model, uuid, status, used_credit, created_at")
+      .select("id, email, model, uuid, status, used_credit, file_size, created_at")
       .order("created_at", { ascending: false });
 
     setGenerations((data as any as Generation[]) || []);
