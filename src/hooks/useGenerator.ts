@@ -22,7 +22,7 @@ interface GeneratorResult {
   error: string | null;
   progress: number;
   statusText: string;
-  generate: (prompt: string, aspectRatio: string) => Promise<void>;
+  generate: (prompt: string, aspectRatio: string, referenceImage?: File) => Promise<void>;
   reset: () => void;
 }
 
