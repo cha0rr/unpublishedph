@@ -127,16 +127,20 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       }
 
       setState("polling");
+      startProgressSimulation();
       const finalUrl = await pollHistory(uuid);
+      stopProgressSimulation();
 
       if (finalUrl) {
+        setProgress(100);
         setResultUrl(finalUrl);
         setState("success");
-        setStatusText("Vídeo pronto.");
+        setStatusText("Vídeo pronto!");
       } else {
         throw new Error("URL do resultado não encontrada.");
       }
     } catch (err: any) {
+      stopProgressSimulation();
       setError(err.message || "Erro inesperado.");
       setState("error");
       setStatusText("");
