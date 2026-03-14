@@ -166,7 +166,7 @@ const Admin = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="mb-8 flex items-center gap-3">
             <Shield className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Painel Administrativo</h1>
           </div>
 
           {loading ? (
