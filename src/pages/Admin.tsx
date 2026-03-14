@@ -162,7 +162,7 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="mx-auto max-w-4xl px-4 pt-28 pb-20">
+      <div className="mx-auto max-w-4xl px-4 pt-24 sm:pt-28 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="mb-8 flex items-center gap-3">
             <Shield className="h-6 w-6 text-primary" />
