@@ -6,11 +6,11 @@ import { VideoIcon } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section id="hero" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+    <section id="hero" className="relative min-h-[80vh] lg:min-h-screen flex items-center pt-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-navy-light/50" />
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-primary/[0.04] blur-[120px]" />
 
-      <div className="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-2 lg:gap-16 lg:py-28">
+      <div className="relative mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 py-12 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:py-28">
         <motion.div
           className="flex flex-col justify-center"
           initial={{ opacity: 0, x: -40 }}
