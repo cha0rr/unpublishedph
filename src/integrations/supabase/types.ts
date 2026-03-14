@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      image_generations: {
+        Row: {
+          ai_credit: number | null
+          created_at: string | null
+          email: string
+          estimated_credit: number | null
+          id: string
+          image_url: string | null
+          model: string
+          plan: string | null
+          prompt: string
+          request_payload: Json | null
+          response_payload: Json | null
+          role: string
+          status: string | null
+          status_percentage: number | null
+          updated_at: string | null
+          used_credit: number | null
+          user_id: string
+          uuid: string | null
+        }
+        Insert: {
+          ai_credit?: number | null
+          created_at?: string | null
+          email: string
+          estimated_credit?: number | null
+          id?: string
+          image_url?: string | null
+          model: string
+          plan?: string | null
+          prompt: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          role: string
+          status?: string | null
+          status_percentage?: number | null
+          updated_at?: string | null
+          used_credit?: number | null
+          user_id: string
+          uuid?: string | null
+        }
+        Update: {
+          ai_credit?: number | null
+          created_at?: string | null
+          email?: string
+          estimated_credit?: number | null
+          id?: string
+          image_url?: string | null
+          model?: string
+          plan?: string | null
+          prompt?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          role?: string
+          status?: string | null
+          status_percentage?: number | null
+          updated_at?: string | null
+          used_credit?: number | null
+          user_id?: string
+          uuid?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
