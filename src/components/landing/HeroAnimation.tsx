@@ -40,21 +40,20 @@ export function HeroAnimation() {
         </div>
 
         <div className="relative aspect-video w-full rounded-xl bg-muted/30 border border-white/[0.06] overflow-hidden mb-4">
+          <video
+            src="/videos/hero-demo.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent"
             style={{ backgroundSize: "200% 100%" }}
             animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           />
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            animate={{ opacity: [0.3, 0.7, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <div className="h-12 w-12 rounded-full border-2 border-primary/40 flex items-center justify-center">
-              <div className="h-0 w-0 border-t-[8px] border-b-[8px] border-l-[14px] border-transparent border-l-primary/60 ml-1" />
-            </div>
-          </motion.div>
           <Particle delay={0} x="20%" y="30%" />
           <Particle delay={0.5} x="70%" y="20%" />
           <Particle delay={1} x="50%" y="60%" />
