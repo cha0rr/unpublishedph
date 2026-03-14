@@ -45,17 +45,17 @@ export function Navbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/[0.06]"
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-        <Link to="/" className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <img src={logo} alt="PH Studio" className="h-9 w-auto rounded-lg" />
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex absolute left-1/2 -translate-x-1/2">
+        <div className="hidden items-center gap-6 md:flex shrink-0">
           {navLinks.map((link) => (
             <button
               key={link.label}
               onClick={() => scrollTo(link.href)}
-              className="relative text-sm text-muted-foreground transition-colors hover:text-foreground after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all hover:after:w-full"
+              className="relative text-sm text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all hover:after:w-full"
             >
               {link.label}
             </button>
