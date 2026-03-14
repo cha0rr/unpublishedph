@@ -69,11 +69,6 @@ export function Navbar() {
                   Admin
                 </Button>
               )}
-              {(isApproved || isAdmin) && (
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/gerar-video")}>
-                  Gerar Vídeo
-                </Button>
-              )}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -110,11 +105,6 @@ export function Navbar() {
             <div className="flex gap-3 pt-2">
               {user ? (
                 <>
-                  {(isApproved || isAdmin) && (
-                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
-                      Gerar Vídeo
-                    </Button>
-                  )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
                   </Button>
