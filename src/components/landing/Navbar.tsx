@@ -64,9 +64,14 @@ export function Navbar() {
           {user ? (
             <>
               {isAdmin && (
-                <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin")}>
-                  Admin
-                </Button>
+                <>
+                  <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin")}>
+                    Admin
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin/generations")}>
+                    Gerações
+                  </Button>
+                </>
               )}
               {(isApproved || isAdmin) && (
                 <>
@@ -77,6 +82,11 @@ export function Navbar() {
                     Frame Mode
                   </Button>
                 </>
+              )}
+              {(isBusiness || isAdmin) && (
+                <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => navigate("/gerar-imagem")}>
+                  Gerar Imagem
+                </Button>
               )}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
