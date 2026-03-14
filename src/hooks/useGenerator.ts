@@ -32,6 +32,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
   const pollHistory = useCallback(async (uuid: string) => {
     const maxAttempts = type === "video" ? 60 : 40;
     const interval = type === "video" ? 5000 : 4000;
+    const label = type === "image" ? "imagem" : "vídeo";
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (cancelledRef.current) return;
@@ -41,36 +42,42 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       });
 
       if (fnError) throw new Error(fnError.message);
+      if (!data) throw new Error("Resposta de histórico inválida.");
 
-      const result = data?.result;
-      if (!result) throw new Error("Resposta de histórico inválida.");
-
-      const status = result.status;
-      const pct = result.status_percentage ?? 0;
+      const status = data.status;
+      const pct = data.status_percentage ?? 0;
       setProgress(pct);
-      setStatusText(
-        type === "image"
-          ? `Processando imagem... ${pct}%`
-          : `Processando vídeo... ${pct}%`
-      );
+      setStatusText(`Processando ${label}... ${pct}%`);
 
       if (status === 2) {
-        const finalUrl =
-          result.generate_result ||
-          (type === "image" ? result.image_url : result.video_url) ||
-          result.file_download_url ||
-          "";
-        return finalUrl;
+        // Extract URL from the response
+        let finalUrl = data.generate_result;
+
+        if (!finalUrl && type === "image" && data.generated_image?.length > 0) {
+          const img = data.generated_image[0];
+          finalUrl = img.image_url || img.file_download_url || img.image_uri;
+        }
+
+        if (!finalUrl && type === "video" && data.generated_video?.length > 0) {
+          const vid = data.generated_video[0];
+          finalUrl = vid.video_url || vid.file_download_url;
+        }
+
+        if (!finalUrl) {
+          finalUrl = data.thumbnail_url;
+        }
+
+        return finalUrl || null;
       }
 
       if (status === 3) {
-        throw new Error(result.error_message || `Falha ao gerar ${type === "image" ? "imagem" : "vídeo"}.`);
+        throw new Error(data.error_message || `Falha ao gerar ${label}.`);
       }
 
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
 
-    throw new Error(`Tempo limite excedido ao gerar ${type === "image" ? "imagem" : "vídeo"}.`);
+    throw new Error(`Tempo limite excedido ao gerar ${label}.`);
   }, [type]);
 
   const generate = useCallback(async (prompt: string, aspectRatio: string) => {
@@ -83,7 +90,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
 
     try {
       const functionName = type === "image" ? "geminigen-image" : "geminigen-video";
-      
+
       const body = type === "image"
         ? {
             prompt,
@@ -102,7 +109,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
 
       if (fnError) throw new Error(fnError.message);
 
-      const uuid = data?.result?.uuid;
+      const uuid = data?.uuid;
       if (!uuid) {
         throw new Error("UUID da geração não retornado.");
       }
