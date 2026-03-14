@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { RegistroDialog } from "./RegistroDialog";
 
 const plans = [
   {
@@ -56,7 +57,13 @@ const plans = [
 ];
 
 export function PricingSection() {
-  const navigate = useNavigate();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("pro");
+
+  const handleSelectPlan = (slug: string) => {
+    setSelectedPlan(slug);
+    setDialogOpen(true);
+  };
 
   return (
     <section id="planos" className="relative py-16 sm:py-24 bg-navy-light/30">
@@ -107,7 +114,7 @@ export function PricingSection() {
                 ))}
               </ul>
               <Button
-                onClick={() => navigate(`/registro?plano=${plan.slug}`)}
+                onClick={() => handleSelectPlan(plan.slug)}
                 className={
                   plan.highlighted
                     ? "bg-primary text-primary-foreground hover:bg-primary/90 w-full"
@@ -121,6 +128,8 @@ export function PricingSection() {
           ))}
         </div>
       </div>
+
+      <RegistroDialog open={dialogOpen} onOpenChange={setDialogOpen} selectedPlan={selectedPlan} />
     </section>
   );
 }
