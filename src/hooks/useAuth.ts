@@ -54,17 +54,19 @@ export function useAuth() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (session?.user) {
-          const { profile, isAdmin, isApproved } = await fetchProfile(session.user.id);
-          setState({
-            user: session.user,
-            session,
-            profile,
-            isAdmin,
-            isApproved,
-            loading: false,
-          });
+          setTimeout(async () => {
+            const { profile, isAdmin, isApproved } = await fetchProfile(session.user.id);
+            setState({
+              user: session.user,
+              session,
+              profile,
+              isAdmin,
+              isApproved,
+              loading: false,
+            });
+          }, 0);
         } else {
           setState({
             user: null,
