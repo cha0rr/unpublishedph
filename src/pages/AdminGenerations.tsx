@@ -161,8 +161,9 @@ export default function AdminGenerations() {
                     <TableHead className="text-muted-foreground">Modelo</TableHead>
                     <TableHead className="text-muted-foreground">UUID</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">Créditos</TableHead>
-                    <TableHead className="text-muted-foreground">Data</TableHead>
+                     <TableHead className="text-muted-foreground">Créditos</TableHead>
+                     <TableHead className="text-muted-foreground">Tamanho</TableHead>
+                     <TableHead className="text-muted-foreground">Data</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
