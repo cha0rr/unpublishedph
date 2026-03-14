@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 
 const items = [
-  { label: "Comercial de Produto", type: "Vídeo", color: "from-purple-500/20 to-primary/20" },
+  { label: "Comercial de Produto", type: "Vídeo", color: "from-purple-500/20 to-primary/20", video: "/videos/showcase-comercial-produto.mp4" },
   { label: "Vídeo Institucional", type: "Vídeo", color: "from-orange-500/20 to-primary/20" },
   { label: "Comercial de Moda", type: "Vídeo", color: "from-pink-500/20 to-primary/20" },
   { label: "Animação Abstrata", type: "Vídeo", color: "from-green-500/20 to-primary/20" },
