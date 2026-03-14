@@ -6,19 +6,19 @@ const steps = [
     num: "01",
     icon: PenLine,
     title: "Escreva seu prompt",
-    description: "Descreva o que você quer criar — em português, de forma natural.",
+    description: "Descreva o vídeo que você quer criar — em português, de forma natural.",
   },
   {
     num: "02",
     icon: SlidersHorizontal,
     title: "Escolha o formato",
-    description: "Selecione entre imagem ou vídeo, ajuste proporção e qualidade.",
+    description: "Selecione a proporção e qualidade ideal para seu projeto.",
   },
   {
     num: "03",
     icon: Download,
     title: "Gere e baixe",
-    description: "Receba seu conteúdo em segundos, pronto para uso.",
+    description: "Receba seu vídeo em instantes, pronto para uso.",
   },
 ];
 
@@ -36,11 +36,10 @@ export function HowItWorks() {
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
             Como <span className="text-gradient-cyan">funciona</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">Três passos simples para criar conteúdo incrível.</p>
+          <p className="mt-4 text-muted-foreground">Três passos simples para criar vídeos incríveis.</p>
         </motion.div>
 
         <div className="relative grid gap-8 md:grid-cols-3">
-          {/* Connector line */}
           <div className="absolute top-16 left-[16.66%] right-[16.66%] hidden h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent md:block" />
 
           {steps.map((step, i) => (

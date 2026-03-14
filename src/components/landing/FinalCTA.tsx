@@ -21,7 +21,7 @@ export function FinalCTA() {
           <span className="text-gradient-cyan">Publique com impacto.</span>
         </h2>
         <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto">
-          Comece a gerar imagens e vídeos agora mesmo. Sem limites, sem complicação.
+          Comece a gerar vídeos agora mesmo. Sem limites, sem complicação.
         </p>
         <div className="mt-10">
           <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8">

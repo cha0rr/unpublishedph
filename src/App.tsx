@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import GerarVideo from "./pages/GerarVideo.tsx";
-import GerarImagem from "./pages/GerarImagem.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -19,7 +18,6 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/gerar-video" element={<GerarVideo />} />
-          <Route path="/gerar-imagem" element={<GerarImagem />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
