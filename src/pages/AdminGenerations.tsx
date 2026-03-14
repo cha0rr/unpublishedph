@@ -21,6 +21,7 @@ interface Generation {
   uuid: string;
   status: string;
   used_credit: number;
+  file_size: number | null;
   created_at: string;
 }
 
@@ -45,7 +46,7 @@ export default function AdminGenerations() {
     setLoading(true);
     const { data } = await supabase
       .from("image_generations" as any)
-      .select("id, email, model, uuid, status, used_credit, created_at")
+      .select("id, email, model, uuid, status, used_credit, file_size, created_at")
       .order("created_at", { ascending: false });
 
     setGenerations((data as any as Generation[]) || []);
@@ -160,8 +161,9 @@ export default function AdminGenerations() {
                     <TableHead className="text-muted-foreground">Modelo</TableHead>
                     <TableHead className="text-muted-foreground">UUID</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">Créditos</TableHead>
-                    <TableHead className="text-muted-foreground">Data</TableHead>
+                     <TableHead className="text-muted-foreground">Créditos</TableHead>
+                     <TableHead className="text-muted-foreground">Tamanho</TableHead>
+                     <TableHead className="text-muted-foreground">Data</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -183,6 +185,9 @@ export default function AdminGenerations() {
                       </TableCell>
                       <TableCell className="text-foreground text-sm">
                         {Number(g.used_credit || 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {g.file_size ? `${(g.file_size / 1024).toFixed(0)} KB` : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(g.created_at).toLocaleDateString("pt-BR")}

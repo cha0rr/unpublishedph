@@ -17,19 +17,28 @@ export type Database = {
       image_generations: {
         Row: {
           ai_credit: number | null
+          aspect_ratio: string | null
           created_at: string | null
           email: string
+          error_code: string | null
+          error_message: string | null
           estimated_credit: number | null
+          file_size: number | null
           id: string
           image_url: string | null
           model: string
+          output_format: string | null
           plan: string | null
           prompt: string
+          provider: string | null
           request_payload: Json | null
+          resolution: string | null
           response_payload: Json | null
           role: string
           status: string | null
           status_percentage: number | null
+          style: string | null
+          thumbnail_small: string | null
           updated_at: string | null
           used_credit: number | null
           user_id: string
@@ -37,19 +46,28 @@ export type Database = {
         }
         Insert: {
           ai_credit?: number | null
+          aspect_ratio?: string | null
           created_at?: string | null
           email: string
+          error_code?: string | null
+          error_message?: string | null
           estimated_credit?: number | null
+          file_size?: number | null
           id?: string
           image_url?: string | null
           model: string
+          output_format?: string | null
           plan?: string | null
           prompt: string
+          provider?: string | null
           request_payload?: Json | null
+          resolution?: string | null
           response_payload?: Json | null
           role: string
           status?: string | null
           status_percentage?: number | null
+          style?: string | null
+          thumbnail_small?: string | null
           updated_at?: string | null
           used_credit?: number | null
           user_id: string
@@ -57,19 +75,28 @@ export type Database = {
         }
         Update: {
           ai_credit?: number | null
+          aspect_ratio?: string | null
           created_at?: string | null
           email?: string
+          error_code?: string | null
+          error_message?: string | null
           estimated_credit?: number | null
+          file_size?: number | null
           id?: string
           image_url?: string | null
           model?: string
+          output_format?: string | null
           plan?: string | null
           prompt?: string
+          provider?: string | null
           request_payload?: Json | null
+          resolution?: string | null
           response_payload?: Json | null
           role?: string
           status?: string | null
           status_percentage?: number | null
+          style?: string | null
+          thumbnail_small?: string | null
           updated_at?: string | null
           used_credit?: number | null
           user_id?: string

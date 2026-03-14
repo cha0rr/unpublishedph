@@ -18,7 +18,7 @@ export function ImageGenerator() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    generate(prompt.trim(), model);
+    generate({ prompt: prompt.trim(), model });
   };
 
   const isProcessing = state === "generating" || state === "polling";

@@ -10,13 +10,24 @@ function getSimulatedProgress(elapsedMs: number): number {
   return Math.max(1, progress);
 }
 
+export interface ImageGenerateParams {
+  prompt: string;
+  model: string;
+  aspect_ratio?: string;
+  resolution?: string;
+  output_format?: string;
+  style?: string;
+  ref_history?: string;
+  file_urls?: string[];
+}
+
 interface ImageGeneratorResult {
   state: GeneratorState;
   resultUrl: string | null;
   error: string | null;
   progress: number;
   statusText: string;
-  generate: (prompt: string, model: string) => Promise<void>;
+  generate: (params: ImageGenerateParams) => Promise<void>;
   reset: () => void;
 }
 
@@ -56,7 +67,7 @@ export function useImageGenerator(): ImageGeneratorResult {
   }, [stopProgressSimulation]);
 
   const pollHistory = useCallback(async (uuid: string) => {
-    const maxAttempts = 60;
+    const maxAttempts = 120;
     const interval = 5000;
     let consecutiveNetworkErrors = 0;
 
@@ -110,7 +121,7 @@ export function useImageGenerator(): ImageGeneratorResult {
     throw new Error("Tempo limite excedido.");
   }, []);
 
-  const generate = useCallback(async (prompt: string, model: string) => {
+  const generate = useCallback(async (params: ImageGenerateParams) => {
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
@@ -130,7 +141,7 @@ export function useImageGenerator(): ImageGeneratorResult {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ prompt, model }),
+          body: JSON.stringify(params),
         }
       );
 
