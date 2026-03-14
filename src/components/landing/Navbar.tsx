@@ -14,8 +14,10 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, isAdmin, isApproved, signOut } = useAuth();
+  const { user, profile, isAdmin, isApproved, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const isBusiness = profile?.plan === "business" && profile?.status === "approved";
 
   const scrollTo = (id: string) => {
     setMobileOpen(false);
