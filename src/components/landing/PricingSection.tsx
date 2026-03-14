@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
     name: "Básico",
     price: "R$ 59",
     period: "/mês",
+    slug: "basico",
     description: "Para começar a criar vídeos com IA.",
     features: [
       "Geração de vídeos ilimitada",
@@ -20,6 +22,7 @@ const plans = [
     name: "Pro",
     price: "R$ 79",
     period: "/mês",
+    slug: "pro",
     description: "Para criadores que precisam de mais flexibilidade.",
     features: [
       "Geração de vídeos ilimitada",
@@ -34,6 +37,7 @@ const plans = [
     name: "Business",
     price: "R$ 99",
     period: "/mês",
+    slug: "business",
     description: "Para equipes e empresas que querem resultado.",
     features: [
       "Geração de vídeos ilimitada",
@@ -49,6 +53,8 @@ const plans = [
 ];
 
 export function PricingSection() {
+  const navigate = useNavigate();
+
   return (
     <section id="planos" className="relative py-24 bg-navy-light/30">
       <div className="mx-auto max-w-7xl px-6">
@@ -98,6 +104,7 @@ export function PricingSection() {
                 ))}
               </ul>
               <Button
+                onClick={() => navigate(`/registro?plano=${plan.slug}`)}
                 className={
                   plan.highlighted
                     ? "bg-primary text-primary-foreground hover:bg-primary/90 w-full"

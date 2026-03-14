@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.geminigen-webhook]
 verify_jwt = false
+
+[functions.register]
+verify_jwt = false
