@@ -111,7 +111,6 @@ Deno.serve(async (req) => {
 
     // Use the correct GeminiGen API endpoint for image generation
     const apiUrl = 'https://api.geminigen.ai/uapi/v1/generate_image';
-    console.log('Calling GeminiGen API:', apiUrl, 'model:', model);
 
     const apiResponse = await fetch(apiUrl, {
       method: 'POST',
@@ -122,68 +121,12 @@ Deno.serve(async (req) => {
     });
 
     const responseData = await apiResponse.json();
-    console.log('GeminiGen response status:', apiResponse.status, 'body:', JSON.stringify(responseData));
 
     if (!apiResponse.ok) {
-      // If generate_image fails, try the video-gen style pattern as fallback
-      const fallbackUrl = `https://api.geminigen.ai/uapi/v1/image-gen/${model}`;
-      console.log('Trying fallback URL:', fallbackUrl);
-      
-      const formData2 = new FormData();
-      formData2.append('prompt', prompt);
-      formData2.append('model', model);
-      if (aspect_ratio) formData2.append('aspect_ratio', aspect_ratio);
-      if (resolution) formData2.append('resolution', resolution);
-      if (output_format) formData2.append('output_format', output_format);
-      if (style) formData2.append('style', style);
-
-      const fallbackResponse = await fetch(fallbackUrl, {
-        method: 'POST',
-        headers: { 'x-api-key': geminigenKey },
-        body: formData2,
+      return new Response(JSON.stringify({ error: 'Erro na API GeminiGen.', details: responseData }), {
+        status: apiResponse.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-
-      const fallbackData = await fallbackResponse.json();
-      console.log('Fallback response status:', fallbackResponse.status, 'body:', JSON.stringify(fallbackData));
-
-      if (!fallbackResponse.ok) {
-        // Try one more pattern
-        const fallbackUrl2 = `https://api.geminigen.ai/uapi/v1/image-gen/nano-banana`;
-        console.log('Trying fallback URL 2:', fallbackUrl2);
-
-        const formData3 = new FormData();
-        formData3.append('prompt', prompt);
-        formData3.append('model', model);
-
-        const fallbackResponse2 = await fetch(fallbackUrl2, {
-          method: 'POST',
-          headers: { 'x-api-key': geminigenKey },
-          body: formData3,
-        });
-
-        const fallbackData2 = await fallbackResponse2.json();
-        console.log('Fallback 2 response status:', fallbackResponse2.status, 'body:', JSON.stringify(fallbackData2));
-
-        if (!fallbackResponse2.ok) {
-          return new Response(JSON.stringify({ 
-            error: 'Erro na API GeminiGen.', 
-            tried_urls: [apiUrl, fallbackUrl, fallbackUrl2],
-            responses: [
-              { url: apiUrl, status: apiResponse.status, data: responseData },
-              { url: fallbackUrl, status: fallbackResponse.status, data: fallbackData },
-              { url: fallbackUrl2, status: fallbackResponse2.status, data: fallbackData2 },
-            ]
-          }), {
-            status: apiResponse.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        // fallbackUrl2 succeeded
-        Object.assign(responseData, fallbackData2);
-      } else {
-        // fallbackUrl succeeded
-        Object.assign(responseData, fallbackData);
-      }
     }
 
     const generationUuid = responseData.uuid;
