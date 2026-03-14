@@ -57,7 +57,13 @@ const plans = [
 ];
 
 export function PricingSection() {
-  const navigate = useNavigate();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("pro");
+
+  const handleSelectPlan = (slug: string) => {
+    setSelectedPlan(slug);
+    setDialogOpen(true);
+  };
 
   return (
     <section id="planos" className="relative py-16 sm:py-24 bg-navy-light/30">
