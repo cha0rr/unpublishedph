@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.register]
 verify_jwt = false
+
+[functions.geminigen-image-history]
+verify_jwt = false

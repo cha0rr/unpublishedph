@@ -14,8 +14,10 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, isAdmin, isApproved, signOut } = useAuth();
+  const { user, profile, isAdmin, isApproved, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const isBusiness = profile?.plan === "business" && profile?.status === "approved";
 
   const scrollTo = (id: string) => {
     setMobileOpen(false);
@@ -64,9 +66,14 @@ export function Navbar() {
           {user ? (
             <>
               {isAdmin && (
-                <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin")}>
-                  Admin
-                </Button>
+                <>
+                  <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin")}>
+                    Admin
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin/generations")}>
+                    Gerações
+                  </Button>
+                </>
               )}
               {(isApproved || isAdmin) && (
                 <>
@@ -77,6 +84,11 @@ export function Navbar() {
                     Frame Mode
                   </Button>
                 </>
+              )}
+              {(isBusiness || isAdmin) && (
+                <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => navigate("/gerar-imagem")}>
+                  Gerar Imagem
+                </Button>
               )}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
@@ -115,9 +127,14 @@ export function Navbar() {
               {user ? (
                 <>
                   {isAdmin && (
-                    <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin"); }}>
-                      Admin
-                    </Button>
+                    <>
+                      <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin"); }}>
+                        Admin
+                      </Button>
+                      <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin/generations"); }}>
+                        Gerações
+                      </Button>
+                    </>
                   )}
                   {(isApproved || isAdmin) && (
                     <>
@@ -128,6 +145,11 @@ export function Navbar() {
                         Frame Mode
                       </Button>
                     </>
+                  )}
+                  {(isBusiness || isAdmin) && (
+                    <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/gerar-imagem"); }}>
+                      Gerar Imagem
+                    </Button>
                   )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
