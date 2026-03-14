@@ -127,9 +127,14 @@ export function Navbar() {
               {user ? (
                 <>
                   {isAdmin && (
-                    <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin"); }}>
-                      Admin
-                    </Button>
+                    <>
+                      <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin"); }}>
+                        Admin
+                      </Button>
+                      <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin/generations"); }}>
+                        Gerações
+                      </Button>
+                    </>
                   )}
                   {(isApproved || isAdmin) && (
                     <>
@@ -140,6 +145,11 @@ export function Navbar() {
                         Frame Mode
                       </Button>
                     </>
+                  )}
+                  {(isBusiness || isAdmin) && (
+                    <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/gerar-imagem"); }}>
+                      Gerar Imagem
+                    </Button>
                   )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
