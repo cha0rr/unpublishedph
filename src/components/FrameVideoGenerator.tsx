@@ -180,7 +180,7 @@ export function FrameVideoGenerator() {
   return (
     <div className="w-full space-y-4">
       {/* Frame uploads */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* First frame */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">Frame Inicial</label>
