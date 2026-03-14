@@ -48,7 +48,7 @@ export function Navbar() {
           <img src={logo} alt="PH Studio" className="h-9 w-auto rounded-lg" />
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-8 md:flex absolute left-1/2 -translate-x-1/2">
           {navLinks.map((link) => (
             <button
               key={link.label}
