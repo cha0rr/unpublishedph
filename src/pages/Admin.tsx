@@ -183,7 +183,7 @@ const Admin = () => {
                 {pending.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma solicitação pendente.</p>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">{pending.map((p) => <ProfileCard key={p.id} profile={p} />)}</div>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">{pending.map((p) => <ProfileCard key={p.id} profile={p} />)}</div>
                 )}
               </div>
 
