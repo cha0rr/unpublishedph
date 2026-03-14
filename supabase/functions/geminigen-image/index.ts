@@ -30,14 +30,16 @@ Deno.serve(async (req) => {
       model: 'nano-banana-2',
       prompt,
       aspectRatio: aspect_ratio || '16:9',
+      api_key: apiKey,
     };
 
-    console.log('Sending to GeminiGen:', JSON.stringify(requestBody));
+    console.log('Sending to GeminiGen (keys redacted):', JSON.stringify({ ...requestBody, api_key: '***' }));
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/generate_image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Api-Key': apiKey,
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
