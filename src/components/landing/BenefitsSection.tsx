@@ -48,7 +48,7 @@ export function BenefitsSection() {
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Por que escolher o <span className="text-gradient-cyan">PH Studio</span>?
           </h2>
-          <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
             Tecnologia de ponta com a simplicidade que você precisa.
           </p>
         </motion.div>
