@@ -36,19 +36,19 @@ const cardVariants = {
 
 export function BenefitsSection() {
   return (
-    <section className="relative py-24">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="relative py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          className="mb-16 text-center"
+          className="mb-10 sm:mb-16 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Por que escolher o <span className="text-gradient-cyan">PH Studio</span>?
           </h2>
-          <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
             Tecnologia de ponta com a simplicidade que você precisa.
           </p>
         </motion.div>

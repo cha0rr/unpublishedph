@@ -66,7 +66,7 @@ export function VideoGenerator() {
         )}
 
         {/* Bottom toolbar */}
-        <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
@@ -83,9 +83,7 @@ export function VideoGenerator() {
             >
               {referenceImage ? <ImageIcon className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             </button>
-          </div>
 
-          <div className="flex items-center gap-2">
             <ToggleGroup
               type="single"
               value={aspectRatio}
@@ -105,7 +103,9 @@ export function VideoGenerator() {
                 9:16
               </ToggleGroupItem>
             </ToggleGroup>
+          </div>
 
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             {state !== "idle" && (
               <Button variant="outline" size="sm" onClick={reset} disabled={isLoading} className="h-9 w-9 p-0 rounded-lg border-border/50">
                 <RotateCcw className="h-4 w-4" />

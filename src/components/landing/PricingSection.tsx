@@ -56,16 +56,16 @@ export function PricingSection() {
   const navigate = useNavigate();
 
   return (
-    <section id="planos" className="relative py-24 bg-navy-light/30">
-      <div className="mx-auto max-w-7xl px-6">
+    <section id="planos" className="relative py-16 sm:py-24 bg-navy-light/30">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          className="mb-16 text-center"
+          className="mb-10 sm:mb-16 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Planos que <span className="text-gradient-cyan">escalam</span> com você
           </h2>
           <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada e sem marca d'água.</p>
@@ -80,7 +80,7 @@ export function PricingSection() {
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className={`glass-card p-8 flex flex-col ${
+              className={`glass-card p-5 sm:p-8 flex flex-col ${
                 plan.highlighted ? "border-primary/30 glow-cyan" : ""
               }`}
             >
@@ -91,8 +91,8 @@ export function PricingSection() {
               )}
               <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
-              <div className="mt-6 mb-6">
-                <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+              <div className="mt-4 sm:mt-6 mb-4 sm:mb-6">
+                <span className="text-3xl sm:text-4xl font-bold text-foreground">{plan.price}</span>
                 {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
               </div>
               <ul className="mb-8 flex-1 space-y-3">

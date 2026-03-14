@@ -10,9 +10,9 @@ const links = {
 export function Footer() {
   return (
     <footer className="border-t border-white/[0.06] bg-background">
-      <div className="mx-auto max-w-7xl px-6 py-16">
-        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-16">
+        <div className="grid gap-8 sm:gap-12 grid-cols-2 lg:grid-cols-5">
+          <div className="col-span-2 lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <img src={logo} alt="PH Studio" className="h-9 w-auto rounded-lg" />
             </Link>
@@ -43,7 +43,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-16 border-t border-white/[0.06] pt-8 text-center">
+        <div className="mt-10 sm:mt-16 border-t border-white/[0.06] pt-6 sm:pt-8 text-center">
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} PH Labs. Todos os direitos reservados.</p>
         </div>
       </div>

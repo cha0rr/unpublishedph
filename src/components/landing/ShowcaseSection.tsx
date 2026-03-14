@@ -11,16 +11,16 @@ const items = [
 
 export function ShowcaseSection() {
   return (
-    <section className="relative py-24">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="relative py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          className="mb-16 text-center"
+          className="mb-10 sm:mb-16 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Criado com <span className="text-gradient-cyan">PH Studio</span>
           </h2>
           <p className="mt-4 text-muted-foreground">Explore o potencial criativo da plataforma.</p>

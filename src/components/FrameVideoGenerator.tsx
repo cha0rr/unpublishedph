@@ -180,7 +180,7 @@ export function FrameVideoGenerator() {
   return (
     <div className="w-full space-y-4">
       {/* Frame uploads */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* First frame */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">Frame Inicial</label>
@@ -230,7 +230,7 @@ export function FrameVideoGenerator() {
           className="min-h-[80px] resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
         />
 
-        <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2">
             <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => v && setAspectRatio(v)} className="gap-1">
               <ToggleGroupItem value="16:9" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">16:9</ToggleGroupItem>
@@ -243,7 +243,7 @@ export function FrameVideoGenerator() {
             </ToggleGroup>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             {state !== "idle" && (
               <Button variant="outline" size="sm" onClick={reset} disabled={isLoading} className="h-9 w-9 p-0 rounded-lg border-border/50">
                 <RotateCcw className="h-4 w-4" />

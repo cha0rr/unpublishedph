@@ -24,22 +24,22 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="como-funciona" className="relative py-24 bg-navy-light/30">
-      <div className="mx-auto max-w-7xl px-6">
+    <section id="como-funciona" className="relative py-16 sm:py-24 bg-navy-light/30">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          className="mb-16 text-center"
+          className="mb-10 sm:mb-16 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Como <span className="text-gradient-cyan">funciona</span>
           </h2>
           <p className="mt-4 text-muted-foreground">Três passos simples para criar vídeos incríveis.</p>
         </motion.div>
 
-        <div className="relative grid gap-8 md:grid-cols-3">
+        <div className="relative grid gap-6 sm:gap-8 md:grid-cols-3">
           <div className="absolute top-16 left-[16.66%] right-[16.66%] hidden h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent md:block" />
 
           {steps.map((step, i) => (
