@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
       prompt,
       uuid: generationUuid,
       status: 'pending',
-      request_payload: requestPayload,
+      request_payload: body,
       response_payload: responseData,
     });
 
