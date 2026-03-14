@@ -91,8 +91,8 @@ export function PricingSection() {
               )}
               <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
-              <div className="mt-6 mb-6">
-                <span className="text-4xl font-bold text-foreground">{plan.price}</span>
+              <div className="mt-4 sm:mt-6 mb-4 sm:mb-6">
+                <span className="text-3xl sm:text-4xl font-bold text-foreground">{plan.price}</span>
                 {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
               </div>
               <ul className="mb-8 flex-1 space-y-3">
