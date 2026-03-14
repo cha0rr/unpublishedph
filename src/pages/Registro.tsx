@@ -17,7 +17,7 @@ const WHATSAPP_NUMBER = "5585982089367";
 const plans: Record<string, string> = {
   basico: "Básico — R$ 59/mês",
   pro: "Pro — R$ 79/mês",
-  business: "Business — R$ 99/mês",
+  business: "Business — R$ 129/mês",
 };
 
 const Registro = () => {
