@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 type GeneratorState = "idle" | "generating" | "polling" | "success" | "error";
 
+// Simulated progress curve: starts fast, slows down, never reaches 100%
+function getSimulatedProgress(elapsedMs: number): number {
+  const totalEstimate = 50000; // 50s estimate
+  const ratio = elapsedMs / totalEstimate;
+  // Logarithmic curve that approaches ~95% but never hits 100
+  const progress = Math.min(95, Math.round(100 * (1 - Math.exp(-2.5 * ratio))));
+  return Math.max(1, progress);
+}
+
 interface UseGeneratorOptions {
   type: "image" | "video";
 }
