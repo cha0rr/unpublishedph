@@ -149,12 +149,13 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
+    stopProgressSimulation();
     setState("idle");
     setResultUrl(null);
     setError(null);
     setProgress(0);
     setStatusText("");
-  }, []);
+  }, [stopProgressSimulation]);
 
   return { state, resultUrl, error, progress, statusText, generate, reset };
 }
