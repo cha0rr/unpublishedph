@@ -27,7 +27,7 @@ export function HeroSection() {
             <span className="text-xs text-muted-foreground">Veo 3.1 — Geração Ilimitada</span>
           </motion.div>
 
-          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Transforme ideias em{" "}
             <span className="text-gradient-cyan">vídeos incríveis</span>{" "}
             com IA
