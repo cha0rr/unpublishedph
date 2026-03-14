@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,29 +12,35 @@ import logo from "@/assets/logo.jpeg";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, profile, isApproved, isAdmin, user } = useAuth();
+  const { signIn, profile, isApproved, isAdmin, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [pendingApproval, setPendingApproval] = useState(false);
+
+  // Redirect via useEffect instead of during render
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) return;
+    if (isAdmin) {
+      navigate("/admin", { replace: true });
+    } else if (isApproved) {
+      navigate("/gerar-video", { replace: true });
+    }
+  }, [user, isAdmin, isApproved, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setError("");
-    setPendingApproval(false);
 
     try {
       await signIn(email, password);
-
-      // Small delay to let auth state update
-      setTimeout(() => {
-        setLoading(false);
-      }, 1000);
+      // useEffect will handle redirect once auth state updates
     } catch (err: any) {
       setError(err.message || "Erro ao fazer login.");
-      setLoading(false);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -65,16 +71,6 @@ const Login = () => {
         <Footer />
       </div>
     );
-  }
-
-  // If user is logged in and approved, redirect
-  if (user && (isApproved || isAdmin)) {
-    if (isAdmin) {
-      navigate("/admin");
-    } else {
-      navigate("/gerar-video");
-    }
-    return null;
   }
 
   return (
@@ -126,8 +122,8 @@ const Login = () => {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              {loading ? (
+            <Button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Entrando...
