@@ -20,7 +20,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 79",
+    price: "R$ 89",
     period: "/mês",
     slug: "pro",
     description: "Para criadores que precisam de mais flexibilidade.",
