@@ -41,12 +41,22 @@ export function ShowcaseSection() {
               className="group relative aspect-video overflow-hidden rounded-2xl border border-white/[0.06]"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${item.color}`} />
-              {/* Play icon */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-60 transition-opacity">
-                <div className="h-10 w-10 rounded-full border-2 border-foreground/30 flex items-center justify-center">
-                  <div className="h-0 w-0 border-t-[6px] border-b-[6px] border-l-[10px] border-transparent border-l-foreground/40 ml-0.5" />
+              {item.video ? (
+                <video
+                  src={item.video}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-60 transition-opacity">
+                  <div className="h-10 w-10 rounded-full border-2 border-foreground/30 flex items-center justify-center">
+                    <div className="h-0 w-0 border-t-[6px] border-b-[6px] border-l-[10px] border-transparent border-l-foreground/40 ml-0.5" />
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
               <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-4 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100">
                 <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary mb-1">{item.type}</span>
