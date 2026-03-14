@@ -26,9 +26,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Try minimal body first to find correct field names
-    const requestBody = { prompt };
-    console.log('Attempt minimal body:', JSON.stringify(requestBody));
+    const requestBody = { model: 'nano-banana-2', prompt, aspectRatio: aspect_ratio || '16:9' };
+    console.log('Request body:', JSON.stringify(requestBody));
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/generate_image', {
       method: 'POST',
