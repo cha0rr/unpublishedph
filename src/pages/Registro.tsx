@@ -15,8 +15,8 @@ import logo from "@/assets/logo.jpeg";
 const WHATSAPP_NUMBER = "5585982089367";
 
 const plans: Record<string, string> = {
-  basico: "Básico — R$ 59/mês",
-  pro: "Pro — R$ 79/mês",
+  basico: "Básico — R$ 69/mês",
+  pro: "Pro — R$ 89/mês",
   business: "Business — R$ 129/mês",
 };
 
@@ -143,8 +143,8 @@ const Registro = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="basico">Básico — R$ 59/mês</SelectItem>
-                  <SelectItem value="pro">Pro — R$ 79/mês</SelectItem>
+                  <SelectItem value="basico">Básico — R$ 69/mês</SelectItem>
+                  <SelectItem value="pro">Pro — R$ 89/mês</SelectItem>
                   <SelectItem value="business">Business — R$ 129/mês</SelectItem>
                 </SelectContent>
               </Select>
