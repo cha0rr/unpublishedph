@@ -56,8 +56,8 @@ export function PricingSection() {
   const navigate = useNavigate();
 
   return (
-    <section id="planos" className="relative py-24 bg-navy-light/30">
-      <div className="mx-auto max-w-7xl px-6">
+    <section id="planos" className="relative py-16 sm:py-24 bg-navy-light/30">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
           className="mb-16 text-center"
           initial={{ opacity: 0, y: 20 }}
