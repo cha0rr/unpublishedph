@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 const plans = [
   {
     name: "Básico",
-    price: "R$ 29",
+    price: "R$ 59",
     period: "/mês",
     description: "Para começar a criar vídeos com IA.",
     features: [
