@@ -4,26 +4,46 @@ import { Check } from "lucide-react";
 
 const plans = [
   {
-    name: "Starter",
-    price: "Grátis",
-    description: "Para experimentar o poder da IA.",
-    features: ["10 gerações/dia", "Imagens em HD", "Vídeos em 720p", "Marca d'água"],
+    name: "Básico",
+    price: "R$ 29",
+    period: "/mês",
+    description: "Para começar a criar vídeos com IA.",
+    features: [
+      "Geração de vídeos ilimitada",
+      "Formato 16:9",
+      "Sem marca d'água",
+      "Uso comercial",
+    ],
     highlighted: false,
   },
   {
     name: "Pro",
-    price: "R$ 49",
+    price: "R$ 79",
     period: "/mês",
-    description: "Para criadores e profissionais.",
-    features: ["Gerações ilimitadas", "Imagens em 4K", "Vídeos em 1080p", "Sem marca d'água", "Uso comercial", "Suporte prioritário"],
+    description: "Para criadores que precisam de mais flexibilidade.",
+    features: [
+      "Geração de vídeos ilimitada",
+      "Formatos 16:9 e 9:16",
+      "Sem marca d'água",
+      "Uso comercial",
+      "Suporte 24 horas",
+    ],
     highlighted: true,
   },
   {
-    name: "Studio",
-    price: "R$ 149",
+    name: "Business",
+    price: "R$ 199",
     period: "/mês",
-    description: "Para equipes e empresas.",
-    features: ["Tudo do Pro", "Vídeos em 4K", "API de acesso", "Múltiplos usuários", "SLA garantido", "Gerente de conta"],
+    description: "Para equipes e empresas que querem resultado.",
+    features: [
+      "Geração de vídeos ilimitada",
+      "Formatos 16:9 e 9:16",
+      "Gerador de roteiros com IA",
+      "Sem marca d'água",
+      "Uso comercial",
+      "Suporte exclusivo",
+      "Chamadas de vídeo semanais com consultoria",
+    ],
     highlighted: false,
   },
 ];
@@ -42,7 +62,7 @@ export function PricingSection() {
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
             Planos que <span className="text-gradient-cyan">escalam</span> com você
           </h2>
-          <p className="mt-4 text-muted-foreground">Comece grátis. Evolua quando precisar.</p>
+          <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada e sem marca d'água.</p>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -71,8 +91,8 @@ export function PricingSection() {
               </div>
               <ul className="mb-8 flex-1 space-y-3">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-primary shrink-0" />
+                  <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
