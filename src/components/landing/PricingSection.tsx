@@ -45,7 +45,7 @@ const plans = [
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
       "Gerador de roteiros com IA (em breve)",
-      "Gerador de imagens com IA (em breve)",
+      "Gerador de imagens com IA",
       "Sem marca d'água",
       "Uso comercial",
       "Suporte exclusivo",
