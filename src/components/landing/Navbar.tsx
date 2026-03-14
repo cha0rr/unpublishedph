@@ -147,8 +147,8 @@ export function Navbar() {
                     </>
                   )}
                   {(isBusiness || isAdmin) && (
-                    <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/gerar-imagem"); }}>
-                      Gerar Imagem
+                    <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
+                      Studio Imagens
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>

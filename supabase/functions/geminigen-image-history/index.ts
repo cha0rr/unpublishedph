@@ -115,10 +115,26 @@ Deno.serve(async (req) => {
     if (!imageUrl) imageUrl = data.thumbnail_url;
     if (imageUrl) updatePayload.image_url = imageUrl;
 
+    // Extract thumbnail_small
+    if (data.thumbnail_small) updatePayload.thumbnail_small = data.thumbnail_small;
+    if (data.generated_image?.[0]?.thumbnail_small) {
+      updatePayload.thumbnail_small = data.generated_image[0].thumbnail_small;
+    }
+
+    // Extract file_size
+    if (data.file_size !== undefined) updatePayload.file_size = data.file_size;
+    if (data.generated_image?.[0]?.file_size !== undefined) {
+      updatePayload.file_size = data.generated_image[0].file_size;
+    }
+
     // Extract credits
     if (data.used_credit !== undefined) updatePayload.used_credit = data.used_credit;
     if (data.estimated_credit !== undefined) updatePayload.estimated_credit = data.estimated_credit;
     if (data.ai_credit !== undefined) updatePayload.ai_credit = data.ai_credit;
+
+    // Extract error info
+    if (data.error_code !== undefined) updatePayload.error_code = String(data.error_code);
+    if (data.error_message !== undefined) updatePayload.error_message = data.error_message;
 
     await adminClient
       .from('image_generations')

@@ -187,6 +187,9 @@ export default function AdminGenerations() {
                         {Number(g.used_credit || 0).toFixed(2)}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
+                        {g.file_size ? `${(g.file_size / 1024).toFixed(0)} KB` : "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
                         {new Date(g.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
                     </TableRow>
