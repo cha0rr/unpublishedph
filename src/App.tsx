@@ -9,6 +9,8 @@ import GerarVideoFrame from "./pages/GerarVideoFrame.tsx";
 import Login from "./pages/Login.tsx";
 import Registro from "./pages/Registro.tsx";
 import Admin from "./pages/Admin.tsx";
+import GerarImagem from "./pages/GerarImagem.tsx";
+import AdminGenerations from "./pages/AdminGenerations.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
