@@ -11,7 +11,8 @@ interface GeneratorResult {
   state: GeneratorState;
   resultUrl: string | null;
   error: string | null;
-  progress: string;
+  progress: number;
+  statusText: string;
   generate: (prompt: string, aspectRatio: string) => Promise<void>;
   reset: () => void;
 }
@@ -20,103 +21,117 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState("");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("");
+  const cancelledRef = useRef(false);
 
-  const cleanup = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+  useEffect(() => {
+    return () => { cancelledRef.current = true; };
   }, []);
 
-  useEffect(() => cleanup, [cleanup]);
+  const pollHistory = useCallback(async (uuid: string) => {
+    const maxAttempts = type === "video" ? 60 : 40;
+    const interval = type === "video" ? 5000 : 4000;
 
-  const pollHistory = useCallback(
-    (uuid: string) => {
-      setState("polling");
-      setProgress("Aguardando processamento...");
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (cancelledRef.current) return;
 
-      intervalRef.current = setInterval(async () => {
-        try {
-          const { data, error: fnError } = await supabase.functions.invoke("geminigen-history", {
-            body: { uuid },
-          });
+      const { data, error: fnError } = await supabase.functions.invoke("geminigen-history", {
+        body: { uuid },
+      });
 
-          if (fnError) throw new Error(fnError.message);
+      if (fnError) throw new Error(fnError.message);
 
-          const status = data?.status;
+      const result = data?.result;
+      if (!result) throw new Error("Resposta de histórico inválida.");
 
-          if (status === 2) {
-            cleanup();
-            const url = data?.output?.[0] || data?.output_url || data?.result?.url;
-            if (url) {
-              setResultUrl(url);
-              setState("success");
-              setProgress("");
-            } else {
-              setError("Geração concluída mas URL não encontrada na resposta.");
-              setState("error");
-              setProgress("");
-            }
-          } else if (status === 3) {
-            cleanup();
-            setError(data?.error_message || "A geração falhou.");
-            setState("error");
-            setProgress("");
-          } else {
-            setProgress(`Processando... (status: ${status ?? "aguardando"})`);
-          }
-        } catch (err: any) {
-          cleanup();
-          setError(err.message || "Erro ao consultar status.");
-          setState("error");
-          setProgress("");
-        }
-      }, 3000);
-    },
-    [cleanup]
-  );
+      const status = result.status;
+      const pct = result.status_percentage ?? 0;
+      setProgress(pct);
+      setStatusText(
+        type === "image"
+          ? `Processando imagem... ${pct}%`
+          : `Processando vídeo... ${pct}%`
+      );
 
-  const generate = useCallback(
-    async (prompt: string, aspectRatio: string) => {
-      cleanup();
-      setState("generating");
-      setResultUrl(null);
-      setError(null);
-      setProgress("Enviando prompt...");
-
-      try {
-        const functionName = type === "image" ? "geminigen-image" : "geminigen-video";
-
-        const { data, error: fnError } = await supabase.functions.invoke(functionName, {
-          body: { prompt, aspect_ratio: aspectRatio },
-        });
-
-        if (fnError) throw new Error(fnError.message);
-
-        const uuid = data?.uuid || data?.id || data?.request_id;
-        if (!uuid) {
-          throw new Error("UUID não retornado pela API.");
-        }
-
-        pollHistory(uuid);
-      } catch (err: any) {
-        setError(err.message || "Erro ao iniciar geração.");
-        setState("error");
-        setProgress("");
+      if (status === 2) {
+        const finalUrl =
+          result.generate_result ||
+          (type === "image" ? result.image_url : result.video_url) ||
+          result.file_download_url ||
+          "";
+        return finalUrl;
       }
-    },
-    [type, pollHistory, cleanup]
-  );
+
+      if (status === 3) {
+        throw new Error(result.error_message || `Falha ao gerar ${type === "image" ? "imagem" : "vídeo"}.`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    throw new Error(`Tempo limite excedido ao gerar ${type === "image" ? "imagem" : "vídeo"}.`);
+  }, [type]);
+
+  const generate = useCallback(async (prompt: string, aspectRatio: string) => {
+    cancelledRef.current = false;
+    setState("generating");
+    setResultUrl(null);
+    setError(null);
+    setProgress(0);
+    setStatusText("Enviando solicitação...");
+
+    try {
+      const functionName = type === "image" ? "geminigen-image" : "geminigen-video";
+      
+      const body = type === "image"
+        ? {
+            prompt,
+            aspect_ratio: aspectRatio,
+            output_format: "jpeg",
+            resolution: "1K",
+            style: "Photorealistic",
+          }
+        : {
+            prompt,
+            resolution: "720p",
+            aspect_ratio: aspectRatio,
+          };
+
+      const { data, error: fnError } = await supabase.functions.invoke(functionName, { body });
+
+      if (fnError) throw new Error(fnError.message);
+
+      const uuid = data?.result?.uuid;
+      if (!uuid) {
+        throw new Error("UUID da geração não retornado.");
+      }
+
+      setState("polling");
+      const finalUrl = await pollHistory(uuid);
+
+      if (finalUrl) {
+        setResultUrl(finalUrl);
+        setState("success");
+        setStatusText(type === "image" ? "Imagem pronta." : "Vídeo pronto.");
+      } else {
+        throw new Error("URL do resultado não encontrada.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Erro inesperado.");
+      setState("error");
+      setStatusText("");
+    }
+  }, [type, pollHistory]);
 
   const reset = useCallback(() => {
-    cleanup();
+    cancelledRef.current = true;
     setState("idle");
     setResultUrl(null);
     setError(null);
-    setProgress("");
-  }, [cleanup]);
+    setProgress(0);
+    setStatusText("");
+  }, []);
 
-  return { state, resultUrl, error, progress, generate, reset };
+  return { state, resultUrl, error, progress, statusText, generate, reset };
 }

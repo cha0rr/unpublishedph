@@ -9,10 +9,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { prompt, aspect_ratio } = await req.json();
+    const {
+      prompt,
+      resolution = "720p",
+      aspect_ratio = "16:9",
+    } = await req.json();
 
     if (!prompt) {
-      return new Response(JSON.stringify({ error: 'prompt is required' }), {
+      return new Response(JSON.stringify({ error: 'prompt é obrigatório.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -20,23 +24,24 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('model', 'veo-3.1-fast');
+    formData.append('resolution', resolution);
+    formData.append('aspect_ratio', aspect_ratio);
+
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-Api-Key': apiKey,
+        'x-api-key': apiKey,
       },
-      body: JSON.stringify({
-        model: 'veo-3.1-fast',
-        prompt,
-        aspect_ratio: aspect_ratio || '16:9',
-      }),
+      body: formData,
     });
 
     const data = await response.json();
@@ -46,7 +51,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Erro interno ao gerar vídeo.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
