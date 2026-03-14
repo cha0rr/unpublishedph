@@ -114,7 +114,7 @@ export function PricingSection() {
                 ))}
               </ul>
               <Button
-                onClick={() => navigate(`/registro?plano=${plan.slug}`)}
+                onClick={() => handleSelectPlan(plan.slug)}
                 className={
                   plan.highlighted
                     ? "bg-primary text-primary-foreground hover:bg-primary/90 w-full"
@@ -128,6 +128,8 @@ export function PricingSection() {
           ))}
         </div>
       </div>
+
+      <RegistroDialog open={dialogOpen} onOpenChange={setDialogOpen} selectedPlan={selectedPlan} />
     </section>
   );
 }
