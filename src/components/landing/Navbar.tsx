@@ -69,6 +69,11 @@ export function Navbar() {
                   Admin
                 </Button>
               )}
+              {(isApproved || isAdmin) && (
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/gerar-video")}>
+                  Gerar Vídeo
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
               </Button>
