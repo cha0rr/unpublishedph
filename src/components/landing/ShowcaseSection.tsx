@@ -5,7 +5,7 @@ const items = [
   { label: "Vídeo Institucional", type: "Vídeo", color: "from-orange-500/20 to-primary/20", video: "/videos/showcase-video-institucional.mp4" },
   { label: "Comercial de Moda", type: "Vídeo", color: "from-pink-500/20 to-primary/20", video: "/videos/showcase-comercial-moda.mp4" },
   { label: "Animação Abstrata", type: "Vídeo", color: "from-green-500/20 to-primary/20", video: "/videos/showcase-animacao-abstrata.mp4" },
-  { label: "Vídeo para Redes Sociais", type: "Vídeo", color: "from-blue-500/20 to-primary/20" },
+  { label: "Vídeo para Redes Sociais", type: "Vídeo", color: "from-blue-500/20 to-primary/20", video: "/videos/showcase-redes-sociais.mp4" },
   { label: "Trailer Cinematográfico", type: "Vídeo", color: "from-red-500/20 to-primary/20" },
 ];
 
