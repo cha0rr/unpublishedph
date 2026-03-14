@@ -12,7 +12,7 @@ const plans = [
     description: "Para começar a criar vídeos com IA.",
     features: [
       "Geração de vídeos ilimitada",
-      "Formato 16:9",
+      "Formatos 16:9 e 9:16",
       "Sem marca d'água",
       "Uso comercial",
     ],
