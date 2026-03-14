@@ -34,8 +34,8 @@ export function HeroSection() {
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
-            O PH Studio gera vídeos de alta qualidade com inteligência artificial.
-            Rápido, profissional e sem limites.
+            O PH Studio gera vídeos profissionais com inteligência artificial.
+            Ilimitado, sem marca d'água e pronto para publicar.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
@@ -58,7 +58,7 @@ export function HeroSection() {
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
-              HD & 4K
+              Ilimitado
             </div>
           </div>
         </motion.div>
