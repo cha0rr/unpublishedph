@@ -195,7 +195,7 @@ const Admin = () => {
                 {approved.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum usuário aprovado.</p>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">{approved.map((p) => <ProfileCard key={p.id} profile={p} />)}</div>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">{approved.map((p) => <ProfileCard key={p.id} profile={p} />)}</div>
                 )}
               </div>
 
