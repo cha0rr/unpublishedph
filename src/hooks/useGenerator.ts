@@ -33,10 +33,33 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
   const cancelledRef = useRef(false);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(0);
+
+  const startProgressSimulation = useCallback(() => {
+    startTimeRef.current = Date.now();
+    progressTimerRef.current = setInterval(() => {
+      if (cancelledRef.current) return;
+      const elapsed = Date.now() - startTimeRef.current;
+      const simulated = getSimulatedProgress(elapsed);
+      setProgress(simulated);
+      setStatusText(`Processando vídeo... ${simulated}%`);
+    }, 300);
+  }, []);
+
+  const stopProgressSimulation = useCallback(() => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    return () => { cancelledRef.current = true; };
-  }, []);
+    return () => {
+      cancelledRef.current = true;
+      stopProgressSimulation();
+    };
+  }, [stopProgressSimulation]);
 
   const pollHistory = useCallback(async (uuid: string) => {
     const maxAttempts = 60;
@@ -53,9 +76,6 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       if (!data) throw new Error("Resposta de histórico inválida.");
 
       const status = data.status;
-      const pct = data.status_percentage ?? 0;
-      setProgress(pct);
-      setStatusText(`Processando vídeo... ${pct}%`);
 
       if (status === 2) {
         let finalUrl = data.generate_result;
