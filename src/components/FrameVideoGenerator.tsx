@@ -53,36 +53,55 @@ export function FrameVideoGenerator() {
   };
 
   const pollHistory = useCallback(async (uuid: string) => {
-    const maxAttempts = 80;
+    const maxAttempts = 120;
     const interval = 5000;
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 5;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (cancelledRef.current) return null;
 
-      const { data, error: fnError } = await supabase.functions.invoke("geminigen-history", {
-        body: { uuid },
-      });
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-history`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          },
+          body: JSON.stringify({ uuid }),
+        });
 
-      if (fnError) throw new Error(fnError.message);
-      if (!data) throw new Error("Resposta de histórico inválida.");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data) throw new Error("Resposta inválida.");
 
-      const status = data.status;
-      const progressPct = data.status_percentage ?? 0;
-      setProgress(progressPct);
-      setStatusText(`Gerando vídeo... ${progressPct}%`);
+        consecutiveErrors = 0;
 
-      if (status === 2) {
-        const finalUrl =
-          data.generated_video?.[0]?.video_url ||
-          data.generate_result ||
-          data.file_download_url ||
-          "";
-        if (!finalUrl) throw new Error("Vídeo concluído, mas URL não encontrada.");
-        return finalUrl;
-      }
+        const status = data.status;
+        const progressPct = data.status_percentage ?? 0;
+        setProgress(progressPct);
+        setStatusText(`Gerando vídeo... ${progressPct}%`);
 
-      if (status === 3) {
-        throw new Error(data.error_message || "Falha na geração do vídeo.");
+        if (status === 2) {
+          const finalUrl =
+            data.generated_video?.[0]?.video_url ||
+            data.generate_result ||
+            data.file_download_url ||
+            "";
+          if (!finalUrl) throw new Error("Vídeo concluído, mas URL não encontrada.");
+          return finalUrl;
+        }
+
+        if (status === 3) {
+          throw new Error(data.error_message || "Falha na geração do vídeo.");
+        }
+      } catch (err: any) {
+        consecutiveErrors++;
+        console.warn(`Poll attempt ${attempt + 1} failed:`, err.message);
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          throw new Error("Conexão perdida ao verificar status do vídeo.");
+        }
       }
 
       await new Promise((resolve) => setTimeout(resolve, interval));
