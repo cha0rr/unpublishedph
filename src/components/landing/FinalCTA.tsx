@@ -16,7 +16,7 @@ export function FinalCTA() {
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className="text-3xl font-bold text-foreground sm:text-5xl leading-tight">
+        <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-5xl leading-tight">
           Crie com velocidade.{" "}
           <span className="text-gradient-cyan">Publique com impacto.</span>
         </h2>
