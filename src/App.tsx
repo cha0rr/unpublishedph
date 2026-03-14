@@ -10,6 +10,7 @@ import Login from "./pages/Login.tsx";
 import Registro from "./pages/Registro.tsx";
 import Admin from "./pages/Admin.tsx";
 import GerarImagem from "./pages/GerarImagem.tsx";
+import BusinessStudioImages from "./pages/BusinessStudioImages.tsx";
 import AdminGenerations from "./pages/AdminGenerations.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
