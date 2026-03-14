@@ -1,3 +1,4 @@
+import { TechBackground } from "@/components/landing/TechBackground";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { VideoGenerator } from "@/components/VideoGenerator";
