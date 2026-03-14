@@ -33,7 +33,7 @@ export function HowItWorks() {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Como <span className="text-gradient-cyan">funciona</span>
           </h2>
           <p className="mt-4 text-muted-foreground">Três passos simples para criar vídeos incríveis.</p>
