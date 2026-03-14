@@ -1,3 +1,4 @@
+import { TechBackground } from "@/components/landing/TechBackground";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { BenefitsSection } from "@/components/landing/BenefitsSection";
