@@ -98,7 +98,14 @@ Deno.serve(async (req) => {
 
     const requestPayload = { prompt, model };
 
-    const apiResponse = await fetch('https://api.geminigen.ai/uapi/v1/image-gen', {
+    // Map model to API endpoint path (similar to video-gen/veo pattern)
+    const modelEndpointMap: Record<string, string> = {
+      'nano-banana-2': 'nano-banana',
+      'nano-banana-pro': 'nano-banana-pro',
+    };
+    const endpointModel = modelEndpointMap[model] || model;
+
+    const apiResponse = await fetch(`https://api.geminigen.ai/uapi/v1/image-gen/${endpointModel}`, {
       method: 'POST',
       headers: {
         'x-api-key': geminigenKey,
