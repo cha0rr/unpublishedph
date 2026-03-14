@@ -94,12 +94,19 @@ Deno.serve(async (req) => {
 
     // Send to GeminiGen API using FormData
     const formData = new FormData();
-    formData.append('prompt', prompt);
+
+    // Incorporate style into the prompt for reliable application
+    let finalPrompt = prompt;
+    if (style && style !== 'auto') {
+      finalPrompt = `[Style: ${style}] ${prompt}`;
+    }
+
+    formData.append('prompt', finalPrompt);
     formData.append('model', model);
     if (aspect_ratio) formData.append('aspect_ratio', aspect_ratio);
     if (resolution && resolution.trim() && resolution !== 'auto') formData.append('resolution', resolution);
     if (output_format) formData.append('output_format', output_format);
-    if (style) formData.append('style', style);
+    if (style && style !== 'auto') formData.append('style', style);
     if (ref_history) formData.append('ref_history', ref_history);
     if (file_urls && Array.isArray(file_urls)) {
       for (const url of file_urls) {
