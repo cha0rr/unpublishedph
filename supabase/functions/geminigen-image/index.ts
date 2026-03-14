@@ -32,23 +32,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Send as FormData (same as video endpoint)
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('model', 'nano-banana-2');
+    formData.append('aspect_ratio', aspect_ratio);
+    formData.append('output_format', output_format);
+    formData.append('resolution', resolution);
+    formData.append('style', style);
+
+    console.log('Sending image request as FormData');
+
     const response = await fetch('https://api.geminigen.ai/uapi/v1/generate_image', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'x-api-key': apiKey,
       },
-      body: JSON.stringify({
-        prompt,
-        model: 'nano-banana-2',
-        aspect_ratio,
-        output_format,
-        resolution,
-        style,
-      }),
+      body: formData,
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('Response status:', response.status, 'body:', responseText);
+
+    let data;
+    try { data = JSON.parse(responseText); } catch { data = { raw: responseText }; }
 
     return new Response(JSON.stringify(data), {
       status: response.status,
