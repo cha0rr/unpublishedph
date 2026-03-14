@@ -42,7 +42,7 @@ const ASPECT_RATIOS = [
 ];
 
 const RESOLUTIONS = [
-  { value: "", label: "Auto (padrão)" },
+  { value: "auto", label: "Auto (padrão)" },
   { value: "1024x1024", label: "1024×1024" },
   { value: "1280x720", label: "1280×720" },
   { value: "720x1280", label: "720×1280" },
