@@ -28,6 +28,8 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/gerar-imagem" element={<GerarImagem />} />
+          <Route path="/admin/generations" element={<AdminGenerations />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

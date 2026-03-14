@@ -1,0 +1,138 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const geminigenKey = Deno.env.get('GEMINIGEN_API_KEY');
+
+    if (!geminigenKey) {
+      return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Token inválido.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // Check authorization
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('plan, status')
+      .eq('user_id', userId)
+      .single();
+
+    const { data: roles } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
+    const isBusiness = profile?.plan === 'business' && profile?.status === 'approved';
+
+    if (!isAdmin && !isBusiness) {
+      return new Response(JSON.stringify({ error: 'Acesso restrito.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { uuid } = await req.json();
+
+    if (!uuid) {
+      return new Response(JSON.stringify({ error: 'UUID é obrigatório.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Query GeminiGen history
+    const apiResponse = await fetch(`https://api.geminigen.ai/uapi/v1/history/${uuid}`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': geminigenKey,
+      },
+    });
+
+    const data = await apiResponse.json();
+
+    // Update the record in image_generations
+    const updatePayload: Record<string, any> = {
+      response_payload: data,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (data.status !== undefined) {
+      if (data.status === 2) updatePayload.status = 'completed';
+      else if (data.status === 3) updatePayload.status = 'failed';
+      else updatePayload.status = 'processing';
+    }
+
+    if (data.status_percentage !== undefined) {
+      updatePayload.status_percentage = data.status_percentage;
+    }
+
+    // Extract image URL
+    let imageUrl = data.generate_result;
+    if (!imageUrl && data.generated_image?.length > 0) {
+      const img = data.generated_image[0];
+      imageUrl = img.image_url || img.file_download_url;
+    }
+    if (!imageUrl) imageUrl = data.thumbnail_url;
+    if (imageUrl) updatePayload.image_url = imageUrl;
+
+    // Extract credits
+    if (data.used_credit !== undefined) updatePayload.used_credit = data.used_credit;
+    if (data.estimated_credit !== undefined) updatePayload.estimated_credit = data.estimated_credit;
+    if (data.ai_credit !== undefined) updatePayload.ai_credit = data.ai_credit;
+
+    await adminClient
+      .from('image_generations')
+      .update(updatePayload)
+      .eq('uuid', uuid);
+
+    return new Response(JSON.stringify(data), {
+      status: apiResponse.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message || 'Erro ao consultar histórico.' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
