@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'X-Api-Key': apiKey,
       },
       body: JSON.stringify({
         model: 'nano-banana-2',
