@@ -102,7 +102,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
     throw new Error("Tempo limite excedido ao gerar vídeo.");
   }, []);
 
-  const generate = useCallback(async (prompt: string, aspectRatio: string) => {
+  const generate = useCallback(async (prompt: string, aspectRatio: string, referenceImage?: File) => {
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
@@ -111,11 +111,21 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
     setStatusText("Enviando solicitação...");
 
     try {
-      const body = {
+      const body: Record<string, string> = {
         prompt,
         resolution: "720p",
         aspect_ratio: aspectRatio,
       };
+
+      if (referenceImage) {
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(referenceImage);
+        });
+        body.reference_image = base64;
+      }
 
       const { data, error: fnError } = await supabase.functions.invoke("geminigen-video", { body });
 
