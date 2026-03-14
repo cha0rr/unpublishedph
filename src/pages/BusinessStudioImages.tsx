@@ -78,7 +78,7 @@ export default function BusinessStudioImages() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("nano-banana-pro");
   const [aspectRatio, setAspectRatio] = useState("1:1");
-  const [resolution, setResolution] = useState("");
+  const [resolution, setResolution] = useState("auto");
   const [outputFormat, setOutputFormat] = useState("png");
   const [style, setStyle] = useState("auto");
   const [refHistory, setRefHistory] = useState("");
