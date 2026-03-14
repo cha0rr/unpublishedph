@@ -8,7 +8,6 @@ import logo from "@/assets/logo.jpeg";
 
 const navLinks = [
   { label: "Início", href: "#hero" },
-  { label: "Gerador de Vídeo", href: "#modos" },
   { label: "Como Funciona", href: "#como-funciona" },
   { label: "Planos", href: "#planos" },
 ];
