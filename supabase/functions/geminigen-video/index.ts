@@ -37,6 +37,20 @@ Deno.serve(async (req) => {
     formData.append('resolution', resolution);
     formData.append('aspect_ratio', aspect_ratio);
 
+    if (reference_image) {
+      // Convert base64 data URL to blob
+      const base64Data = reference_image.split(',')[1] || reference_image;
+      const mimeMatch = reference_image.match(/data:([^;]+);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+      const binaryStr = atob(base64Data);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mime });
+      formData.append('image', blob, 'reference.png');
+    }
+
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
       method: 'POST',
       headers: {
