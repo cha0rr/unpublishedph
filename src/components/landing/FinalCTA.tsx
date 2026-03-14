@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 export function FinalCTA() {
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section className="relative py-20 sm:py-32 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-navy-light/50 to-background" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-primary/[0.06] blur-[120px]" />
 
