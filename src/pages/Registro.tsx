@@ -143,8 +143,8 @@ const Registro = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="basico">Básico — R$ 59/mês</SelectItem>
-                  <SelectItem value="pro">Pro — R$ 79/mês</SelectItem>
+                  <SelectItem value="basico">Básico — R$ 69/mês</SelectItem>
+                  <SelectItem value="pro">Pro — R$ 89/mês</SelectItem>
                   <SelectItem value="business">Business — R$ 129/mês</SelectItem>
                 </SelectContent>
               </Select>
