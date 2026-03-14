@@ -111,9 +111,24 @@ export function Navbar() {
                 {link.label}
               </button>
             ))}
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col gap-3 pt-2">
               {user ? (
                 <>
+                  {isAdmin && (
+                    <Button variant="ghost" size="sm" className="justify-start text-primary" onClick={() => { setMobileOpen(false); navigate("/admin"); }}>
+                      Admin
+                    </Button>
+                  )}
+                  {(isApproved || isAdmin) && (
+                    <>
+                      <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
+                        Gerar Vídeo
+                      </Button>
+                      <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/gerar-video-frame"); }}>
+                        Frame Mode
+                      </Button>
+                    </>
+                  )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
                   </Button>
