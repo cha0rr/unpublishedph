@@ -82,23 +82,13 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
     setStatusText("Enviando solicitação...");
 
     try {
-      const functionName = type === "image" ? "geminigen-image" : "geminigen-video";
+      const body = {
+        prompt,
+        resolution: "720p",
+        aspect_ratio: aspectRatio,
+      };
 
-      const body = type === "image"
-        ? {
-            prompt,
-            aspect_ratio: aspectRatio,
-            output_format: "jpeg",
-            resolution: "1K",
-            style: "Photorealistic",
-          }
-        : {
-            prompt,
-            resolution: "720p",
-            aspect_ratio: aspectRatio,
-          };
-
-      const { data, error: fnError } = await supabase.functions.invoke(functionName, { body });
+      const { data, error: fnError } = await supabase.functions.invoke("geminigen-video", { body });
 
       if (fnError) throw new Error(fnError.message);
 
@@ -113,7 +103,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       if (finalUrl) {
         setResultUrl(finalUrl);
         setState("success");
-        setStatusText(type === "image" ? "Imagem pronta." : "Vídeo pronto.");
+        setStatusText("Vídeo pronto.");
       } else {
         throw new Error("URL do resultado não encontrada.");
       }
@@ -122,7 +112,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       setState("error");
       setStatusText("");
     }
-  }, [type, pollHistory]);
+  }, [pollHistory]);
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
