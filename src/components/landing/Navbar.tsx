@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.jpeg";
 
 const navLinks = [
@@ -14,11 +15,26 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, isAdmin, isApproved, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const scrollTo = (id: string) => {
     setMobileOpen(false);
-    const el = document.querySelector(id);
-    el?.scrollIntoView({ behavior: "smooth" });
+    if (window.location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        const el = document.querySelector(id);
+        el?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    } else {
+      const el = document.querySelector(id);
+      el?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
@@ -46,12 +62,32 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            Entrar
-          </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Começar Agora
-          </Button>
+          {user ? (
+            <>
+              {isAdmin && (
+                <Button variant="ghost" size="sm" className="text-primary" onClick={() => navigate("/admin")}>
+                  Admin
+                </Button>
+              )}
+              {(isApproved || isAdmin) && (
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/gerar-video")}>
+                  Gerar Vídeo
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate("/login")}>
+                Entrar
+              </Button>
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/registro")}>
+                Começar Agora
+              </Button>
+            </>
+          )}
         </div>
 
         <button className="md:hidden text-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -72,8 +108,27 @@ export function Navbar() {
               </button>
             ))}
             <div className="flex gap-3 pt-2">
-              <Button variant="outline" size="sm" className="flex-1 border-border text-foreground">Entrar</Button>
-              <Button size="sm" className="flex-1 bg-primary text-primary-foreground">Começar Agora</Button>
+              {user ? (
+                <>
+                  {(isApproved || isAdmin) && (
+                    <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
+                      Gerar Vídeo
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="flex-1 border-border text-foreground" onClick={() => { setMobileOpen(false); navigate("/login"); }}>
+                    Entrar
+                  </Button>
+                  <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { setMobileOpen(false); navigate("/registro"); }}>
+                    Começar Agora
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </motion.div>
