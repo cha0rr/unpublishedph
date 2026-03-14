@@ -45,7 +45,7 @@ export function BenefitsSection() {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Por que escolher o <span className="text-gradient-cyan">PH Studio</span>?
           </h2>
           <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
