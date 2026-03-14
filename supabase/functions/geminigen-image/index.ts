@@ -72,7 +72,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { prompt, model } = await req.json();
+    const body = await req.json();
+    const { prompt, model, aspect_ratio, resolution, output_format, style, ref_history, file_urls } = body;
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: 'Prompt é obrigatório.' }), {
@@ -95,17 +96,23 @@ Deno.serve(async (req) => {
     const formData = new FormData();
     formData.append('prompt', prompt);
     formData.append('model', model);
+    if (aspect_ratio) formData.append('aspect_ratio', aspect_ratio);
+    if (resolution) formData.append('resolution', resolution);
+    if (output_format) formData.append('output_format', output_format);
+    if (style) formData.append('style', style);
+    if (ref_history) formData.append('ref_history', ref_history);
+    if (file_urls && Array.isArray(file_urls)) {
+      for (const url of file_urls) {
+        if (url && typeof url === 'string' && url.trim()) {
+          formData.append('file_urls', url.trim());
+        }
+      }
+    }
 
-    const requestPayload = { prompt, model };
+    // Use the correct GeminiGen API endpoint for image generation
+    const apiUrl = 'https://api.geminigen.ai/uapi/v1/generate_image';
 
-    // Map model to API endpoint path (similar to video-gen/veo pattern)
-    const modelEndpointMap: Record<string, string> = {
-      'nano-banana-2': 'nano-banana',
-      'nano-banana-pro': 'nano-banana-pro',
-    };
-    const endpointModel = modelEndpointMap[model] || model;
-
-    const apiResponse = await fetch(`https://api.geminigen.ai/uapi/v1/image-gen/${endpointModel}`, {
+    const apiResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'x-api-key': geminigenKey,
@@ -116,7 +123,7 @@ Deno.serve(async (req) => {
     const responseData = await apiResponse.json();
 
     if (!apiResponse.ok) {
-      return new Response(JSON.stringify({ error: responseData.error || 'Erro na API GeminiGen.', details: responseData }), {
+      return new Response(JSON.stringify({ error: 'Erro na API GeminiGen.', details: responseData }), {
         status: apiResponse.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -134,7 +141,7 @@ Deno.serve(async (req) => {
       prompt,
       uuid: generationUuid,
       status: 'pending',
-      request_payload: requestPayload,
+      request_payload: body,
       response_payload: responseData,
     });
 
