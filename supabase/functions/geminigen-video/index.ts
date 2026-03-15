@@ -115,6 +115,27 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
+    const generationUuid = data.uuid;
+    const userEmail = claimsData.claims.email as string;
+    const userRole = isAdmin ? 'admin' : 'user';
+
+    // Log video generation to image_generations table
+    await adminClient.from('image_generations').insert({
+      user_id: userId,
+      email: userEmail,
+      role: userRole,
+      plan: profile?.plan || null,
+      model: 'veo-3.1-fast',
+      prompt,
+      uuid: generationUuid || null,
+      status: response.ok ? 'pending' : 'failed',
+      aspect_ratio: aspect_ratio,
+      resolution,
+      request_payload: { prompt, resolution, aspect_ratio, has_reference_image: !!reference_image },
+      response_payload: data,
+      error_message: response.ok ? null : (data.error || data.message || null),
+    });
+
     return new Response(JSON.stringify(data), {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
