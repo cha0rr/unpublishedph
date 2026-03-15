@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -9,6 +11,59 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- Auth validation ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Token inválido.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = claimsData.claims.sub as string;
+
+    // --- Plan/role check ---
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('plan, status')
+      .eq('user_id', userId)
+      .single();
+
+    const { data: roles } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
+    const isApproved = profile?.status === 'approved';
+
+    if (!isAdmin && !isApproved) {
+      return new Response(JSON.stringify({ error: 'Acesso restrito. Conta não aprovada.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- Business logic ---
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
@@ -46,7 +101,6 @@ Deno.serve(async (req) => {
     formData.append('aspect_ratio', String(aspectRatio));
     formData.append('mode_image', 'frame');
 
-    // Order matters: 1st file = first frame, 2nd file = last frame
     formData.append('files', firstFrame, firstFrame.name);
     formData.append('files', lastFrame, lastFrame.name);
 
