@@ -81,8 +81,8 @@ export default function AdminGenerations() {
       <main className="relative z-10 pt-24 pb-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground font-display">Gerações de Imagens</h1>
-            <p className="text-muted-foreground mt-1">Painel administrativo de monitoramento</p>
+            <h1 className="text-3xl font-bold text-foreground font-display">Gerações (Imagens & Vídeos)</h1>
+            <p className="text-muted-foreground mt-1">Monitoramento de todas as gerações da plataforma</p>
           </div>
 
           {/* Stats Cards */}
