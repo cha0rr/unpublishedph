@@ -74,12 +74,17 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
 
       let data: any;
       try {
+        // Use the user's session token for authentication
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
+
         const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-history`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ uuid }),
         });
