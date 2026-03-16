@@ -17,6 +17,11 @@ Deno.serve(async (req) => {
       throw new Error('Campos obrigatórios não preenchidos.');
     }
 
+    const ALLOWED_PLANS = ['basico', 'pro', 'business'];
+    if (!ALLOWED_PLANS.includes(plan)) {
+      throw new Error('Plano inválido.');
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

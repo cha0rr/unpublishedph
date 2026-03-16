@@ -9,6 +9,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const incomingSecret = req.headers.get('x-webhook-secret');
+    const expectedSecret = Deno.env.get('GEMINIGEN_WEBHOOK_SECRET');
+    if (!expectedSecret || !incomingSecret || incomingSecret !== expectedSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.text();
     console.log('GeminiGen webhook received:', body);
 
