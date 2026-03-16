@@ -17,6 +17,7 @@ export interface GenerateParams {
   prompt: string;
   aspectRatio: string;
   resolution?: string;
+  model?: string;
   modeImage?: "none" | "ingredient" | "frame";
   files?: File[];
 }
