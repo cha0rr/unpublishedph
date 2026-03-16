@@ -156,7 +156,7 @@ export function FrameVideoGenerator() {
             )}
             <Button
               onClick={handleGenerate}
-              disabled={isLoading || !prompt.trim() || !firstFrame || !lastFrame}
+              disabled={isLoading || !prompt.trim()}
               className="h-9 rounded-lg bg-gradient-to-r from-primary/80 to-primary px-5 text-primary-foreground hover:from-primary hover:to-primary/90 shadow-[0_0_15px_hsl(196_89%_61%/0.3)]"
             >
               {isLoading ? (
