@@ -68,10 +68,10 @@ export function useGenerator(): GeneratorResult {
   }, [stopProgressSimulation]);
 
   const pollHistory = useCallback(async (uuid: string) => {
-    const maxAttempts = 60;
+    const maxAttempts = 120;
     const interval = 5000;
     let consecutiveNetworkErrors = 0;
-    const maxConsecutiveNetworkErrors = 5;
+    const maxConsecutiveNetworkErrors = 12;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (cancelledRef.current) return;
