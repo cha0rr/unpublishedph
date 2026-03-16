@@ -105,7 +105,7 @@ export function useGenerator(): GeneratorResult {
         continue;
       }
 
-      const status = data.status;
+      const status = Number(data.status);
 
       if (status === 2) {
         let finalUrl = data.generate_result;
