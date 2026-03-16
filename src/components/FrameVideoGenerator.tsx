@@ -84,7 +84,7 @@ export function FrameVideoGenerator() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Frame Final</label>
+          <label className="text-sm font-medium text-muted-foreground">Frame Final <span className="text-muted-foreground/60 font-normal">(Opcional)</span></label>
           <input ref={lastInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setLastFrame, setLastPreview)} className="hidden" />
           {lastPreview ? (
             <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-card/40">
