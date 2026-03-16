@@ -59,9 +59,6 @@ export function VideoGenerator() {
     const files: File[] = [];
     if (modeImage === "ingredient" && ingredientFile) {
       files.push(ingredientFile);
-    } else if (modeImage === "frame") {
-      if (frameStartFile) files.push(frameStartFile);
-      if (frameEndFile) files.push(frameEndFile);
     }
     generate({ prompt: prompt.trim(), aspectRatio, resolution, modeImage, files });
   };
