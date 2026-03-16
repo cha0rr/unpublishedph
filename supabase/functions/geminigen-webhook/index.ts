@@ -27,6 +27,21 @@ async function importPublicKey(pem: string): Promise<CryptoKey> {
   );
 }
 
+function hexToUint8Array(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+async function md5Hex(data: string): Promise<string> {
+  const encoded = new TextEncoder().encode(data);
+  const hashBuffer = await crypto.subtle.digest('MD5', encoded);
+  const hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -61,14 +76,20 @@ Deno.serve(async (req) => {
     }
 
     const publicKey = await importPublicKey(publicKeyPem);
-    const sigBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0));
-    const bodyBytes = new TextEncoder().encode(rawBody);
 
+    // Step 1: MD5 hash of raw body (hex string), matching GeminiGen's signing process
+    const bodyMd5Hex = await md5Hex(rawBody);
+
+    // Step 2: Decode hex-encoded signature
+    const sigBytes = hexToUint8Array(signature);
+
+    // Step 3: Verify signature against the MD5 hash
+    const md5Bytes = new TextEncoder().encode(bodyMd5Hex);
     const valid = await crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',
       publicKey,
       sigBytes,
-      bodyBytes,
+      md5Bytes,
     );
 
     if (!valid) {
