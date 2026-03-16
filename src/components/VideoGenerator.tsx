@@ -4,17 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu } from "lucide-react";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers } from "lucide-react";
 
-type ModeImage = "none" | "ingredient";
-
-const MAX_INGREDIENTS = 3;
+type ModeImage = "none" | "ingredient" | "frame";
 
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
   { value: "veo-3.1", label: "Veo 3.1" },
   { value: "veo-3.1-fast", label: "Veo 3.1 Fast" },
 ];
+
+const MODE_LIMITS: Record<ModeImage, number> = {
+  none: 0,
+  frame: 2,
+  ingredient: 3,
+};
 
 export function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
@@ -23,34 +27,35 @@ export function VideoGenerator() {
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
 
-  const [ingredientFiles, setIngredientFiles] = useState<File[]>([]);
-  const [ingredientPreviews, setIngredientPreviews] = useState<string[]>([]);
-  const ingredientInputRef = useRef<HTMLInputElement>(null);
+  const [refImages, setRefImages] = useState<File[]>([]);
+  const [refPreviews, setRefPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
 
   const isLoading = state === "generating" || state === "polling";
+  const maxImages = MODE_LIMITS[modeImage];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && ingredientFiles.length < MAX_INGREDIENTS) {
-      setIngredientFiles((prev) => [...prev, file]);
+    if (file && refImages.length < maxImages) {
+      setRefImages((prev) => [...prev, file]);
       const reader = new FileReader();
-      reader.onloadend = () => setIngredientPreviews((prev) => [...prev, reader.result as string]);
+      reader.onloadend = () => setRefPreviews((prev) => [...prev, reader.result as string]);
       reader.readAsDataURL(file);
     }
-    if (ingredientInputRef.current) ingredientInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeFile = (index: number) => {
-    setIngredientFiles((prev) => prev.filter((_, i) => i !== index));
-    setIngredientPreviews((prev) => prev.filter((_, i) => i !== index));
+    setRefImages((prev) => prev.filter((_, i) => i !== index));
+    setRefPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const clearAllFiles = () => {
-    setIngredientFiles([]);
-    setIngredientPreviews([]);
-    if (ingredientInputRef.current) ingredientInputRef.current.value = "";
+    setRefImages([]);
+    setRefPreviews([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleModeChange = (val: string) => {
@@ -61,10 +66,22 @@ export function VideoGenerator() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    generate({ prompt: prompt.trim(), aspectRatio, resolution, model, modeImage, files: ingredientFiles });
+    generate({
+      prompt: prompt.trim(),
+      aspectRatio,
+      resolution,
+      model,
+      modeImage: refImages.length > 0 ? modeImage : "none",
+      refImages,
+    });
   };
 
   const canGenerate = prompt.trim().length > 0 && !isLoading;
+
+  const modeLabel = modeImage === "frame" ? "Frame Images" : "Ingredient Images";
+  const modeHint = modeImage === "frame"
+    ? "Envie o frame inicial e, opcionalmente, o frame final (máx. 2)"
+    : "Envie até 3 imagens de referência como ingredientes";
 
   return (
     <div className="w-full space-y-4">
@@ -100,9 +117,11 @@ export function VideoGenerator() {
           </ToggleGroup>
         </div>
 
-        {/* Mode selector */}
+        {/* Image Reference Type selector */}
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Modo de referência</p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Layers className="h-3 w-3" /> Image Reference Type
+          </p>
           <ToggleGroup
             type="single"
             value={modeImage}
@@ -117,35 +136,49 @@ export function VideoGenerator() {
               Sem referência
             </ToggleGroupItem>
             <ToggleGroupItem
+              value="frame"
+              className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+            >
+              <ImageIcon className="h-3.5 w-3.5 mr-1" />
+              Frame Images
+            </ToggleGroupItem>
+            <ToggleGroupItem
               value="ingredient"
               className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
             >
               <ImageIcon className="h-3.5 w-3.5 mr-1" />
-              Ingrediente
+              Ingredient Images
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
 
-        {/* Conditional upload */}
-        {modeImage === "ingredient" && (
+        {/* Reference Images upload */}
+        {modeImage !== "none" && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground mb-1.5">Imagens de referência ({ingredientFiles.length}/{MAX_INGREDIENTS})</p>
-            <input ref={ingredientInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            <p className="text-xs text-muted-foreground mb-1">
+              {modeLabel} — <span className="text-muted-foreground/70">{modeHint}</span>
+            </p>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
             <div className="flex gap-2 flex-wrap">
-              {ingredientPreviews.map((preview, idx) => (
+              {refPreviews.map((preview, idx) => (
                 <div key={idx} className="relative group rounded-xl overflow-hidden border border-border/50 w-24 h-24 bg-muted/20">
-                  <img src={preview} alt={`Referência ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={preview} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
                   <button
                     onClick={() => removeFile(idx)}
                     className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="h-3 w-3" />
                   </button>
+                  {modeImage === "frame" && (
+                    <span className="absolute bottom-1 left-1 text-[9px] font-medium bg-background/80 text-foreground px-1.5 py-0.5 rounded">
+                      {idx === 0 ? "Início" : "Final"}
+                    </span>
+                  )}
                 </div>
               ))}
-              {ingredientFiles.length < MAX_INGREDIENTS && (
+              {refImages.length < maxImages && (
                 <button
-                  onClick={() => ingredientInputRef.current?.click()}
+                  onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                   className="w-24 h-24 rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
                 >

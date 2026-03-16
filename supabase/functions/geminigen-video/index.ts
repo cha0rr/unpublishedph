@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     const prompt = incomingForm.get('prompt') as string | null;
     const resolution = (incomingForm.get('resolution') as string) || '720p';
     const aspectRatio = (incomingForm.get('aspect_ratio') as string) || '16:9';
-    const modeImage = (incomingForm.get('mode_image') as string) || 'none';
+    const modeImage = (incomingForm.get('mode_image') as string) || '';
     const modelFromClient = (incomingForm.get('model') as string) || 'veo-3.1-fast';
 
     if (!prompt) {
@@ -93,20 +93,14 @@ Deno.serve(async (req) => {
     outForm.append('model', modelFromClient);
     outForm.append('watermark', 'false');
 
-    if (modeImage === 'ingredient') {
-      outForm.append('mode_image', 'ingredient');
-      const allFiles = incomingForm.getAll('files') as File[];
-      for (const f of allFiles) {
-        outForm.append('files', f, f.name || 'reference.png');
-      }
-    } else if (modeImage === 'frame') {
-      outForm.append('mode_image', 'frame');
-      const allFiles = incomingForm.getAll('files') as File[];
-      for (const f of allFiles) {
-        outForm.append('files', f, f.name || 'frame.png');
+    // Use ref_images (new API field) instead of deprecated files
+    if (modeImage === 'ingredient' || modeImage === 'frame') {
+      outForm.append('mode_image', modeImage);
+      const refImages = incomingForm.getAll('ref_images') as File[];
+      for (const f of refImages) {
+        outForm.append('ref_images', f, f.name || 'reference.png');
       }
     }
-    // mode "none": no mode_image, no files
 
     console.log('GeminiGen request:', { prompt: prompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution });
 
@@ -135,7 +129,7 @@ Deno.serve(async (req) => {
       status: response.ok ? 'pending' : 'failed',
       aspect_ratio: aspectRatio,
       resolution,
-      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage, model: modelFromClient },
+      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
     });
