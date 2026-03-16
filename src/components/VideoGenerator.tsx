@@ -6,7 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon } from "lucide-react";
 
-type ModeImage = "none" | "ingredient" | "frame";
+type ModeImage = "none" | "ingredient";
 
 export function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
@@ -19,13 +19,6 @@ export function VideoGenerator() {
   const [ingredientPreview, setIngredientPreview] = useState<string | null>(null);
   const ingredientInputRef = useRef<HTMLInputElement>(null);
 
-  // Frame mode: start + optional end
-  const [frameStartFile, setFrameStartFile] = useState<File | null>(null);
-  const [frameStartPreview, setFrameStartPreview] = useState<string | null>(null);
-  const [frameEndFile, setFrameEndFile] = useState<File | null>(null);
-  const [frameEndPreview, setFrameEndPreview] = useState<string | null>(null);
-  const frameStartInputRef = useRef<HTMLInputElement>(null);
-  const frameEndInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
 
@@ -58,10 +51,7 @@ export function VideoGenerator() {
   const handleModeChange = (val: string) => {
     if (!val) return;
     setModeImage(val as ModeImage);
-    // Clear files when switching modes
     clearFile(setIngredientFile, setIngredientPreview, ingredientInputRef);
-    clearFile(setFrameStartFile, setFrameStartPreview, frameStartInputRef);
-    clearFile(setFrameEndFile, setFrameEndPreview, frameEndInputRef);
   };
 
   const handleGenerate = () => {
@@ -69,9 +59,6 @@ export function VideoGenerator() {
     const files: File[] = [];
     if (modeImage === "ingredient" && ingredientFile) {
       files.push(ingredientFile);
-    } else if (modeImage === "frame") {
-      if (frameStartFile) files.push(frameStartFile);
-      if (frameEndFile) files.push(frameEndFile);
     }
     generate({ prompt: prompt.trim(), aspectRatio, resolution, modeImage, files });
   };
@@ -152,13 +139,6 @@ export function VideoGenerator() {
               <ImageIcon className="h-3.5 w-3.5 mr-1" />
               Ingrediente
             </ToggleGroupItem>
-            <ToggleGroupItem
-              value="frame"
-              className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-            >
-              <Film className="h-3.5 w-3.5 mr-1" />
-              Frame
-            </ToggleGroupItem>
           </ToggleGroup>
         </div>
 
@@ -175,24 +155,6 @@ export function VideoGenerator() {
           </div>
         )}
 
-        {modeImage === "frame" && (
-          <div className="flex gap-3">
-            <ImageUploadSlot
-              label="Frame Inicial"
-              preview={frameStartPreview}
-              inputRef={frameStartInputRef}
-              onSelect={(e) => handleFileSelect(e, setFrameStartFile, setFrameStartPreview)}
-              onClear={() => clearFile(setFrameStartFile, setFrameStartPreview, frameStartInputRef)}
-            />
-            <ImageUploadSlot
-              label="Frame Final (opcional)"
-              preview={frameEndPreview}
-              inputRef={frameEndInputRef}
-              onSelect={(e) => handleFileSelect(e, setFrameEndFile, setFrameEndPreview)}
-              onClear={() => clearFile(setFrameEndFile, setFrameEndPreview, frameEndInputRef)}
-            />
-          </div>
-        )}
 
         {/* Bottom toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
