@@ -16,6 +16,8 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profile, isAdmin, isApproved, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   const isBusiness = profile?.plan === "business" && profile?.status === "approved";
 
