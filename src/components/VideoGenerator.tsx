@@ -51,10 +51,7 @@ export function VideoGenerator() {
   const handleModeChange = (val: string) => {
     if (!val) return;
     setModeImage(val as ModeImage);
-    // Clear files when switching modes
     clearFile(setIngredientFile, setIngredientPreview, ingredientInputRef);
-    clearFile(setFrameStartFile, setFrameStartPreview, frameStartInputRef);
-    clearFile(setFrameEndFile, setFrameEndPreview, frameEndInputRef);
   };
 
   const handleGenerate = () => {
