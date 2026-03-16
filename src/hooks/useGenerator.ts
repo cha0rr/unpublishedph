@@ -19,7 +19,7 @@ export interface GenerateParams {
   resolution?: string;
   model?: string;
   modeImage?: "none" | "ingredient" | "frame";
-  files?: File[];
+  refImages?: File[];
 }
 
 interface GeneratorResult {
@@ -130,7 +130,7 @@ export function useGenerator(): GeneratorResult {
   }, []);
 
   const generate = useCallback(async (params: GenerateParams) => {
-    const { prompt, aspectRatio, resolution = "720p", model = "veo-3.1-fast", modeImage = "none", files = [] } = params;
+    const { prompt, aspectRatio, resolution = "720p", model = "veo-3.1-fast", modeImage = "none", refImages = [] } = params;
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
@@ -149,12 +149,11 @@ export function useGenerator(): GeneratorResult {
       formData.append("aspect_ratio", aspectRatio);
       formData.append("model", model);
 
-      if (modeImage !== "none") {
+      if (modeImage !== "none" && refImages.length > 0) {
         formData.append("mode_image", modeImage);
-      }
-
-      for (const file of files) {
-        formData.append("files", file, file.name);
+        for (const file of refImages) {
+          formData.append("ref_images", file, file.name);
+        }
       }
 
       const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-video`, {
