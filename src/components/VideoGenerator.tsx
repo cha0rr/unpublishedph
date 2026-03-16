@@ -19,13 +19,6 @@ export function VideoGenerator() {
   const [ingredientPreview, setIngredientPreview] = useState<string | null>(null);
   const ingredientInputRef = useRef<HTMLInputElement>(null);
 
-  // Frame mode: start + optional end
-  const [frameStartFile, setFrameStartFile] = useState<File | null>(null);
-  const [frameStartPreview, setFrameStartPreview] = useState<string | null>(null);
-  const [frameEndFile, setFrameEndFile] = useState<File | null>(null);
-  const [frameEndPreview, setFrameEndPreview] = useState<string | null>(null);
-  const frameStartInputRef = useRef<HTMLInputElement>(null);
-  const frameEndInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
 
