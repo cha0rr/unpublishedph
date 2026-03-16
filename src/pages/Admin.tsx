@@ -6,7 +6,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
-import { Check, X, Loader2, Shield } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Check, X, Loader2, Shield, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ProfileRow {
   id: string;
@@ -19,7 +36,14 @@ interface ProfileRow {
   plan: string | null;
   status: string;
   created_at: string;
+  subscription_expires_at: string | null;
 }
+
+const PLANS = [
+  { value: "basico", label: "Básico" },
+  { value: "pro", label: "Pro" },
+  { value: "business", label: "Business" },
+];
 
 const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -50,10 +74,37 @@ const Admin = () => {
 
   const updateStatus = async (profileId: string, status: string) => {
     setActionLoading(profileId);
-    await supabase
+    await supabase.from("profiles").update({ status }).eq("id", profileId);
+    await fetchProfiles();
+    setActionLoading(null);
+  };
+
+  const updatePlan = async (profileId: string, plan: string) => {
+    setActionLoading(profileId);
+    const { error } = await supabase
       .from("profiles")
-      .update({ status })
+      .update({ plan } as any)
       .eq("id", profileId);
+    if (error) {
+      toast.error("Erro ao atualizar plano.");
+    } else {
+      toast.success("Plano atualizado.");
+    }
+    await fetchProfiles();
+    setActionLoading(null);
+  };
+
+  const updateExpiration = async (profileId: string, date: Date | undefined) => {
+    setActionLoading(profileId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ subscription_expires_at: date ? date.toISOString() : null } as any)
+      .eq("id", profileId);
+    if (error) {
+      toast.error("Erro ao atualizar vencimento.");
+    } else {
+      toast.success(date ? "Vencimento definido." : "Vencimento removido.");
+    }
     await fetchProfiles();
     setActionLoading(null);
   };
@@ -90,74 +141,163 @@ const Admin = () => {
     );
   };
 
-  const ProfileCard = ({ profile }: { profile: ProfileRow }) => (
-    <div className="glass-card p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold text-foreground">{profile.full_name}</h3>
-          <p className="text-xs text-muted-foreground">{profile.email}</p>
+  const isExpired = (expiresAt: string | null) => {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  };
+
+  const ProfileCard = ({ profile }: { profile: ProfileRow }) => {
+    const expired = isExpired(profile.subscription_expires_at);
+
+    return (
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-semibold text-foreground">{profile.full_name}</h3>
+            <p className="text-xs text-muted-foreground">{profile.email}</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {expired && (
+              <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold bg-red-500/20 text-red-400">
+                Vencido
+              </span>
+            )}
+            {statusBadge(profile.status)}
+          </div>
         </div>
-        {statusBadge(profile.status)}
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span className="text-muted-foreground">WhatsApp:</span>{" "}
+            <span className="text-foreground">{profile.whatsapp}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Pagamento:</span>{" "}
+            <span className="text-foreground capitalize">{profile.payment_method || "-"}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Uso:</span>{" "}
+            <span className="text-foreground">{profile.usage_type || "-"}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Vencimento:</span>{" "}
+            <span className={cn("text-foreground", expired && "text-red-400 font-semibold")}>
+              {profile.subscription_expires_at
+                ? format(new Date(profile.subscription_expires_at), "dd/MM/yyyy", { locale: ptBR })
+                : "-"}
+            </span>
+          </div>
+        </div>
+
+        {/* Plan selector */}
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Plano</p>
+          <Select
+            value={profile.plan || ""}
+            onValueChange={(val) => updatePlan(profile.id, val)}
+            disabled={actionLoading === profile.id}
+          >
+            <SelectTrigger className="h-8 text-xs bg-background/50 border-border/50">
+              <SelectValue placeholder="Selecionar plano" />
+            </SelectTrigger>
+            <SelectContent>
+              {PLANS.map((p) => (
+                <SelectItem key={p.value} value={p.value}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Expiration date picker */}
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Vencimento da mensalidade</p>
+          <div className="flex gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={actionLoading === profile.id}
+                  className={cn(
+                    "h-8 flex-1 justify-start text-left text-xs font-normal bg-background/50 border-border/50",
+                    !profile.subscription_expires_at && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-3 w-3" />
+                  {profile.subscription_expires_at
+                    ? format(new Date(profile.subscription_expires_at), "dd/MM/yyyy", { locale: ptBR })
+                    : "Definir data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : undefined}
+                  onSelect={(date) => updateExpiration(profile.id, date)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            {profile.subscription_expires_at && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateExpiration(profile.id, undefined)}
+                disabled={actionLoading === profile.id}
+                className="h-8 px-2 border-border/50 text-muted-foreground hover:text-destructive"
+                title="Remover vencimento"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <p className="text-[10px] text-muted-foreground">
+          Cadastro: {new Date(profile.created_at).toLocaleString("pt-BR")}
+        </p>
+
+        {profile.status === "pending" && (
+          <div className="flex gap-2 pt-1">
+            <Button
+              size="sm"
+              onClick={() => updateStatus(profile.id, "approved")}
+              disabled={actionLoading === profile.id}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-foreground gap-1"
+            >
+              {actionLoading === profile.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              Aprovar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => updateStatus(profile.id, "rejected")}
+              disabled={actionLoading === profile.id}
+              className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10 gap-1"
+            >
+              <X className="h-3 w-3" />
+              Rejeitar
+            </Button>
+          </div>
+        )}
+        {profile.status !== "pending" && (
+          <div className="flex gap-2 pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => updateStatus(profile.id, "pending")}
+              disabled={actionLoading === profile.id}
+              className="text-xs border-border text-muted-foreground"
+            >
+              Resetar para pendente
+            </Button>
+          </div>
+        )}
       </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div>
-          <span className="text-muted-foreground">WhatsApp:</span>{" "}
-          <span className="text-foreground">{profile.whatsapp}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Plano:</span>{" "}
-          <span className="text-foreground capitalize">{profile.plan || "-"}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Pagamento:</span>{" "}
-          <span className="text-foreground capitalize">{profile.payment_method || "-"}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Uso:</span>{" "}
-          <span className="text-foreground">{profile.usage_type || "-"}</span>
-        </div>
-      </div>
-      <p className="text-[10px] text-muted-foreground">
-        {new Date(profile.created_at).toLocaleString("pt-BR")}
-      </p>
-      {profile.status === "pending" && (
-        <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={() => updateStatus(profile.id, "approved")}
-            disabled={actionLoading === profile.id}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-foreground gap-1"
-          >
-            {actionLoading === profile.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-            Aprovar
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => updateStatus(profile.id, "rejected")}
-            disabled={actionLoading === profile.id}
-            className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10 gap-1"
-          >
-            <X className="h-3 w-3" />
-            Rejeitar
-          </Button>
-        </div>
-      )}
-      {profile.status !== "pending" && (
-        <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => updateStatus(profile.id, "pending")}
-            disabled={actionLoading === profile.id}
-            className="text-xs border-border text-muted-foreground"
-          >
-            Resetar para pendente
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
