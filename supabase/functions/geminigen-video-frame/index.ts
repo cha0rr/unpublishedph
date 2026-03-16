@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     // --- Auth validation ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Não autorizado.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Token inválido.' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Token inválido.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     const isApproved = profile?.status === 'approved';
 
     if (!isAdmin && !isApproved) {
-      return new Response(JSON.stringify({ error: 'Acesso restrito. Conta não aprovada.' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Acesso restrito. Conta não aprovada.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     // --- Business logic ---
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
+      return new Response(JSON.stringify({ success: false, error: 'GEMINIGEN_API_KEY não configurada.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -77,18 +77,18 @@ Deno.serve(async (req) => {
     const prompt = incoming.get('prompt');
     const aspectRatio = incoming.get('aspect_ratio') || '16:9';
     const resolution = incoming.get('resolution') || '720p';
-    const firstFrame = incoming.get('first_frame');
-    const lastFrame = incoming.get('last_frame');
+    const modelFromClient = (incoming.get('model') as string) || 'veo-3.1-fast';
+    const allFiles = incoming.getAll('files') as File[];
 
     if (!prompt || typeof prompt !== 'string') {
-      return new Response(JSON.stringify({ error: 'prompt é obrigatório.' }), {
+      return new Response(JSON.stringify({ success: false, error: 'prompt é obrigatório.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!(firstFrame instanceof File) || !(lastFrame instanceof File)) {
-      return new Response(JSON.stringify({ error: 'Envie frame inicial e frame final.' }), {
+    if (allFiles.length < 2) {
+      return new Response(JSON.stringify({ success: false, error: 'Envie frame inicial e frame final.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -96,21 +96,20 @@ Deno.serve(async (req) => {
 
     const formData = new FormData();
     formData.append('prompt', prompt);
-    formData.append('model', 'veo-3.1-fast');
+    formData.append('model', modelFromClient);
     formData.append('resolution', String(resolution));
     formData.append('aspect_ratio', String(aspectRatio));
     formData.append('mode_image', 'frame');
 
-    formData.append('files', firstFrame, firstFrame.name);
-    formData.append('files', lastFrame, lastFrame.name);
+    for (const f of allFiles) {
+      formData.append('files', f, f.name || 'frame.png');
+    }
 
-    console.log('Sending frame mode request:', { prompt, aspectRatio, resolution, firstFrameSize: firstFrame.size, lastFrameSize: lastFrame.size });
+    console.log('Sending frame mode request:', { prompt: prompt.substring(0, 50), model: modelFromClient, aspectRatio, resolution, filesCount: allFiles.length });
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-      },
+      headers: { 'x-api-key': apiKey },
       body: formData,
     });
 
@@ -121,30 +120,29 @@ Deno.serve(async (req) => {
     const userEmail = claimsData.claims.email as string;
     const userRole = isAdmin ? 'admin' : 'user';
 
-    // Log video-frame generation to image_generations table
     await adminClient.from('image_generations').insert({
       user_id: userId,
       email: userEmail,
       role: userRole,
       plan: profile?.plan || null,
-      model: 'veo-3.1-fast-frame',
+      model: modelFromClient,
       prompt: String(prompt),
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
       aspect_ratio: String(aspectRatio),
       resolution: String(resolution),
-      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode: 'frame' },
+      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode: 'frame', model: modelFromClient },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
     });
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({ success: response.ok, uuid: generationUuid || null, status: response.status }), {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Erro interno ao gerar vídeo.' }), {
+    return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno ao gerar vídeo.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
