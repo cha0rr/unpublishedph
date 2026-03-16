@@ -124,7 +124,7 @@ export function useGenerator(): GeneratorResult {
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
 
-    throw new Error("Tempo limite excedido ao gerar vídeo.");
+    throw new Error("Tempo limite excedido ao gerar vídeo. Verifique seus créditos no dashboard da GeminiGen ou tente novamente.");
   }, []);
 
   const generate = useCallback(async (params: GenerateParams) => {
