@@ -120,7 +120,9 @@ export function useGenerator(): GeneratorResult {
       }
 
       if (status === 3) {
-        throw new Error(data.error_message || data.error_code || "Falha ao gerar vídeo.");
+        const errMsg = data.error_message || "";
+        const errCode = data.error_code ? ` (Código: ${data.error_code})` : "";
+        throw new Error(errMsg + errCode || "Falha ao gerar vídeo.");
       }
 
       await new Promise((resolve) => setTimeout(resolve, interval));

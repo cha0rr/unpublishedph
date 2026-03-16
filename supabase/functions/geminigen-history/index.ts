@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('GeminiGen history response:', JSON.stringify({ uuid, status: data.status, error_code: data.error_code, error_message: data.error_message }));
 
     // --- Sync status to image_generations (same pattern as geminigen-image-history) ---
     const updatePayload: Record<string, any> = {
