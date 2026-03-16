@@ -77,7 +77,7 @@ export function VideoGenerator() {
     });
   };
 
-  const canGenerate = prompt.trim().length > 0 && !isLoading && (modeImage !== "frame" || refImages.length >= 2 || modeImage === "none");
+  const canGenerate = prompt.trim().length > 0 && !isLoading && (modeImage !== "frame" || refImages.length >= 2);
 
   const modeLabel = modeImage === "frame" ? "Frame Images" : "Ingredient Images";
   const modeHint = modeImage === "frame"
