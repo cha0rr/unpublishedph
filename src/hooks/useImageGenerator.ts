@@ -163,6 +163,7 @@ export function useImageGenerator(): ImageGeneratorResult {
         setResultUrl(finalUrl);
         setState("success");
         setStatusText("Imagem pronta!");
+        playSound();
       } else {
         throw new Error("URL do resultado não encontrada.");
       }

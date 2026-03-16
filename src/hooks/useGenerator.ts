@@ -185,6 +185,7 @@ export function useGenerator(): GeneratorResult {
         setResultUrl(finalUrl);
         setState("success");
         setStatusText("Vídeo pronto!");
+        playSound();
       } else {
         throw new Error("URL do resultado não encontrada.");
       }
