@@ -79,7 +79,7 @@ export function Navbar() {
               )}
               {(isApproved || isAdmin) && (
                 <>
-                  <Button size="sm" className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "bg-primary text-primary-foreground hover:bg-primary/90"} onClick={() => navigate("/gerar-video")}>
+                  <Button size="sm" variant={currentPath === "/gerar-video" ? "default" : "outline"} className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/gerar-video")}>
                     Gerar Vídeo
                   </Button>
                   <Button size="sm" variant="outline" className={currentPath === "/gerar-video-frame" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/gerar-video-frame")}>
@@ -140,7 +140,7 @@ export function Navbar() {
                   )}
                   {(isApproved || isAdmin) && (
                     <>
-                      <Button size="sm" className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "bg-primary text-primary-foreground hover:bg-primary/90"} onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
+                      <Button size="sm" variant={currentPath === "/gerar-video" ? "default" : "outline"} className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
                         Gerar Vídeo
                       </Button>
                       <Button size="sm" variant="outline" className={currentPath === "/gerar-video-frame" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-video-frame"); }}>
