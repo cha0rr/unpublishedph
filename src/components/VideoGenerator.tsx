@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { useGenerator } from "@/hooks/useGenerator";
+import { useCooldown } from "@/hooks/useCooldown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers } from "lucide-react";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download } from "lucide-react";
 
-type ModeImage = "none" | "ingredient" | "frame";
+type ModeImage = "none" | "ingredient";
 
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
@@ -16,7 +17,6 @@ const MODEL_OPTIONS = [
 
 const MODE_LIMITS: Record<ModeImage, number> = {
   none: 0,
-  frame: 2,
   ingredient: 3,
 };
 
@@ -32,6 +32,7 @@ export function VideoGenerator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
+  const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_video_cooldown", durationMs: 90000 });
 
   const isLoading = state === "generating" || state === "polling";
   const maxImages = MODE_LIMITS[modeImage];
@@ -66,7 +67,7 @@ export function VideoGenerator() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    if (modeImage === "frame" && refImages.length < 2) return;
+    startCooldown();
     generate({
       prompt: prompt.trim(),
       aspectRatio,
@@ -77,12 +78,13 @@ export function VideoGenerator() {
     });
   };
 
-  const canGenerate = prompt.trim().length > 0 && !isLoading && (modeImage !== "frame" || refImages.length >= 2);
+  const canGenerate = prompt.trim().length > 0 && !isLoading && !isCooling;
 
-  const modeLabel = modeImage === "frame" ? "Frame Images" : "Ingredient Images";
-  const modeHint = modeImage === "frame"
-    ? "Envie exatamente 2 imagens: frame inicial e frame final (obrigatório)"
-    : "Envie até 3 imagens de referência como ingredientes";
+  const formatCooldown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -137,13 +139,6 @@ export function VideoGenerator() {
               Sem referência
             </ToggleGroupItem>
             <ToggleGroupItem
-              value="frame"
-              className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-            >
-              <ImageIcon className="h-3.5 w-3.5 mr-1" />
-              Frame Images
-            </ToggleGroupItem>
-            <ToggleGroupItem
               value="ingredient"
               className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
             >
@@ -157,7 +152,7 @@ export function VideoGenerator() {
         {modeImage !== "none" && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground mb-1">
-              {modeLabel} — <span className="text-muted-foreground/70">{modeHint}</span>
+              Ingredient Images — <span className="text-muted-foreground/70">Envie até 3 imagens de referência como ingredientes</span>
             </p>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
             <div className="flex gap-2 flex-wrap">
@@ -170,11 +165,6 @@ export function VideoGenerator() {
                   >
                     <X className="h-3 w-3" />
                   </button>
-                  {modeImage === "frame" && (
-                    <span className="absolute bottom-1 left-1 text-[9px] font-medium bg-background/80 text-foreground px-1.5 py-0.5 rounded">
-                      {idx === 0 ? "Início" : "Final"}
-                    </span>
-                  )}
                 </div>
               ))}
               {refImages.length < maxImages && (
@@ -218,6 +208,8 @@ export function VideoGenerator() {
             >
               {isLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Gerando...</>
+              ) : isCooling ? (
+                <>Aguarde {formatCooldown(remainingSeconds)}</>
               ) : (
                 <><Sparkles className="h-4 w-4" /> Gerar</>
               )}
@@ -250,6 +242,16 @@ export function VideoGenerator() {
           <p className="text-sm font-medium text-primary">{statusText}</p>
           <div className={`overflow-hidden rounded-xl border border-border/30 bg-card/40 ${aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16] max-w-sm mx-auto"}`}>
             <video src={resultUrl} controls autoPlay loop className="h-full w-full object-cover" />
+          </div>
+          <div className="flex gap-3">
+            <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
+              <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4 mr-2" /> Download
+              </a>
+            </Button>
+            <Button variant="outline" className="border-border/50" onClick={reset}>
+              <RotateCcw className="h-4 w-4 mr-2" /> Novo Vídeo
+            </Button>
           </div>
         </div>
       )}

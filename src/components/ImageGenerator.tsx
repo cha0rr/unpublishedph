@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useImageGenerator } from "@/hooks/useImageGenerator";
+import { useCooldown } from "@/hooks/useCooldown";
 
 const models = [
   { value: "nano-banana-2", label: "Nano Banana 2" },
@@ -15,13 +16,21 @@ export function ImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("nano-banana-2");
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
+  const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_image_cooldown", durationMs: 90000 });
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
+    startCooldown();
     generate({ prompt: prompt.trim(), model });
   };
 
   const isProcessing = state === "generating" || state === "polling";
+
+  const formatCooldown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
@@ -57,7 +66,7 @@ export function ImageGenerator() {
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
-        disabled={isProcessing || !prompt.trim()}
+        disabled={isProcessing || !prompt.trim() || isCooling}
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
       >
         {isProcessing ? (
@@ -65,6 +74,8 @@ export function ImageGenerator() {
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
             Gerando...
           </>
+        ) : isCooling ? (
+          <>Aguarde {formatCooldown(remainingSeconds)}</>
         ) : (
           <>
             <Sparkles className="h-5 w-5 mr-2" />
