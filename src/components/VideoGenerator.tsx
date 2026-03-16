@@ -66,6 +66,7 @@ export function VideoGenerator() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
+    if (modeImage === "frame" && refImages.length < 2) return;
     generate({
       prompt: prompt.trim(),
       aspectRatio,
@@ -76,11 +77,11 @@ export function VideoGenerator() {
     });
   };
 
-  const canGenerate = prompt.trim().length > 0 && !isLoading;
+  const canGenerate = prompt.trim().length > 0 && !isLoading && (modeImage !== "frame" || refImages.length >= 2);
 
   const modeLabel = modeImage === "frame" ? "Frame Images" : "Ingredient Images";
   const modeHint = modeImage === "frame"
-    ? "Envie o frame inicial e o frame final (2 imagens recomendadas)"
+    ? "Envie exatamente 2 imagens: frame inicial e frame final (obrigatório)"
     : "Envie até 3 imagens de referência como ingredientes";
 
   return (
