@@ -31,43 +31,37 @@ export function VideoGenerator() {
 
   const isLoading = state === "generating" || state === "polling";
 
-  const handleFileSelect = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFile: (f: File | null) => void,
-    setPreview: (p: string | null) => void
-  ) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setFile(file);
+    if (file && ingredientFiles.length < MAX_INGREDIENTS) {
+      setIngredientFiles((prev) => [...prev, file]);
       const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
+      reader.onloadend = () => setIngredientPreviews((prev) => [...prev, reader.result as string]);
       reader.readAsDataURL(file);
     }
+    if (ingredientInputRef.current) ingredientInputRef.current.value = "";
   };
 
-  const clearFile = (
-    setFile: (f: File | null) => void,
-    setPreview: (p: string | null) => void,
-    inputRef: React.RefObject<HTMLInputElement>
-  ) => {
-    setFile(null);
-    setPreview(null);
-    if (inputRef.current) inputRef.current.value = "";
+  const removeFile = (index: number) => {
+    setIngredientFiles((prev) => prev.filter((_, i) => i !== index));
+    setIngredientPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const clearAllFiles = () => {
+    setIngredientFiles([]);
+    setIngredientPreviews([]);
+    if (ingredientInputRef.current) ingredientInputRef.current.value = "";
   };
 
   const handleModeChange = (val: string) => {
     if (!val) return;
     setModeImage(val as ModeImage);
-    clearFile(setIngredientFile, setIngredientPreview, ingredientInputRef);
+    clearAllFiles();
   };
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    const files: File[] = [];
-    if (modeImage === "ingredient" && ingredientFile) {
-      files.push(ingredientFile);
-    }
-    generate({ prompt: prompt.trim(), aspectRatio, resolution, model, modeImage, files });
+    generate({ prompt: prompt.trim(), aspectRatio, resolution, model, modeImage, files: ingredientFiles });
   };
 
   const canGenerate = prompt.trim().length > 0 && !isLoading;
