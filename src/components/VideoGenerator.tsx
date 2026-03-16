@@ -128,29 +128,32 @@ export function VideoGenerator() {
 
         {/* Conditional upload */}
         {modeImage === "ingredient" && (
-          <div className="max-w-xs">
-            <p className="text-xs text-muted-foreground mb-1.5">Imagem de referência</p>
-            <input ref={ingredientInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setIngredientFile, setIngredientPreview)} className="hidden" />
-            {ingredientPreview ? (
-              <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-muted/20">
-                <img src={ingredientPreview} alt="Referência" className="w-full h-full object-cover" />
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground mb-1.5">Imagens de referência ({ingredientFiles.length}/{MAX_INGREDIENTS})</p>
+            <input ref={ingredientInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            <div className="flex gap-2 flex-wrap">
+              {ingredientPreviews.map((preview, idx) => (
+                <div key={idx} className="relative group rounded-xl overflow-hidden border border-border/50 w-24 h-24 bg-muted/20">
+                  <img src={preview} alt={`Referência ${idx + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => removeFile(idx)}
+                    className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {ingredientFiles.length < MAX_INGREDIENTS && (
                 <button
-                  onClick={() => clearFile(setIngredientFile, setIngredientPreview, ingredientInputRef)}
-                  className="absolute top-1.5 right-1.5 flex items-center justify-center h-6 w-6 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => ingredientInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="w-24 h-24 rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
                 >
-                  <X className="h-3 w-3" />
+                  <Upload className="h-4 w-4" />
+                  <span className="text-[10px]">Upload</span>
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => ingredientInputRef.current?.click()}
-                disabled={isLoading}
-                className="w-full aspect-video rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
-              >
-                <Upload className="h-5 w-5" />
-                <span className="text-xs">Upload</span>
-              </button>
-            )}
+              )}
+            </div>
           </div>
         )}
 
