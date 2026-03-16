@@ -1,32 +1,33 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
+import { useGenerator } from "@/hooks/useGenerator";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Loader2, RotateCcw, Upload, X, ImageIcon } from "lucide-react";
+import { Sparkles, Loader2, RotateCcw, Upload, X, Cpu } from "lucide-react";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const MODEL_OPTIONS = [
+  { value: "veo-3-fast", label: "Veo 3 Fast" },
+  { value: "veo-3.1", label: "Veo 3.1" },
+  { value: "veo-3.1-fast", label: "Veo 3.1 Fast" },
+];
 
 export function FrameVideoGenerator() {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [resolution, setResolution] = useState("720p");
+  const [model, setModel] = useState("veo-3.1-fast");
   const [firstFrame, setFirstFrame] = useState<File | null>(null);
   const [lastFrame, setLastFrame] = useState<File | null>(null);
   const [firstPreview, setFirstPreview] = useState<string | null>(null);
   const [lastPreview, setLastPreview] = useState<string | null>(null);
 
-  const [state, setState] = useState<"idle" | "generating" | "polling" | "success" | "error">("idle");
-  const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-
   const firstInputRef = useRef<HTMLInputElement>(null);
   const lastInputRef = useRef<HTMLInputElement>(null);
-  const cancelledRef = useRef(false);
+
+  const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
+
+  const isLoading = state === "generating" || state === "polling";
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -52,136 +53,16 @@ export function FrameVideoGenerator() {
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  const pollHistory = useCallback(async (uuid: string) => {
-    const maxAttempts = 120;
-    const interval = 5000;
-    let consecutiveNetworkErrors = 0;
-    const maxConsecutiveNetworkErrors = 5;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      if (cancelledRef.current) return null;
-
-      let data: any;
-      try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-history`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-          },
-          body: JSON.stringify({ uuid }),
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        data = await res.json();
-        if (!data) throw new Error("Resposta inválida.");
-        consecutiveNetworkErrors = 0;
-      } catch (networkErr: any) {
-        consecutiveNetworkErrors++;
-        console.warn(`Poll network error (attempt ${attempt + 1}):`, networkErr.message);
-        if (consecutiveNetworkErrors >= maxConsecutiveNetworkErrors) {
-          throw new Error("Conexão perdida ao verificar status do vídeo.");
-        }
-        await new Promise((resolve) => setTimeout(resolve, interval));
-        continue;
-      }
-
-      // API status checks — these throw immediately, no retry
-      const status = data.status;
-      const progressPct = data.status_percentage ?? 0;
-      setProgress(progressPct);
-      setStatusText(`Gerando vídeo... ${progressPct}%`);
-
-      if (status === 2) {
-        const finalUrl =
-          data.generated_video?.[0]?.video_url ||
-          data.generate_result ||
-          data.file_download_url ||
-          "";
-        if (!finalUrl) throw new Error("Vídeo concluído, mas URL não encontrada.");
-        return finalUrl;
-      }
-
-      if (status === 3) {
-        throw new Error(data.error_message || data.error_code || "Falha na geração do vídeo.");
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, interval));
-    }
-
-    throw new Error("Tempo limite excedido ao gerar o vídeo.");
-  }, []);
-
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!prompt.trim() || !firstFrame || !lastFrame) return;
-
-    cancelledRef.current = false;
-    setState("generating");
-    setVideoUrl(null);
-    setError(null);
-    setProgress(0);
-    setStatusText("Enviando solicitação...");
-
-    try {
-      const formData = new FormData();
-      formData.append("prompt", prompt.trim());
-      formData.append("aspect_ratio", aspectRatio);
-      formData.append("resolution", resolution);
-      formData.append("first_frame", firstFrame);
-      formData.append("last_frame", lastFrame);
-
-      // Use fetch directly since supabase.functions.invoke doesn't handle FormData with files well
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-video-frame`, {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || data?.detail?.message || "Erro ao iniciar a geração.");
-      }
-
-      const uuid = data?.result?.uuid ?? data?.uuid;
-      if (!uuid) throw new Error("UUID da geração não retornado.");
-
-      setState("polling");
-      const finalUrl = await pollHistory(uuid);
-
-      if (finalUrl) {
-        setProgress(100);
-        setVideoUrl(finalUrl);
-        setState("success");
-        setStatusText("Vídeo pronto!");
-      }
-    } catch (err: any) {
-      setError(err.message || "Erro inesperado.");
-      setState("error");
-      setStatusText("");
-    }
+    const files: File[] = [firstFrame, lastFrame];
+    generate({ prompt: prompt.trim(), aspectRatio, resolution, model, modeImage: "frame", files });
   };
-
-  const reset = () => {
-    cancelledRef.current = true;
-    setState("idle");
-    setVideoUrl(null);
-    setError(null);
-    setProgress(0);
-    setStatusText("");
-  };
-
-  const isLoading = state === "generating" || state === "polling";
 
   return (
     <div className="w-full space-y-4">
       {/* Frame uploads */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* First frame */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">Frame Inicial</label>
           <input ref={firstInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setFirstFrame, setFirstPreview)} className="hidden" />
@@ -200,7 +81,6 @@ export function FrameVideoGenerator() {
           )}
         </div>
 
-        {/* Last frame */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">Frame Final</label>
           <input ref={lastInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setLastFrame, setLastPreview)} className="hidden" />
@@ -230,6 +110,29 @@ export function FrameVideoGenerator() {
           className="min-h-[80px] resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
         />
 
+        {/* Model selector */}
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Cpu className="h-3 w-3" /> Modelo
+          </p>
+          <ToggleGroup
+            type="single"
+            value={model}
+            onValueChange={(v) => v && setModel(v)}
+            className="justify-start gap-1"
+          >
+            {MODEL_OPTIONS.map((opt) => (
+              <ToggleGroupItem
+                key={opt.value}
+                value={opt.value}
+                className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+              >
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2">
             <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => v && setAspectRatio(v)} className="gap-1">
@@ -249,7 +152,6 @@ export function FrameVideoGenerator() {
                 <RotateCcw className="h-4 w-4" />
               </Button>
             )}
-
             <Button
               onClick={handleGenerate}
               disabled={isLoading || !prompt.trim() || !firstFrame || !lastFrame}
@@ -284,11 +186,11 @@ export function FrameVideoGenerator() {
       )}
 
       {/* Result */}
-      {state === "success" && videoUrl && (
+      {state === "success" && resultUrl && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-primary">{statusText}</p>
           <div className={`overflow-hidden rounded-xl border border-border/30 bg-card/40 ${aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16] max-w-sm mx-auto"}`}>
-            <video src={videoUrl} controls autoPlay loop className="h-full w-full object-cover" />
+            <video src={resultUrl} controls autoPlay loop className="h-full w-full object-cover" />
           </div>
         </div>
       )}
