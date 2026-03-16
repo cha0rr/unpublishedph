@@ -89,7 +89,7 @@ const Admin = () => {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
-    setViolations((data as TabViolation[]) || []);
+    setViolations((data as unknown as TabViolation[]) || []);
   };
 
   const updateStatus = async (profileId: string, status: string) => {
