@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -33,6 +34,7 @@ interface GeneratorResult {
 }
 
 export function useGenerator(): GeneratorResult {
+  const { playSound } = useNotificationSound();
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +185,7 @@ export function useGenerator(): GeneratorResult {
         setResultUrl(finalUrl);
         setState("success");
         setStatusText("Vídeo pronto!");
+        playSound();
       } else {
         throw new Error("URL do resultado não encontrada.");
       }

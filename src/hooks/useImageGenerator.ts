@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
 
 type GeneratorState = "idle" | "generating" | "polling" | "success" | "error";
 
@@ -32,6 +33,7 @@ interface ImageGeneratorResult {
 }
 
 export function useImageGenerator(): ImageGeneratorResult {
+  const { playSound } = useNotificationSound();
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +163,7 @@ export function useImageGenerator(): ImageGeneratorResult {
         setResultUrl(finalUrl);
         setState("success");
         setStatusText("Imagem pronta!");
+        playSound();
       } else {
         throw new Error("URL do resultado não encontrada.");
       }
