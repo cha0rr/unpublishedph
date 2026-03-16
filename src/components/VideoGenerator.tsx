@@ -139,13 +139,6 @@ export function VideoGenerator() {
               <ImageIcon className="h-3.5 w-3.5 mr-1" />
               Ingrediente
             </ToggleGroupItem>
-            <ToggleGroupItem
-              value="frame"
-              className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-            >
-              <Film className="h-3.5 w-3.5 mr-1" />
-              Frame
-            </ToggleGroupItem>
           </ToggleGroup>
         </div>
 
