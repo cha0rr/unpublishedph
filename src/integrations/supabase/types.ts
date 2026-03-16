@@ -197,6 +197,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_own_profile: {
+        Args: {
+          new_full_name: string
+          new_payment_method: string
+          new_usage_type: string
+          new_whatsapp: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
