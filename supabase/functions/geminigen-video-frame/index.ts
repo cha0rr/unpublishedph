@@ -100,6 +100,7 @@ Deno.serve(async (req) => {
     formData.append('resolution', String(resolution));
     formData.append('aspect_ratio', String(aspectRatio));
     formData.append('mode_image', 'frame');
+    formData.append('watermark', 'false');
 
     for (const f of allFiles) {
       formData.append('files', f, f.name || 'frame.png');
