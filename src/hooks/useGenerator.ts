@@ -68,10 +68,10 @@ export function useGenerator(): GeneratorResult {
   }, [stopProgressSimulation]);
 
   const pollHistory = useCallback(async (uuid: string) => {
-    const maxAttempts = 60;
+    const maxAttempts = 120;
     const interval = 5000;
     let consecutiveNetworkErrors = 0;
-    const maxConsecutiveNetworkErrors = 5;
+    const maxConsecutiveNetworkErrors = 12;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (cancelledRef.current) return;
@@ -98,11 +98,12 @@ export function useGenerator(): GeneratorResult {
         consecutiveNetworkErrors = 0;
       } catch (networkErr: any) {
         consecutiveNetworkErrors++;
-        console.warn(`Poll network error (attempt ${attempt + 1}):`, networkErr.message);
+        console.warn(`Poll network error (attempt ${attempt + 1}, consecutive: ${consecutiveNetworkErrors}):`, networkErr.message);
         if (consecutiveNetworkErrors >= maxConsecutiveNetworkErrors) {
           throw new Error("Conexão perdida ao verificar status do vídeo.");
         }
-        await new Promise((resolve) => setTimeout(resolve, interval));
+        const backoff = Math.min(interval * Math.pow(1.5, consecutiveNetworkErrors - 1), 30000);
+        await new Promise((resolve) => setTimeout(resolve, backoff));
         continue;
       }
 
