@@ -113,6 +113,7 @@ export type Database = {
           payment_method: string | null
           plan: string | null
           status: string
+          subscription_expires_at: string | null
           usage_type: string | null
           user_id: string | null
           whatsapp: string
@@ -125,6 +126,7 @@ export type Database = {
           payment_method?: string | null
           plan?: string | null
           status?: string
+          subscription_expires_at?: string | null
           usage_type?: string | null
           user_id?: string | null
           whatsapp: string
@@ -137,6 +139,7 @@ export type Database = {
           payment_method?: string | null
           plan?: string | null
           status?: string
+          subscription_expires_at?: string | null
           usage_type?: string | null
           user_id?: string | null
           whatsapp?: string
