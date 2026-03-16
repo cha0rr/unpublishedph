@@ -37,8 +37,22 @@ interface ProfileRow {
   status: string;
   created_at: string;
   subscription_expires_at: string | null;
+interface ProfileRow {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  whatsapp: string;
+  usage_type: string | null;
+  payment_method: string | null;
+  plan: string | null;
+  status: string;
+  created_at: string;
+  subscription_expires_at: string | null;
 }
 
+// Redeclare to avoid duplicate — remove original block above
+// (This replaces lines 28-40)
 const PLANS = [
   { value: "basico", label: "Básico" },
   { value: "pro", label: "Pro" },
