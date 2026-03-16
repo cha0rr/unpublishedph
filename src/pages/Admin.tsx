@@ -37,22 +37,15 @@ interface ProfileRow {
   status: string;
   created_at: string;
   subscription_expires_at: string | null;
-interface ProfileRow {
-  id: string;
-  user_id: string;
-  full_name: string;
-  email: string;
-  whatsapp: string;
-  usage_type: string | null;
-  payment_method: string | null;
-  plan: string | null;
-  status: string;
-  created_at: string;
-  subscription_expires_at: string | null;
 }
 
-// Redeclare to avoid duplicate — remove original block above
-// (This replaces lines 28-40)
+interface TabViolation {
+  id: string;
+  user_id: string;
+  email: string;
+  created_at: string;
+}
+
 const PLANS = [
   { value: "basico", label: "Básico" },
   { value: "pro", label: "Pro" },
@@ -63,6 +56,7 @@ const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [violations, setViolations] = useState<TabViolation[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -73,7 +67,10 @@ const Admin = () => {
   }, [user, isAdmin, authLoading, navigate]);
 
   useEffect(() => {
-    if (isAdmin) fetchProfiles();
+    if (isAdmin) {
+      fetchProfiles();
+      fetchViolations();
+    }
   }, [isAdmin]);
 
   const fetchProfiles = async () => {
@@ -84,6 +81,15 @@ const Admin = () => {
       .order("created_at", { ascending: false });
     setProfiles((data as ProfileRow[]) || []);
     setLoading(false);
+  };
+
+  const fetchViolations = async () => {
+    const { data } = await supabase
+      .from("tab_violations" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setViolations((data as TabViolation[]) || []);
   };
 
   const updateStatus = async (profileId: string, status: string) => {
@@ -329,6 +335,26 @@ const Admin = () => {
             </div>
           ) : (
             <div className="space-y-8">
+              {/* Tab Violations */}
+              {violations.length > 0 && (
+                <div>
+                  <h2 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Tentativas de Múltiplas Abas ({violations.length})
+                  </h2>
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+                    {violations.map((v) => (
+                      <div key={v.id} className="flex items-center justify-between text-sm py-2 border-b border-border/20 last:border-0">
+                        <span className="text-foreground font-medium">{v.email}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(v.created_at).toLocaleString("pt-BR")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Pending */}
               <div>
                 <h2 className="mb-4 text-lg font-semibold text-foreground">
