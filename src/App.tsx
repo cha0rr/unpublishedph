@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TabGuard } from "@/components/TabGuard";
 import Index from "./pages/Index.tsx";
 import GerarVideo from "./pages/GerarVideo.tsx";
 import GerarVideoFrame from "./pages/GerarVideoFrame.tsx";
@@ -21,6 +22,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <TabGuard>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
