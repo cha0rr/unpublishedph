@@ -33,6 +33,7 @@ interface ImageGeneratorResult {
 }
 
 export function useImageGenerator(): ImageGeneratorResult {
+  const { playSound } = useNotificationSound();
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
