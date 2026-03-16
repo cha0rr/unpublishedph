@@ -149,7 +149,7 @@ export function useGenerator(): GeneratorResult {
       formData.append("aspect_ratio", aspectRatio);
       formData.append("model", model);
 
-      if (modeImage !== "none" && files.length > 0) {
+      if (modeImage !== "none") {
         formData.append("mode_image", modeImage);
       }
 

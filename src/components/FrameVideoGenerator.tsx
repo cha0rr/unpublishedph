@@ -54,10 +54,8 @@ export function FrameVideoGenerator() {
   };
 
   const handleGenerate = () => {
-    if (!prompt.trim()) return;
-    const files: File[] = [];
-    if (firstFrame) files.push(firstFrame);
-    if (lastFrame) files.push(lastFrame);
+    if (!prompt.trim() || !firstFrame || !lastFrame) return;
+    const files: File[] = [firstFrame, lastFrame];
     generate({ prompt: prompt.trim(), aspectRatio, resolution, model, modeImage: "frame", files });
   };
 
@@ -66,7 +64,7 @@ export function FrameVideoGenerator() {
       {/* Frame uploads */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Frame Inicial <span className="text-muted-foreground/60 font-normal">(Opcional)</span></label>
+          <label className="text-sm font-medium text-muted-foreground">Frame Inicial</label>
           <input ref={firstInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setFirstFrame, setFirstPreview)} className="hidden" />
           {firstPreview ? (
             <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-card/40">
@@ -84,7 +82,7 @@ export function FrameVideoGenerator() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Frame Final <span className="text-muted-foreground/60 font-normal">(Opcional)</span></label>
+          <label className="text-sm font-medium text-muted-foreground">Frame Final</label>
           <input ref={lastInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setLastFrame, setLastPreview)} className="hidden" />
           {lastPreview ? (
             <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-card/40">
@@ -156,7 +154,7 @@ export function FrameVideoGenerator() {
             )}
             <Button
               onClick={handleGenerate}
-              disabled={isLoading || !prompt.trim()}
+              disabled={isLoading || !prompt.trim() || !firstFrame || !lastFrame}
               className="h-9 rounded-lg bg-gradient-to-r from-primary/80 to-primary px-5 text-primary-foreground hover:from-primary hover:to-primary/90 shadow-[0_0_15px_hsl(196_89%_61%/0.3)]"
             >
               {isLoading ? (
