@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     console.log('GeminiGen response:', JSON.stringify(data));
 
     const generationUuid = data.uuid;
-    const userEmail = claimsData.claims.email as string;
+    const userEmail = user.email as string;
     const userRole = isAdmin ? 'admin' : 'user';
 
     await adminClient.from('image_generations').insert({

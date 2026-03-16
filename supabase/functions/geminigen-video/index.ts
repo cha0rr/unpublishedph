@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
     console.log('GeminiGen video response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
 
     const generationUuid = data.uuid;
-    const userEmail = claimsData.claims.email as string;
+    const userEmail = user.email as string;
     const userRole = isAdmin ? 'admin' : 'user';
 
     await adminClient.from('image_generations').insert({
