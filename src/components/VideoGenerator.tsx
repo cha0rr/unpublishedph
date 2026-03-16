@@ -6,7 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon } from "lucide-react";
 
-type ModeImage = "none" | "ingredient" | "frame";
+type ModeImage = "none" | "ingredient";
 
 export function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
