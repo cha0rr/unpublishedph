@@ -81,7 +81,7 @@ export function VideoGenerator() {
 
   const modeLabel = modeImage === "frame" ? "Frame Images" : "Ingredient Images";
   const modeHint = modeImage === "frame"
-    ? "Envie o frame inicial e o frame final (2 imagens recomendadas)"
+    ? "Envie exatamente 2 imagens: frame inicial e frame final (obrigatório)"
     : "Envie até 3 imagens de referência como ingredientes";
 
   return (
