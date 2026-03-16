@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
     outForm.append('resolution', resolution);
     outForm.append('aspect_ratio', aspectRatio);
     outForm.append('model', modelFromClient);
+    outForm.append('watermark', 'false');
 
     if (modeImage === 'ingredient') {
       outForm.append('mode_image', 'ingredient');
