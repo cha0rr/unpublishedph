@@ -6,16 +6,19 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 type GeneratorState = "idle" | "generating" | "polling" | "success" | "error";
 
-// Simulated progress curve: starts fast, slows down, never reaches 100%
 function getSimulatedProgress(elapsedMs: number): number {
-  const totalEstimate = 50000; // 50s estimate
+  const totalEstimate = 50000;
   const ratio = elapsedMs / totalEstimate;
   const progress = Math.min(95, Math.round(100 * (1 - Math.exp(-2.5 * ratio))));
   return Math.max(1, progress);
 }
 
-interface UseGeneratorOptions {
-  type: "image" | "video";
+export interface GenerateParams {
+  prompt: string;
+  aspectRatio: string;
+  resolution?: string;
+  modeImage?: "none" | "ingredient" | "frame";
+  files?: File[];
 }
 
 interface GeneratorResult {
@@ -24,11 +27,11 @@ interface GeneratorResult {
   error: string | null;
   progress: number;
   statusText: string;
-  generate: (prompt: string, aspectRatio: string, referenceImage?: File) => Promise<void>;
+  generate: (params: GenerateParams) => Promise<void>;
   reset: () => void;
 }
 
-export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
+export function useGenerator(): GeneratorResult {
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +77,6 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
 
       let data: any;
       try {
-        // Use the user's session token for authentication
         const { data: sessionData } = await supabase.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
         if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
@@ -103,7 +105,6 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
         continue;
       }
 
-      // API status checks — throw immediately, no retry
       const status = data.status;
 
       if (status === 2) {
@@ -126,7 +127,8 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
     throw new Error("Tempo limite excedido ao gerar vídeo.");
   }, []);
 
-  const generate = useCallback(async (prompt: string, aspectRatio: string, referenceImage?: File) => {
+  const generate = useCallback(async (params: GenerateParams) => {
+    const { prompt, aspectRatio, resolution = "720p", modeImage = "none", files = [] } = params;
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
@@ -135,30 +137,34 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
     setStatusText("Enviando solicitação...");
 
     try {
-      const body: Record<string, string> = {
-        prompt,
-        resolution: "720p",
-        aspect_ratio: aspectRatio,
-      };
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
-      if (referenceImage) {
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(referenceImage);
-        });
-        body.reference_image = base64;
+      const formData = new FormData();
+      formData.append("prompt", prompt);
+      formData.append("resolution", resolution);
+      formData.append("aspect_ratio", aspectRatio);
+      formData.append("mode_image", modeImage);
+
+      for (const file of files) {
+        formData.append("files", file, file.name);
       }
 
-      const { data, error: fnError } = await supabase.functions.invoke("geminigen-video", { body });
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-video`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
 
-      if (fnError) throw new Error(fnError.message);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
       const uuid = data?.uuid;
-      if (!uuid) {
-        throw new Error("UUID da geração não retornado.");
-      }
+      if (!uuid) throw new Error("UUID da geração não retornado.");
 
       setState("polling");
       startProgressSimulation();
@@ -179,7 +185,7 @@ export function useGenerator({ type }: UseGeneratorOptions): GeneratorResult {
       setState("error");
       setStatusText("");
     }
-  }, [pollHistory]);
+  }, [pollHistory, startProgressSimulation, stopProgressSimulation]);
 
   const reset = useCallback(() => {
     cancelledRef.current = true;

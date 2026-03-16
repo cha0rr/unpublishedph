@@ -63,13 +63,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Business logic ---
-    const {
-      prompt,
-      resolution = "720p",
-      aspect_ratio = "16:9",
-      reference_image,
-    } = await req.json();
+    // --- Parse incoming FormData ---
+    const incomingForm = await req.formData();
+    const prompt = incomingForm.get('prompt') as string | null;
+    const resolution = (incomingForm.get('resolution') as string) || '720p';
+    const aspectRatio = (incomingForm.get('aspect_ratio') as string) || '16:9';
+    const modeImage = (incomingForm.get('mode_image') as string) || 'none';
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: 'prompt é obrigatório.' }), {
@@ -86,31 +85,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const formData = new FormData();
-    formData.append('prompt', prompt);
-    formData.append('model', 'veo-3.1-fast');
-    formData.append('resolution', resolution);
-    formData.append('aspect_ratio', aspect_ratio);
+    // --- Build outgoing FormData for GeminiGen API ---
+    const outForm = new FormData();
+    outForm.append('prompt', prompt);
+    outForm.append('resolution', resolution);
+    outForm.append('aspect_ratio', aspectRatio);
 
-    if (reference_image) {
-      const base64Data = reference_image.split(',')[1] || reference_image;
-      const mimeMatch = reference_image.match(/data:([^;]+);/);
-      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-      const binaryStr = atob(base64Data);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
+    if (modeImage === 'ingredient') {
+      outForm.append('model', 'veo-3.1-fast');
+      outForm.append('mode_image', 'ingredient');
+      const file = incomingForm.get('files') as File | null;
+      if (file) {
+        outForm.append('image', file, file.name || 'reference.png');
       }
-      const blob = new Blob([bytes], { type: mime });
-      formData.append('image', blob, 'reference.png');
+    } else if (modeImage === 'frame') {
+      outForm.append('model', 'veo-3.1-fast-frame');
+      outForm.append('mode_image', 'frame');
+      const allFiles = incomingForm.getAll('files') as File[];
+      // First file = frame inicial, second = frame final (optional)
+      if (allFiles.length > 0) {
+        outForm.append('files', allFiles[0], allFiles[0].name || 'frame_start.png');
+      }
+      if (allFiles.length > 1) {
+        outForm.append('files', allFiles[1], allFiles[1].name || 'frame_end.png');
+      }
+    } else {
+      // none — no image
+      outForm.append('model', 'veo-3.1-fast');
     }
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-      },
-      body: formData,
+      headers: { 'x-api-key': apiKey },
+      body: outForm,
     });
 
     const data = await response.json();
@@ -119,19 +126,18 @@ Deno.serve(async (req) => {
     const userEmail = claimsData.claims.email as string;
     const userRole = isAdmin ? 'admin' : 'user';
 
-    // Log video generation to image_generations table
     await adminClient.from('image_generations').insert({
       user_id: userId,
       email: userEmail,
       role: userRole,
       plan: profile?.plan || null,
-      model: 'veo-3.1-fast',
+      model: modeImage === 'frame' ? 'veo-3.1-fast-frame' : 'veo-3.1-fast',
       prompt,
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
-      aspect_ratio: aspect_ratio,
+      aspect_ratio: aspectRatio,
       resolution,
-      request_payload: { prompt, resolution, aspect_ratio, has_reference_image: !!reference_image },
+      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
     });
