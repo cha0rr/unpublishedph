@@ -8,6 +8,8 @@ import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu } from "l
 
 type ModeImage = "none" | "ingredient";
 
+const MAX_INGREDIENTS = 3;
+
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
   { value: "veo-3.1", label: "Veo 3.1" },
@@ -21,8 +23,8 @@ export function VideoGenerator() {
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
 
-  const [ingredientFile, setIngredientFile] = useState<File | null>(null);
-  const [ingredientPreview, setIngredientPreview] = useState<string | null>(null);
+  const [ingredientFiles, setIngredientFiles] = useState<File[]>([]);
+  const [ingredientPreviews, setIngredientPreviews] = useState<string[]>([]);
   const ingredientInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();

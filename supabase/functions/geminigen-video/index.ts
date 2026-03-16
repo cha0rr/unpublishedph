@@ -95,9 +95,9 @@ Deno.serve(async (req) => {
 
     if (modeImage === 'ingredient') {
       outForm.append('mode_image', 'ingredient');
-      const file = incomingForm.get('files') as File | null;
-      if (file) {
-        outForm.append('files', file, file.name || 'reference.png');
+      const allFiles = incomingForm.getAll('files') as File[];
+      for (const f of allFiles) {
+        outForm.append('files', f, f.name || 'reference.png');
       }
     } else if (modeImage === 'frame') {
       outForm.append('mode_image', 'frame');
