@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profile, isAdmin, isApproved, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   const isBusiness = profile?.plan === "business" && profile?.status === "approved";
 
@@ -77,16 +79,16 @@ export function Navbar() {
               )}
               {(isApproved || isAdmin) && (
                 <>
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/gerar-video")}>
+                  <Button size="sm" className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "bg-primary text-primary-foreground hover:bg-primary/90"} onClick={() => navigate("/gerar-video")}>
                     Gerar Vídeo
                   </Button>
-                  <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => navigate("/gerar-video-frame")}>
+                  <Button size="sm" variant="outline" className={currentPath === "/gerar-video-frame" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/gerar-video-frame")}>
                     Frame Mode
                   </Button>
                 </>
               )}
               {(isBusiness || isAdmin) && (
-                <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => navigate("/business/studio-images")}>
+                <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/business/studio-images")}>
                   Studio Imagens
                 </Button>
               )}
@@ -138,16 +140,16 @@ export function Navbar() {
                   )}
                   {(isApproved || isAdmin) && (
                     <>
-                      <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
+                      <Button size="sm" className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "bg-primary text-primary-foreground hover:bg-primary/90"} onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
                         Gerar Vídeo
                       </Button>
-                      <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/gerar-video-frame"); }}>
+                      <Button size="sm" variant="outline" className={currentPath === "/gerar-video-frame" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-video-frame"); }}>
                         Frame Mode
                       </Button>
                     </>
                   )}
                   {(isBusiness || isAdmin) && (
-                    <Button size="sm" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
+                    <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
                       Studio Imagens
                     </Button>
                   )}
