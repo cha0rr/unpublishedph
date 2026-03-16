@@ -66,7 +66,7 @@ export function FrameVideoGenerator() {
       {/* Frame uploads */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Frame Inicial</label>
+          <label className="text-sm font-medium text-muted-foreground">Frame Inicial <span className="text-muted-foreground/60 font-normal">(Opcional)</span></label>
           <input ref={firstInputRef} type="file" accept="image/*" onChange={(e) => handleFileSelect(e, setFirstFrame, setFirstPreview)} className="hidden" />
           {firstPreview ? (
             <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-card/40">
