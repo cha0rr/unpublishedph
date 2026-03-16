@@ -90,7 +90,48 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
-    return new Response(JSON.stringify(data), {
+    // --- Sync status to image_generations (same pattern as geminigen-image-history) ---
+    const updatePayload: Record<string, any> = {
+      response_payload: data,
+      updated_at: new Date().toISOString(),
+    };
+
+    const numericStatus = Number(data.status);
+    if (numericStatus === 2) updatePayload.status = 'completed';
+    else if (numericStatus === 3) updatePayload.status = 'failed';
+    else updatePayload.status = 'processing';
+
+    if (data.status_percentage !== undefined) {
+      updatePayload.status_percentage = Number(data.status_percentage);
+    }
+
+    // Extract video URL
+    let videoUrl = data.generate_result;
+    if (!videoUrl && data.generated_video?.length > 0) {
+      const vid = data.generated_video[0];
+      videoUrl = vid.video_url || vid.file_download_url;
+    }
+    if (!videoUrl) videoUrl = data.thumbnail_url;
+    if (videoUrl) updatePayload.image_url = videoUrl;
+
+    // Credits
+    if (data.used_credit !== undefined) updatePayload.used_credit = data.used_credit;
+    if (data.estimated_credit !== undefined) updatePayload.estimated_credit = data.estimated_credit;
+    if (data.ai_credit !== undefined) updatePayload.ai_credit = data.ai_credit;
+
+    // Errors
+    if (data.error_code !== undefined) updatePayload.error_code = String(data.error_code);
+    if (data.error_message !== undefined) updatePayload.error_message = data.error_message;
+
+    await adminClient
+      .from('image_generations')
+      .update(updatePayload)
+      .eq('uuid', uuid);
+
+    // Normalize status to number for frontend consistency
+    const normalizedData = { ...data, status: numericStatus };
+
+    return new Response(JSON.stringify(normalizedData), {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
