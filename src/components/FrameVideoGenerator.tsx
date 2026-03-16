@@ -54,8 +54,10 @@ export function FrameVideoGenerator() {
   };
 
   const handleGenerate = () => {
-    if (!prompt.trim() || !firstFrame || !lastFrame) return;
-    const files: File[] = [firstFrame, lastFrame];
+    if (!prompt.trim()) return;
+    const files: File[] = [];
+    if (firstFrame) files.push(firstFrame);
+    if (lastFrame) files.push(lastFrame);
     generate({ prompt: prompt.trim(), aspectRatio, resolution, model, modeImage: "frame", files });
   };
 
