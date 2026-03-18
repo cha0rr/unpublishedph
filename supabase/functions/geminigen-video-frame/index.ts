@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const RATE_LIMIT_PER_HOUR = 10;
+const MAX_PROMPT_LENGTH = 2000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -62,6 +65,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Rate Limiting (admins exempt) ---
+    if (!isAdmin) {
+      const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+      const { count } = await adminClient
+        .from('image_generations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', oneHourAgo);
+
+      if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) {
+        return new Response(JSON.stringify({ success: false, error: `Limite de ${RATE_LIMIT_PER_HOUR} gerações por hora atingido. Aguarde alguns minutos.` }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // --- Business logic ---
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
@@ -86,6 +106,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Prompt sanitization ---
+    const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_LENGTH).trim();
+
     if (allFiles.length < 2) {
       return new Response(JSON.stringify({ success: false, error: 'Envie frame inicial e frame final.' }), {
         status: 400,
@@ -94,7 +117,7 @@ Deno.serve(async (req) => {
     }
 
     const formData = new FormData();
-    formData.append('prompt', prompt);
+    formData.append('prompt', sanitizedPrompt);
     formData.append('model', modelFromClient);
     formData.append('resolution', String(resolution));
     formData.append('aspect_ratio', String(aspectRatio));
@@ -105,7 +128,7 @@ Deno.serve(async (req) => {
       formData.append('files', f, f.name || 'frame.png');
     }
 
-    console.log('Sending frame mode request:', { prompt: prompt.substring(0, 50), model: modelFromClient, aspectRatio, resolution, filesCount: allFiles.length });
+    console.log('Sending frame mode request:', { prompt: sanitizedPrompt.substring(0, 50), model: modelFromClient, aspectRatio, resolution, filesCount: allFiles.length });
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
       method: 'POST',
@@ -126,12 +149,12 @@ Deno.serve(async (req) => {
       role: userRole,
       plan: profile?.plan || null,
       model: modelFromClient,
-      prompt: String(prompt),
+      prompt: sanitizedPrompt,
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
       aspect_ratio: String(aspectRatio),
       resolution: String(resolution),
-      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode: 'frame', model: modelFromClient },
+      request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode: 'frame', model: modelFromClient },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
     });
