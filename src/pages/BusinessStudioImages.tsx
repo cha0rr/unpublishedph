@@ -281,6 +281,7 @@ export default function BusinessStudioImages() {
                   placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
                   className="min-h-[80px] bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground resize-none text-sm"
                   disabled={isProcessing}
+                  maxLength={2000}
                 />
               </div>
 

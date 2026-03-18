@@ -107,8 +107,12 @@ export function FrameVideoGenerator() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           disabled={isLoading}
+          maxLength={2000}
           className="min-h-[80px] resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
         />
+        <p className={`text-xs text-right ${prompt.length > 1800 ? "text-destructive" : "text-muted-foreground"}`}>
+          {prompt.length}/2000
+        </p>
 
         {/* Model selector */}
         <div className="space-y-1">
