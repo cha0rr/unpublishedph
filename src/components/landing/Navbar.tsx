@@ -19,7 +19,7 @@ export function Navbar() {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const isBusiness = profile?.plan === "business" && profile?.status === "approved";
+  const isPro = profile?.plan === "pro" && profile?.status === "approved";
 
   const scrollTo = (id: string) => {
     setMobileOpen(false);
