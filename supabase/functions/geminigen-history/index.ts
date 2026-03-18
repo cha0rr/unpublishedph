@@ -126,7 +126,8 @@ Deno.serve(async (req) => {
     await adminClient
       .from('image_generations')
       .update(updatePayload)
-      .eq('uuid', uuid);
+      .eq('uuid', uuid)
+      .eq('user_id', userId);
 
     // Normalize status to number for frontend consistency
     const normalizedData = { ...data, status: numericStatus };
