@@ -34,7 +34,7 @@ export function ModesSection() {
             </div>
             <h3 className="mb-2 text-xl font-bold text-foreground">Gerador de Vídeos com IA</h3>
             <p className="mb-6 text-sm text-muted-foreground leading-relaxed">
-              Transforme prompts em vídeos profissionais com Veo 3.1. Até 4K, sem marca d'água, uso comercial liberado.
+              Transforme prompts em vídeos profissionais com Veo 3.1. Até 4K, uso comercial liberado.
             </p>
             <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Link to="/gerar-video">Gerar Vídeo</Link>

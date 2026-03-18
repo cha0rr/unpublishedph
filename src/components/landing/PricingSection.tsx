@@ -14,7 +14,6 @@ const plans = [
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
-      "Sem marca d'água",
       "Uso comercial",
     ],
     highlighted: false,
@@ -31,7 +30,6 @@ const plans = [
       "Gerador com Frame Mode",
       "Gerador de imagens com IA",
       "Gerador de roteiros com IA (em breve)",
-      "Sem marca d'água",
       "Uso comercial",
       "Suporte exclusivo",
       "Chamadas de vídeo semanais com consultoria",
@@ -62,7 +60,7 @@ export function PricingSection() {
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Planos que <span className="text-gradient-cyan">escalam</span> com você
           </h2>
-          <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada e sem marca d'água.</p>
+          <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada.</p>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
