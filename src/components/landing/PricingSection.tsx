@@ -60,7 +60,7 @@ export function PricingSection() {
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Planos que <span className="text-gradient-cyan">escalam</span> com você
           </h2>
-          <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada e sem marca d'água.</p>
+          <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada.</p>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
