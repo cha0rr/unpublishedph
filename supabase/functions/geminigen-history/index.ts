@@ -72,6 +72,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // IDOR protection: verify UUID belongs to the authenticated user (admins bypass)
+    if (!isAdmin) {
+      const { data: record } = await adminClient
+        .from('image_generations')
+        .select('id')
+        .eq('uuid', uuid)
+        .eq('user_id', userId)
+        .single();
+
+      if (!record) {
+        return new Response(JSON.stringify({ error: 'Acesso negado a este recurso.' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'GEMINIGEN_API_KEY não configurada.' }), {
