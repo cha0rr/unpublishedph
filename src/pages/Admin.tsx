@@ -49,7 +49,6 @@ interface TabViolation {
 const PLANS = [
   { value: "basico", label: "Básico" },
   { value: "pro", label: "Pro" },
-  { value: "business", label: "Business" },
 ];
 
 const Admin = () => {
