@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,6 +20,17 @@ Deno.serve(async (req) => {
       throw new Error('Campos obrigatórios não preenchidos.');
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 255) {
+      throw new Error('Email inválido.');
+    }
+
+    // Validate field lengths
+    if (full_name.length > 200) throw new Error('Nome muito longo.');
+    if (whatsapp.length > 30) throw new Error('WhatsApp inválido.');
+    if (password.length < 6 || password.length > 128) throw new Error('Senha deve ter entre 6 e 128 caracteres.');
+
     const ALLOWED_PLANS = ['basico', 'pro', 'business'];
     if (!ALLOWED_PLANS.includes(plan)) {
       throw new Error('Plano inválido.');
@@ -27,10 +41,31 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Check if email already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExists = existingUsers?.users?.some(u => u.email === email);
-    if (emailExists) {
+    // Rate limiting by IP
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+                     req.headers.get('cf-connecting-ip') || 'unknown';
+
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_SECONDS * 1000).toISOString();
+    const { count: recentCount } = await supabaseAdmin
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', windowStart);
+
+    // Simple global rate limit as a safety net
+    if ((recentCount ?? 0) > RATE_LIMIT_MAX_REQUESTS) {
+      return new Response(JSON.stringify({ success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if email already exists using profiles table (avoids listUsers pagination issues)
+    const { count: emailCount } = await supabaseAdmin
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', email);
+
+    if ((emailCount ?? 0) > 0) {
       throw new Error('Este email já está cadastrado.');
     }
 
@@ -50,9 +85,9 @@ Deno.serve(async (req) => {
       .from('profiles')
       .insert({
         user_id: userId,
-        full_name,
-        email,
-        whatsapp,
+        full_name: full_name.trim().slice(0, 200),
+        email: email.trim().toLowerCase(),
+        whatsapp: whatsapp.trim().slice(0, 30),
         usage_type,
         payment_method,
         plan,
