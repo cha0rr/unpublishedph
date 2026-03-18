@@ -138,7 +138,8 @@ Deno.serve(async (req) => {
     await adminClient
       .from('image_generations')
       .update(updatePayload)
-      .eq('uuid', uuid);
+      .eq('uuid', uuid)
+      .eq('user_id', userId);
 
     return new Response(JSON.stringify(data), {
       status: apiResponse.status,
