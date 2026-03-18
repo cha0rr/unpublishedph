@@ -266,6 +266,7 @@ export default function BusinessStudioImages() {
                   placeholder="UUID de uma geração anterior (opcional)"
                   className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground"
                   disabled={isProcessing}
+                  maxLength={100}
                 />
               </div>
 
