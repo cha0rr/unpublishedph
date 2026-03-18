@@ -15,9 +15,8 @@ import logo from "@/assets/logo.jpeg";
 const WHATSAPP_NUMBER = "5585982089367";
 
 const plans: Record<string, string> = {
-  basico: "Básico — R$ 69/mês",
-  pro: "Pro — R$ 89/mês",
-  business: "Business — R$ 129/mês",
+  basico: "Básico — R$ 49,90/mês",
+  pro: "Pro — R$ 69,90/mês",
 };
 
 const Registro = () => {
