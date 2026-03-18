@@ -30,7 +30,6 @@ const plans = [
       "Gerador com Frame Mode",
       "Gerador de imagens com IA",
       "Gerador de roteiros com IA (em breve)",
-      "Sem marca d'água",
       "Uso comercial",
       "Suporte exclusivo",
       "Chamadas de vídeo semanais com consultoria",
