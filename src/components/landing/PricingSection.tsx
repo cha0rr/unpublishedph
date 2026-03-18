@@ -65,7 +65,7 @@ export function PricingSection() {
           <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada e sem marca d'água.</p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
