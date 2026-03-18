@@ -19,7 +19,7 @@ export function Navbar() {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const isBusiness = profile?.plan === "business" && profile?.status === "approved";
+  const isPro = profile?.plan === "pro" && profile?.status === "approved";
 
   const scrollTo = (id: string) => {
     setMobileOpen(false);
@@ -87,7 +87,7 @@ export function Navbar() {
                   </Button>
                 </>
               )}
-              {(isBusiness || isAdmin) && (
+              {(isPro || isAdmin) && (
                 <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/business/studio-images")}>
                   Studio Imagens
                 </Button>
@@ -148,7 +148,7 @@ export function Navbar() {
                       </Button>
                     </>
                   )}
-                  {(isBusiness || isAdmin) && (
+                  {(isPro || isAdmin) && (
                     <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
                       Studio Imagens
                     </Button>

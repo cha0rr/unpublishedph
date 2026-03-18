@@ -72,6 +72,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!isAdmin && profile?.plan !== 'pro') {
+      return new Response(JSON.stringify({ error: 'Recurso exclusivo do Plano Pro. Faça upgrade para acessar a geração de imagens.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // --- Rate Limiting (admins exempt) ---
     if (!isAdmin) {
       const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
