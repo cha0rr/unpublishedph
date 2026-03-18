@@ -7,7 +7,7 @@ import { RegistroDialog } from "./RegistroDialog";
 const plans = [
   {
     name: "Básico",
-    price: "R$ 69",
+    price: "R$ 49,90",
     period: "/mês",
     slug: "basico",
     description: "Para começar a criar vídeos com IA.",
@@ -21,38 +21,22 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 89",
+    price: "R$ 69,90",
     period: "/mês",
     slug: "pro",
-    description: "Para criadores que precisam de mais flexibilidade.",
+    description: "Tudo do Básico + ferramentas avançadas para profissionais.",
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
-      "Sem marca d'água",
-      "Uso comercial",
-      "Suporte 24 horas",
-    ],
-    highlighted: true,
-  },
-  {
-    name: "Business",
-    price: "R$ 129",
-    period: "/mês",
-    slug: "business",
-    description: "Para equipes e empresas que querem resultado.",
-    features: [
-      "Geração de vídeos ilimitada",
-      "Formatos 16:9 e 9:16",
-      "Gerador com Frame Mode",
-      "Gerador de roteiros com IA (em breve)",
       "Gerador de imagens com IA",
+      "Gerador de roteiros com IA (em breve)",
       "Sem marca d'água",
       "Uso comercial",
       "Suporte exclusivo",
       "Chamadas de vídeo semanais com consultoria",
     ],
-    highlighted: false,
+    highlighted: true,
   },
 ];
 

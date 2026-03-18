@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     if (whatsapp.length > 30) throw new Error('WhatsApp inválido.');
     if (password.length < 6 || password.length > 128) throw new Error('Senha deve ter entre 6 e 128 caracteres.');
 
-    const ALLOWED_PLANS = ['basico', 'pro', 'business'];
+    const ALLOWED_PLANS = ['basico', 'pro'];
     if (!ALLOWED_PLANS.includes(plan)) {
       throw new Error('Plano inválido.');
     }
