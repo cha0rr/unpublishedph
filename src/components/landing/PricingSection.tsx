@@ -7,7 +7,7 @@ import { RegistroDialog } from "./RegistroDialog";
 const plans = [
   {
     name: "Básico",
-    price: "R$ 69",
+    price: "R$ 49,90",
     period: "/mês",
     slug: "basico",
     description: "Para começar a criar vídeos com IA.",
@@ -21,38 +21,22 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 89",
+    price: "R$ 69,90",
     period: "/mês",
     slug: "pro",
-    description: "Para criadores que precisam de mais flexibilidade.",
+    description: "Tudo do Básico + ferramentas avançadas para profissionais.",
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
-      "Sem marca d'água",
-      "Uso comercial",
-      "Suporte 24 horas",
-    ],
-    highlighted: true,
-  },
-  {
-    name: "Business",
-    price: "R$ 129",
-    period: "/mês",
-    slug: "business",
-    description: "Para equipes e empresas que querem resultado.",
-    features: [
-      "Geração de vídeos ilimitada",
-      "Formatos 16:9 e 9:16",
-      "Gerador com Frame Mode",
-      "Gerador de roteiros com IA (em breve)",
       "Gerador de imagens com IA",
+      "Gerador de roteiros com IA (em breve)",
       "Sem marca d'água",
       "Uso comercial",
       "Suporte exclusivo",
       "Chamadas de vídeo semanais com consultoria",
     ],
-    highlighted: false,
+    highlighted: true,
   },
 ];
 
@@ -81,7 +65,7 @@ export function PricingSection() {
           <p className="mt-4 text-muted-foreground">Todos os planos com geração ilimitada e sem marca d'água.</p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}

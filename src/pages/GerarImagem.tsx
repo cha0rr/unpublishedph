@@ -10,8 +10,8 @@ export default function GerarImagem() {
   const { user, profile, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
 
-  const isBusiness = profile?.plan === "business" && profile?.status === "approved";
-  const hasAccess = isAdmin || isBusiness;
+  const isPro = profile?.plan === "pro" && profile?.status === "approved";
+  const hasAccess = isAdmin || isPro;
 
   useEffect(() => {
     if (!loading && (!user || !hasAccess)) {
