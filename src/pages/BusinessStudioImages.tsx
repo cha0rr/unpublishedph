@@ -159,7 +159,11 @@ export default function BusinessStudioImages() {
                   placeholder="Descreva a imagem que deseja gerar..."
                   className="min-h-[120px] bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground resize-none"
                   disabled={isProcessing}
+                  maxLength={2000}
                 />
+                <p className={`text-xs text-right ${prompt.length > 1800 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {prompt.length}/2000
+                </p>
               </div>
 
               {/* Model + Aspect Ratio */}
