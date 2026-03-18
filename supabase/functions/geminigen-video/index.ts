@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const RATE_LIMIT_PER_HOUR = 10;
+const MAX_PROMPT_LENGTH = 2000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -62,6 +65,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Rate Limiting (admins exempt) ---
+    if (!isAdmin) {
+      const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+      const { count } = await adminClient
+        .from('image_generations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', oneHourAgo);
+
+      if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) {
+        return new Response(JSON.stringify({ success: false, error: `Limite de ${RATE_LIMIT_PER_HOUR} gerações por hora atingido. Aguarde alguns minutos.` }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // --- Parse incoming FormData ---
     const incomingForm = await req.formData();
     const prompt = incomingForm.get('prompt') as string | null;
@@ -77,6 +97,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Prompt sanitization ---
+    const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_LENGTH).trim();
+
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ success: false, error: 'GEMINIGEN_API_KEY não configurada.' }), {
@@ -87,13 +110,12 @@ Deno.serve(async (req) => {
 
     // --- Build outgoing FormData for GeminiGen API ---
     const outForm = new FormData();
-    outForm.append('prompt', prompt);
+    outForm.append('prompt', sanitizedPrompt);
     outForm.append('resolution', resolution);
     outForm.append('aspect_ratio', aspectRatio);
     outForm.append('model', modelFromClient);
     outForm.append('watermark', 'false');
 
-    // Use ref_images (new API field) instead of deprecated files
     if (modeImage === 'ingredient' || modeImage === 'frame') {
       outForm.append('mode_image', modeImage);
       const refImages = incomingForm.getAll('ref_images') as File[];
@@ -102,7 +124,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('GeminiGen request:', { prompt: prompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution });
+    console.log('GeminiGen request:', { prompt: sanitizedPrompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution });
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
       method: 'POST',
@@ -124,12 +146,12 @@ Deno.serve(async (req) => {
       role: userRole,
       plan: profile?.plan || null,
       model: modelFromClient,
-      prompt,
+      prompt: sanitizedPrompt,
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
       aspect_ratio: aspectRatio,
       resolution,
-      request_payload: { prompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient },
+      request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
     });

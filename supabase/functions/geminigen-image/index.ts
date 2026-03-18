@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const RATE_LIMIT_PER_HOUR = 10;
+const MAX_PROMPT_LENGTH = 2000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +34,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate JWT
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -47,7 +49,6 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const userEmail = user.email as string;
 
-    // Use service role to check profile and roles
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: profile } = await adminClient
@@ -62,13 +63,30 @@ Deno.serve(async (req) => {
       .eq('user_id', userId);
 
     const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
-    const isBusiness = profile?.plan === 'business' && profile?.status === 'approved';
+    const isApproved = profile?.status === 'approved';
 
-    if (!isAdmin && !isBusiness) {
-      return new Response(JSON.stringify({ error: 'Acesso restrito a usuários Business ou Admin.' }), {
+    if (!isAdmin && !isApproved) {
+      return new Response(JSON.stringify({ error: 'Acesso restrito. Conta não aprovada.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // --- Rate Limiting (admins exempt) ---
+    if (!isAdmin) {
+      const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+      const { count } = await adminClient
+        .from('image_generations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', oneHourAgo);
+
+      if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) {
+        return new Response(JSON.stringify({ error: `Limite de ${RATE_LIMIT_PER_HOUR} gerações por hora atingido. Aguarde alguns minutos.` }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const body = await req.json();
@@ -81,6 +99,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Prompt sanitization ---
+    const sanitizedPrompt = String(prompt).substring(0, MAX_PROMPT_LENGTH).trim();
+
     const allowedModels = ['nano-banana-2', 'nano-banana-pro'];
     if (!model || !allowedModels.includes(model)) {
       return new Response(JSON.stringify({ error: 'Modelo inválido. Use nano-banana-2 ou nano-banana-pro.' }), {
@@ -91,13 +112,11 @@ Deno.serve(async (req) => {
 
     const userRole = isAdmin ? 'admin' : 'user';
 
-    // Send to GeminiGen API using FormData
     const formData = new FormData();
 
-    // Incorporate style into the prompt for reliable application
-    let finalPrompt = prompt;
+    let finalPrompt = sanitizedPrompt;
     if (style && style !== 'auto') {
-      finalPrompt = `[Style: ${style}] ${prompt}`;
+      finalPrompt = `[Style: ${style}] ${sanitizedPrompt}`;
     }
 
     formData.append('prompt', finalPrompt);
@@ -115,7 +134,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Use the correct GeminiGen API endpoint for image generation
     const apiUrl = 'https://api.geminigen.ai/uapi/v1/generate_image';
 
     const apiResponse = await fetch(apiUrl, {
@@ -137,14 +155,13 @@ Deno.serve(async (req) => {
 
     const generationUuid = responseData.uuid;
 
-    // Insert record into image_generations using service role
     await adminClient.from('image_generations').insert({
       user_id: userId,
       email: userEmail,
       role: userRole,
       plan: profile?.plan || null,
       model,
-      prompt,
+      prompt: sanitizedPrompt,
       uuid: generationUuid,
       status: 'pending',
       request_payload: body,
