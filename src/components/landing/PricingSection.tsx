@@ -14,7 +14,6 @@ const plans = [
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
-      "Sem marca d'água",
       "Uso comercial",
     ],
     highlighted: false,
