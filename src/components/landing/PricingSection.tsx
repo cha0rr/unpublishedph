@@ -28,7 +28,7 @@ const plans = [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
-      "Gerador de imagens com IA",
+      "Geração de imagens com Nano Banana 2 e Nano Banana Pro",
       "Gerador de roteiros com IA (em breve)",
       "Uso comercial",
       "Suporte exclusivo",
