@@ -95,27 +95,13 @@ const Registro = () => {
             className="glass-card p-8 text-center"
           >
             <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Solicitação enviada!</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Redirecionando para pagamento...</h2>
             <p className="text-muted-foreground mb-6">
-              Sua conta foi criada e está aguardando aprovação. Envie a mensagem pelo WhatsApp que foi aberto para agilizar o processo.
+              Você será redirecionado para o Mercado Pago para concluir o pagamento do seu plano.
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => navigate("/login")} className="border-border text-foreground">
-                Ir para Login
-              </Button>
-              <Button
-                onClick={() => {
-                  const planLabel = plans[form.plan] || form.plan;
-                  const message = encodeURIComponent(
-                    `🎬 *Nova solicitação PH Studio*\n\n*Nome:* ${form.full_name}\n*Email:* ${form.email}\n*WhatsApp:* ${form.whatsapp}\n*Plano:* ${planLabel}\n*Tipo de uso:* ${form.usage_type}\n*Pagamento:* ${form.payment_method}`
-                  );
-                  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
-                }}
-                className="bg-primary text-primary-foreground"
-              >
-                Reenviar WhatsApp
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => navigate("/login")} className="border-border text-foreground">
+              Ir para Login
+            </Button>
           </motion.div>
         </div>
         <Footer />
