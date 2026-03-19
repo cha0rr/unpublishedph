@@ -70,8 +70,26 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Erro ao registrar.");
 
-      setSuccess(true);
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage()}`, "_blank");
+      const userId = data.userId;
+
+      const { data: mpData, error: mpError } = await supabase.functions.invoke("mercadopago-create-preference", {
+        body: {
+          userId,
+          plan: form.plan,
+          email: form.email,
+          origin: window.location.origin,
+        },
+      });
+
+      if (mpError) throw new Error(mpError.message);
+      if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
+
+      const checkoutUrl = mpData.sandbox_init_point;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error("URL de checkout não disponível.");
+      }
     } catch (err: any) {
       setError(err.message || "Erro inesperado.");
     } finally {
@@ -103,21 +121,13 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
         {success ? (
           <div className="text-center py-4">
             <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Solicitação enviada!</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Redirecionando para pagamento...</h2>
             <p className="text-muted-foreground mb-6">
-              Sua conta foi criada e está aguardando aprovação. Envie a mensagem pelo WhatsApp que foi aberto para agilizar o processo.
+              Você será redirecionado para o Mercado Pago para concluir o pagamento.
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => handleClose(false)} className="border-border text-foreground">
-                Fechar
-              </Button>
-              <Button
-                onClick={() => window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage()}`, "_blank")}
-                className="bg-primary text-primary-foreground"
-              >
-                Reenviar WhatsApp
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => handleClose(false)} className="border-border text-foreground">
+              Fechar
+            </Button>
           </div>
         ) : (
           <>
@@ -205,21 +215,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 />
               </div>
 
-              {/* Payment Method */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Forma de pagamento</Label>
-                <Select value={form.payment_method} onValueChange={(v) => handleChange("payment_method", v)}>
-                  <SelectTrigger className="bg-muted/30 border-border text-foreground">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="cartao">Cartão de Crédito</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Payment is handled by Mercado Pago */}
 
               {error && (
                 <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
