@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const PLAN_PRICES: Record<string, { title: string; price: number }> = {
   basico: { title: 'PH Studio - Plano Básico', price: 49.90 },
-  pro: { title: 'PH Studio - Plano Pro', price: 69.90 },
+  pro: { title: 'PH Studio - Plano Pro', price: 79.90 },
 }
 
 Deno.serve(async (req) => {
