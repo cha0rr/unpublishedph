@@ -121,21 +121,13 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
         {success ? (
           <div className="text-center py-4">
             <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Solicitação enviada!</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Redirecionando para pagamento...</h2>
             <p className="text-muted-foreground mb-6">
-              Sua conta foi criada e está aguardando aprovação. Envie a mensagem pelo WhatsApp que foi aberto para agilizar o processo.
+              Você será redirecionado para o Mercado Pago para concluir o pagamento.
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => handleClose(false)} className="border-border text-foreground">
-                Fechar
-              </Button>
-              <Button
-                onClick={() => window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage()}`, "_blank")}
-                className="bg-primary text-primary-foreground"
-              >
-                Reenviar WhatsApp
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => handleClose(false)} className="border-border text-foreground">
+              Fechar
+            </Button>
           </div>
         ) : (
           <>
