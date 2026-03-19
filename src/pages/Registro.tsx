@@ -47,6 +47,7 @@ const Registro = () => {
     setError("");
 
     try {
+      // Step 1: Register the user
       const { data, error: fnError } = await supabase.functions.invoke("register", {
         body: form,
       });
@@ -54,22 +55,28 @@ const Registro = () => {
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Erro ao registrar.");
 
-      setSuccess(true);
+      const userId = data.userId;
 
-      // Build WhatsApp message
-      const planLabel = plans[form.plan] || form.plan;
-      const message = encodeURIComponent(
-        `🎬 *Nova solicitação PH Studio*\n\n` +
-        `*Nome:* ${form.full_name}\n` +
-        `*Email:* ${form.email}\n` +
-        `*WhatsApp:* ${form.whatsapp}\n` +
-        `*Plano:* ${planLabel}\n` +
-        `*Tipo de uso:* ${form.usage_type}\n` +
-        `*Pagamento:* ${form.payment_method}`
-      );
+      // Step 2: Create Mercado Pago checkout preference
+      const { data: mpData, error: mpError } = await supabase.functions.invoke("mercadopago-create-preference", {
+        body: {
+          userId,
+          plan: form.plan,
+          email: form.email,
+          origin: window.location.origin,
+        },
+      });
 
-      // Open WhatsApp in new tab
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+      if (mpError) throw new Error(mpError.message);
+      if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
+
+      // Step 3: Redirect to Mercado Pago checkout (sandbox mode)
+      const checkoutUrl = mpData.sandbox_init_point;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error("URL de checkout não disponível.");
+      }
     } catch (err: any) {
       setError(err.message || "Erro inesperado.");
     } finally {
