@@ -84,7 +84,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
       if (mpError) throw new Error(mpError.message);
       if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
 
-      const checkoutUrl = mpData.sandbox_init_point;
+      const checkoutUrl = mpData.init_point;
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {

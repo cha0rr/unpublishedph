@@ -70,8 +70,8 @@ const Registro = () => {
       if (mpError) throw new Error(mpError.message);
       if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
 
-      // Step 3: Redirect to Mercado Pago checkout (sandbox mode)
-      const checkoutUrl = mpData.sandbox_init_point;
+      // Step 3: Redirect to Mercado Pago checkout
+      const checkoutUrl = mpData.init_point;
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
