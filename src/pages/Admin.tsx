@@ -137,6 +137,34 @@ const Admin = () => {
     setActionLoading(null);
   };
 
+  const deleteUser = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ userId: deleteConfirm.user_id }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success("Conta excluída com sucesso.");
+      setDeleteConfirm(null);
+      await fetchProfiles();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao excluir conta.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
