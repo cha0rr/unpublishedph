@@ -70,8 +70,26 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Erro ao registrar.");
 
-      setSuccess(true);
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage()}`, "_blank");
+      const userId = data.userId;
+
+      const { data: mpData, error: mpError } = await supabase.functions.invoke("mercadopago-create-preference", {
+        body: {
+          userId,
+          plan: form.plan,
+          email: form.email,
+          origin: window.location.origin,
+        },
+      });
+
+      if (mpError) throw new Error(mpError.message);
+      if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
+
+      const checkoutUrl = mpData.sandbox_init_point;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error("URL de checkout não disponível.");
+      }
     } catch (err: any) {
       setError(err.message || "Erro inesperado.");
     } finally {
