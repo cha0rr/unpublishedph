@@ -66,7 +66,8 @@ const Admin = () => {
   const [violations, setViolations] = useState<TabViolation[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
+  const [deleteConfirm, setDeleteConfirm] = useState<ProfileRow | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
       navigate("/login");
