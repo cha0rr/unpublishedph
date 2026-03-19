@@ -351,6 +351,17 @@ const Admin = () => {
             </Button>
           </div>
         )}
+        <div className="pt-1 border-t border-border/30">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDeleteConfirm(profile)}
+            className="w-full text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1"
+          >
+            <Trash2 className="h-3 w-3" />
+            Excluir conta
+          </Button>
+        </div>
       </div>
     );
   };
