@@ -203,21 +203,7 @@ const Registro = () => {
               />
             </div>
 
-            {/* Payment Method */}
-            <div className="space-y-2">
-              <Label className="text-foreground">Forma de pagamento</Label>
-              <Select value={form.payment_method} onValueChange={(v) => handleChange("payment_method", v)}>
-                <SelectTrigger className="bg-muted/30 border-border text-foreground">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="cartao">Cartão de Crédito</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Payment is handled by Mercado Pago */}
 
             {error && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
