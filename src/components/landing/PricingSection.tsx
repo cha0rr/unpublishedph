@@ -20,7 +20,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 69,90",
+    price: "R$ 79,90",
     period: "/mês",
     slug: "pro",
     description: "Tudo do Básico + ferramentas avançadas para profissionais.",

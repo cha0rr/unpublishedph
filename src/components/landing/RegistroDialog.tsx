@@ -12,7 +12,7 @@ const WHATSAPP_NUMBER = "5585982089367";
 
 const plans: Record<string, string> = {
   basico: "Básico — R$ 49,90/mês",
-  pro: "Pro — R$ 69,90/mês",
+  pro: "Pro — R$ 79,90/mês",
 };
 
 interface RegistroDialogProps {
@@ -148,7 +148,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="basico">Básico — R$ 49,90/mês</SelectItem>
-                    <SelectItem value="pro">Pro — R$ 69,90/mês</SelectItem>
+                    <SelectItem value="pro">Pro — R$ 79,90/mês</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
