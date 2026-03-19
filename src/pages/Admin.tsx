@@ -19,7 +19,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Check, X, Loader2, Shield, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Check, X, Loader2, Shield, CalendarIcon, AlertTriangle, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -58,7 +66,8 @@ const Admin = () => {
   const [violations, setViolations] = useState<TabViolation[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
+  const [deleteConfirm, setDeleteConfirm] = useState<ProfileRow | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
       navigate("/login");
@@ -126,6 +135,34 @@ const Admin = () => {
     }
     await fetchProfiles();
     setActionLoading(null);
+  };
+
+  const deleteUser = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ userId: deleteConfirm.user_id }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      toast.success("Conta excluída com sucesso.");
+      setDeleteConfirm(null);
+      await fetchProfiles();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao excluir conta.");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   if (authLoading) {
@@ -314,6 +351,17 @@ const Admin = () => {
             </Button>
           </div>
         )}
+        <div className="pt-1 border-t border-border/30">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDeleteConfirm(profile)}
+            className="w-full text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1"
+          >
+            <Trash2 className="h-3 w-3" />
+            Excluir conta
+          </Button>
+        </div>
       </div>
     );
   };
@@ -391,6 +439,27 @@ const Admin = () => {
           )}
         </motion.div>
       </div>
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir conta</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir a conta de <strong>{deleteConfirm?.full_name}</strong> ({deleteConfirm?.email})?
+              Esta ação é irreversível e removerá todos os dados do usuário.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleteLoading}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={deleteUser} disabled={deleteLoading}>
+              {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );
