@@ -121,8 +121,8 @@ Deno.serve(async (req) => {
     outForm.append('aspect_ratio', finalAspectRatio);
     outForm.append('model', finalModel);
     outForm.append('watermark', 'false');
-    outForm.append('mode_image', 'extend');
-    outForm.append('ref_images', videoBlob, 'source_video.mp4');
+    outForm.append('mode_video', 'extend');
+    outForm.append('ref_video', videoBlob, 'source_video.mp4');
 
     console.log('GeminiGen extend request:', {
       prompt: sanitizedPrompt.substring(0, 50),
@@ -138,7 +138,10 @@ Deno.serve(async (req) => {
       body: outForm,
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    console.log('GeminiGen extend raw response:', rawText.substring(0, 2000));
+    let data: any;
+    try { data = JSON.parse(rawText); } catch { data = { raw: rawText.substring(0, 500) }; }
     console.log('GeminiGen extend response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
 
     const generationUuid = data.uuid;
@@ -160,7 +163,7 @@ Deno.serve(async (req) => {
         prompt: sanitizedPrompt,
         resolution: finalResolution,
         aspect_ratio: finalAspectRatio,
-        mode_image: 'extend',
+        mode_video: 'extend',
         model: finalModel,
         source_video_url: sourceVideoUrl,
       },
