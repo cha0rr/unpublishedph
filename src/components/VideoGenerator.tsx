@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
+import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
 import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward } from "lucide-react";
 type ModeImage = "none" | "ingredient";
 
@@ -27,6 +28,7 @@ export function VideoGenerator() {
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
   const [extendOpen, setExtendOpen] = useState(false);
+  const [videoSegments, setVideoSegments] = useState<string[]>([]);
 
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
@@ -245,9 +247,10 @@ export function VideoGenerator() {
       {state === "success" && resultUrl && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-primary">{statusText}</p>
-          <div className={`overflow-hidden rounded-xl border border-border/30 bg-card/40 ${aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16] max-w-sm mx-auto"}`}>
-            <video src={resultUrl} controls autoPlay loop className="h-full w-full object-cover" />
-          </div>
+          <SequentialVideoPlayer
+            segments={videoSegments.length > 0 ? videoSegments : [resultUrl]}
+            aspectRatio={aspectRatio}
+          />
           <div className="flex gap-3 flex-wrap">
             <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
               <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
@@ -261,7 +264,7 @@ export function VideoGenerator() {
             >
               <FastForward className="h-4 w-4 mr-2" /> Estender Vídeo
             </Button>
-            <Button variant="outline" className="border-border/50" onClick={reset}>
+            <Button variant="outline" className="border-border/50" onClick={() => { reset(); setVideoSegments([]); }}>
               <RotateCcw className="h-4 w-4 mr-2" /> Novo Vídeo
             </Button>
           </div>
@@ -275,6 +278,10 @@ export function VideoGenerator() {
             resolution={resolution}
             model={model}
             onExtended={(newUrl, newUuid) => {
+              setVideoSegments(prev => {
+                const segments = prev.length > 0 ? prev : [resultUrl!];
+                return [...segments, newUrl];
+              });
               setSuccessState(newUrl, newUuid);
             }}
           />
