@@ -27,7 +27,7 @@ interface ExtendVideoDialogProps {
   onExtended: (newVideoUrl: string, newUuid: string) => void;
 }
 
-type ExtendState = "idle" | "generating" | "polling" | "concatenating" | "success" | "error";
+type ExtendState = "idle" | "generating" | "polling" | "success" | "error";
 
 function getSimulatedProgress(elapsedMs: number): number {
   const totalEstimate = 50000;
