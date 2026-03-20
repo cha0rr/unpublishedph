@@ -26,6 +26,7 @@ export function VideoGenerator() {
   const [resolution, setResolution] = useState("720p");
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
+  const [extendOpen, setExtendOpen] = useState(false);
 
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
