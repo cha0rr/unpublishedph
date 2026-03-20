@@ -26,12 +26,81 @@ interface ExtendVideoDialogProps {
   onExtended: (newVideoUrl: string) => void;
 }
 
-type ExtendState = "idle" | "generating" | "polling" | "success" | "error";
+type ExtendState = "idle" | "extracting" | "generating" | "polling" | "success" | "error";
 
 function getSimulatedProgress(elapsedMs: number): number {
   const totalEstimate = 50000;
   const ratio = elapsedMs / totalEstimate;
   return Math.max(1, Math.min(95, Math.round(100 * (1 - Math.exp(-2.5 * ratio)))));
+}
+
+async function extractLastFrame(videoUrl: string, accessToken: string): Promise<File> {
+  // Step 1: Download video through edge function proxy (bypasses CORS)
+  const proxyUrl = `${SUPABASE_URL}/functions/v1/geminigen-video-extend?action=proxy&url=${encodeURIComponent(videoUrl)}`;
+  const proxyRes = await fetch(proxyUrl, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!proxyRes.ok) throw new Error("Falha ao baixar vídeo via proxy.");
+  const videoBlob = await proxyRes.blob();
+  const blobUrl = URL.createObjectURL(videoBlob);
+
+  // Step 2: Load blob URL in video element (same-origin, no CORS issues)
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.muted = true;
+    video.src = blobUrl;
+
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+      reject(new Error("Timeout ao extrair frame do vídeo."));
+    }, 30000);
+
+    video.onerror = () => {
+      clearTimeout(timeout);
+      URL.revokeObjectURL(blobUrl);
+      reject(new Error("Erro ao carregar vídeo para extração de frame."));
+    };
+
+    video.onloadedmetadata = () => {
+      video.currentTime = Math.max(0, video.duration - 0.05);
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          clearTimeout(timeout);
+          URL.revokeObjectURL(blobUrl);
+          reject(new Error("Não foi possível criar contexto canvas."));
+          return;
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            clearTimeout(timeout);
+            URL.revokeObjectURL(blobUrl);
+            if (blob) {
+              resolve(new File([blob], "last_frame.png", { type: "image/png" }));
+            } else {
+              reject(new Error("Falha ao converter canvas para blob."));
+            }
+          },
+          "image/png"
+        );
+      } catch (err) {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error("Erro ao capturar frame do vídeo."));
+      }
+    };
+  });
 }
 
 export function ExtendVideoDialog({
@@ -137,31 +206,39 @@ export function ExtendVideoDialog({
   const handleExtend = useCallback(async () => {
     if (!prompt.trim()) return;
     cancelledRef.current = false;
-    setState("generating");
+    setState("extracting");
     setError(null);
     setProgress(0);
-    setStatusText("Enviando solicitação de extensão...");
+    setStatusText("Baixando vídeo e extraindo último frame...");
 
     try {
+      // Get auth token
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
-      // Send video URL to edge function (it will download and process server-side)
+      // Step 1: Extract last frame via proxy
+      const lastFrame = await extractLastFrame(videoUrl, accessToken);
+      if (cancelledRef.current) return;
+
+      setState("generating");
+      setStatusText("Enviando solicitação de extensão...");
+
+      // Step 2: Send frame as FormData
+      const formData = new FormData();
+      formData.append("prompt", prompt.trim());
+      formData.append("ref_images", lastFrame);
+      formData.append("aspectRatio", aspectRatio);
+      formData.append("resolution", resolution);
+      formData.append("model", model);
+
       const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-video-extend`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          videoUrl,
-          aspectRatio,
-          resolution,
-          model,
-        }),
+        body: formData,
       });
 
       const data = await res.json();
@@ -203,7 +280,7 @@ export function ExtendVideoDialog({
     }
   }, [prompt, videoUrl, aspectRatio, resolution, model, pollHistory, stopProgress, onExtended, onOpenChange]);
 
-  const isLoading = state === "generating" || state === "polling";
+  const isLoading = state === "extracting" || state === "generating" || state === "polling";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!isLoading) onOpenChange(v); }}>
