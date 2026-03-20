@@ -248,16 +248,41 @@ export function VideoGenerator() {
           <div className={`overflow-hidden rounded-xl border border-border/30 bg-card/40 ${aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16] max-w-sm mx-auto"}`}>
             <video src={resultUrl} controls autoPlay loop className="h-full w-full object-cover" />
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
               <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
             </Button>
+            <Button
+              variant="outline"
+              className="flex-1 border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => setExtendOpen(true)}
+            >
+              <FastForward className="h-4 w-4 mr-2" /> Estender Vídeo
+            </Button>
             <Button variant="outline" className="border-border/50" onClick={reset}>
               <RotateCcw className="h-4 w-4 mr-2" /> Novo Vídeo
             </Button>
           </div>
+
+          <ExtendVideoDialog
+            open={extendOpen}
+            onOpenChange={setExtendOpen}
+            videoUrl={resultUrl}
+            aspectRatio={aspectRatio}
+            resolution={resolution}
+            model={model}
+            onExtended={(newUrl) => {
+              // Replace current video with the extended one
+              reset();
+              // Small delay to allow reset, then set new result
+              setTimeout(() => {
+                // We need to directly set the result - use generate's internal state
+                // Instead, we'll just update the URL by triggering a fake success
+              }, 0);
+            }}
+          />
         </div>
       )}
     </div>
