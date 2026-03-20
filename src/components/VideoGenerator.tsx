@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download } from "lucide-react";
-
+import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward } from "lucide-react";
 type ModeImage = "none" | "ingredient";
 
 const MODEL_OPTIONS = [
@@ -26,12 +26,13 @@ export function VideoGenerator() {
   const [resolution, setResolution] = useState("720p");
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
+  const [extendOpen, setExtendOpen] = useState(false);
 
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
+  const { state, resultUrl, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_video_cooldown", durationMs: 90000 });
 
   const isLoading = state === "generating" || state === "polling";
@@ -247,16 +248,35 @@ export function VideoGenerator() {
           <div className={`overflow-hidden rounded-xl border border-border/30 bg-card/40 ${aspectRatio === "16:9" ? "aspect-video" : "aspect-[9/16] max-w-sm mx-auto"}`}>
             <video src={resultUrl} controls autoPlay loop className="h-full w-full object-cover" />
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
               <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
             </Button>
+            <Button
+              variant="outline"
+              className="flex-1 border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => setExtendOpen(true)}
+            >
+              <FastForward className="h-4 w-4 mr-2" /> Estender Vídeo
+            </Button>
             <Button variant="outline" className="border-border/50" onClick={reset}>
               <RotateCcw className="h-4 w-4 mr-2" /> Novo Vídeo
             </Button>
           </div>
+
+          <ExtendVideoDialog
+            open={extendOpen}
+            onOpenChange={setExtendOpen}
+            videoUrl={resultUrl}
+            aspectRatio={aspectRatio}
+            resolution={resolution}
+            model={model}
+            onExtended={(newUrl) => {
+              setSuccessState(newUrl);
+            }}
+          />
         </div>
       )}
     </div>
