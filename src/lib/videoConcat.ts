@@ -85,7 +85,7 @@ export async function concatVideos(
 
   const output = await ffmpeg.readFile("output.mp4");
   const outputData = output instanceof Uint8Array ? output : new TextEncoder().encode(output as string);
-  const blob = new Blob([outputData.buffer], { type: "video/mp4" });
+  const blob = new Blob([new Uint8Array(outputData)], { type: "video/mp4" });
 
   // Cleanup
   await ffmpeg.deleteFile("original.mp4");

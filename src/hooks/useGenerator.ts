@@ -33,7 +33,7 @@ interface GeneratorResult {
   generate: (params: GenerateParams) => Promise<void>;
   reset: () => void;
   setResultUrl: (url: string) => void;
-  setSuccessState: (url: string) => void;
+  setSuccessState: (url: string, uuid?: string) => void;
 }
 
 export function useGenerator(): GeneratorResult {
