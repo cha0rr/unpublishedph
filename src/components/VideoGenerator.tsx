@@ -32,7 +32,7 @@ export function VideoGenerator() {
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { state, resultUrl, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
+  const { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_video_cooldown", durationMs: 90000 });
 
   const isLoading = state === "generating" || state === "polling";
