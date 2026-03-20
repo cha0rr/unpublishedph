@@ -208,6 +208,7 @@ export function useGenerator(): GeneratorResult {
     stopProgressSimulation();
     setState("idle");
     setResultUrl(null);
+    setResultUuid(null);
     setError(null);
     setProgress(0);
     setStatusText("");
