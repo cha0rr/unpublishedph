@@ -40,6 +40,7 @@ export function useGenerator(): GeneratorResult {
   const { playSound } = useNotificationSound();
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultUuid, setResultUuid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
