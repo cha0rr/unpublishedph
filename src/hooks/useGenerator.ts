@@ -224,5 +224,5 @@ export function useGenerator(): GeneratorResult {
     setStatusText("Vídeo pronto!");
   }, [stopProgressSimulation]);
 
-  return { state, resultUrl, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
+  return { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
 }
