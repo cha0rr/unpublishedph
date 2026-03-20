@@ -266,7 +266,7 @@ export function ExtendVideoDialog({
             className="w-full h-10 rounded-lg bg-gradient-to-r from-primary/80 to-primary text-primary-foreground hover:from-primary hover:to-primary/90 shadow-[0_0_15px_hsl(196_89%_61%/0.3)]"
           >
             {isLoading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> {state === "concatenating" ? "Concatenando..." : "Gerando continuação..."}</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Gerando continuação...</>
             ) : (
               <><Sparkles className="h-4 w-4" /> Gerar continuação</>
             )}
