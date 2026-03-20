@@ -31,6 +31,8 @@ interface GeneratorResult {
   statusText: string;
   generate: (params: GenerateParams) => Promise<void>;
   reset: () => void;
+  setResultUrl: (url: string) => void;
+  setSuccessState: (url: string) => void;
 }
 
 export function useGenerator(): GeneratorResult {
