@@ -184,25 +184,10 @@ export function ExtendVideoDialog({
       if (cancelledRef.current) return;
       if (!extensionUrl) throw new Error("URL do resultado não encontrada.");
 
-      // Concatenate original + extension
-      setState("concatenating");
-      setProgress(0);
-      setStatusText("Concatenando vídeos...");
-
-      const concatenatedBlob = await concatVideos(
-        videoUrl,
-        extensionUrl,
-        accessToken,
-        (msg) => setStatusText(msg)
-      );
-
-      if (cancelledRef.current) return;
-
-      const blobUrl = URL.createObjectURL(concatenatedBlob);
       setProgress(100);
       setState("success");
       setStatusText("Vídeo estendido pronto!");
-      onExtended(blobUrl, newUuid);
+      onExtended(extensionUrl, newUuid);
       setTimeout(() => onOpenChange(false), 800);
     } catch (err: any) {
       stopProgress();
