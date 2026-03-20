@@ -26,6 +26,7 @@ export interface GenerateParams {
 interface GeneratorResult {
   state: GeneratorState;
   resultUrl: string | null;
+  resultUuid: string | null;
   error: string | null;
   progress: number;
   statusText: string;
@@ -39,6 +40,7 @@ export function useGenerator(): GeneratorResult {
   const { playSound } = useNotificationSound();
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultUuid, setResultUuid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
@@ -140,6 +142,7 @@ export function useGenerator(): GeneratorResult {
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
+    setResultUuid(null);
     setError(null);
     setProgress(0);
     setStatusText("Enviando solicitação...");
@@ -185,6 +188,7 @@ export function useGenerator(): GeneratorResult {
       if (finalUrl) {
         setProgress(100);
         setResultUrl(finalUrl);
+        setResultUuid(uuid);
         setState("success");
         setStatusText("Vídeo pronto!");
         playSound();
@@ -204,6 +208,7 @@ export function useGenerator(): GeneratorResult {
     stopProgressSimulation();
     setState("idle");
     setResultUrl(null);
+    setResultUuid(null);
     setError(null);
     setProgress(0);
     setStatusText("");
@@ -219,5 +224,5 @@ export function useGenerator(): GeneratorResult {
     setStatusText("Vídeo pronto!");
   }, [stopProgressSimulation]);
 
-  return { state, resultUrl, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
+  return { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
 }
