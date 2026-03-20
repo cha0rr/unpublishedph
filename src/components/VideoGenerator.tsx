@@ -28,6 +28,7 @@ export function VideoGenerator() {
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
   const [extendOpen, setExtendOpen] = useState(false);
+  const [videoSegments, setVideoSegments] = useState<string[]>([]);
 
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
