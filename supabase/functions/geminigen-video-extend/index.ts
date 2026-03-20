@@ -138,7 +138,10 @@ Deno.serve(async (req) => {
       body: outForm,
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    console.log('GeminiGen extend raw response:', rawText.substring(0, 2000));
+    let data: any;
+    try { data = JSON.parse(rawText); } catch { data = { raw: rawText.substring(0, 500) }; }
     console.log('GeminiGen extend response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
 
     const generationUuid = data.uuid;
