@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download } from "lucide-react";
-
+import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward } from "lucide-react";
 type ModeImage = "none" | "ingredient";
 
 const MODEL_OPTIONS = [
