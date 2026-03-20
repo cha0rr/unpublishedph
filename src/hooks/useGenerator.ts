@@ -26,6 +26,7 @@ export interface GenerateParams {
 interface GeneratorResult {
   state: GeneratorState;
   resultUrl: string | null;
+  resultUuid: string | null;
   error: string | null;
   progress: number;
   statusText: string;
