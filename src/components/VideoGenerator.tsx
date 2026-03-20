@@ -270,6 +270,7 @@ export function VideoGenerator() {
             open={extendOpen}
             onOpenChange={setExtendOpen}
             videoUrl={resultUrl}
+            videoUuid={resultUuid || ""}
             aspectRatio={aspectRatio}
             resolution={resolution}
             model={model}

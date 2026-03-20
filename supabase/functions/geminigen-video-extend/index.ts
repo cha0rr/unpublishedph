@@ -24,59 +24,18 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ success: false, error: 'Não autorizado.' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // --- PROXY MODE: GET request with ?action=proxy&url=... ---
-    const url = new URL(req.url);
-    if (req.method === 'GET' && url.searchParams.get('action') === 'proxy') {
-      const user = await authenticateUser(authHeader);
-      if (!user) {
-        return new Response(JSON.stringify({ error: 'Token inválido.' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const videoUrl = url.searchParams.get('url');
-      if (!videoUrl) {
-        return new Response(JSON.stringify({ error: 'url é obrigatório.' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log('Proxy: downloading video', videoUrl.substring(0, 80));
-      const videoRes = await fetch(videoUrl);
-      if (!videoRes.ok) {
-        return new Response(JSON.stringify({ error: `Falha ao baixar vídeo: ${videoRes.status}` }), {
-          status: 502,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const videoBody = await videoRes.arrayBuffer();
-      console.log('Proxy: video downloaded, size:', videoBody.byteLength);
-      return new Response(videoBody, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': videoRes.headers.get('Content-Type') || 'video/mp4',
-          'Content-Length': String(videoBody.byteLength),
-        },
-      });
-    }
-
-    // --- EXTEND MODE: POST with FormData (ref_images = last frame image) ---
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -132,16 +91,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Parse FormData with the last frame image
-    const formData = await req.formData();
-    const prompt = formData.get('prompt') as string;
-    const refImage = formData.get('ref_images') as File;
-    const aspectRatio = (formData.get('aspectRatio') as string) || '16:9';
-    const resolution = (formData.get('resolution') as string) || '720p';
-    const model = (formData.get('model') as string) || 'veo-3.1-fast';
+    const { prompt, ref_history } = await req.json();
 
-    if (!prompt || !refImage) {
-      return new Response(JSON.stringify({ success: false, error: 'prompt e ref_images são obrigatórios.' }), {
+    if (!prompt || !ref_history) {
+      return new Response(JSON.stringify({ success: false, error: 'prompt e ref_history são obrigatórios.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -157,34 +110,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Build FormData for GeminiGen API - use mode_image: "frame" with the image
+    // Build FormData for the native video-extend endpoint
     const outForm = new FormData();
     outForm.append('prompt', sanitizedPrompt);
-    outForm.append('resolution', resolution);
-    outForm.append('aspect_ratio', aspectRatio);
-    outForm.append('model', model);
-    outForm.append('watermark', 'false');
-    outForm.append('mode_image', 'frame');
-    outForm.append('files', refImage, 'last_frame.png');
+    outForm.append('ref_history', ref_history);
 
-    console.log('GeminiGen extend request:', {
+    console.log('GeminiGen video-extend request:', {
       prompt: sanitizedPrompt.substring(0, 50),
-      model,
-      aspectRatio,
-      resolution,
-      imageSize: refImage.size,
-      imageType: refImage.type,
-      mode_image: 'frame',
+      ref_history,
     });
 
-    const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
+    const response = await fetch('https://api.geminigen.ai/uapi/v1/video-extend/veo', {
       method: 'POST',
       headers: { 'x-api-key': apiKey },
       body: outForm,
     });
 
     const rawText = await response.text();
-    console.log('GeminiGen extend raw response:', rawText.substring(0, 2000));
+    console.log('GeminiGen video-extend raw response:', rawText.substring(0, 2000));
     let data: any;
     try { data = JSON.parse(rawText); } catch { data = { raw: rawText.substring(0, 500) }; }
 
@@ -197,18 +140,14 @@ Deno.serve(async (req) => {
       email: userEmail,
       role: userRole,
       plan: profile?.plan || null,
-      model,
+      model: data.model_name || 'veo-extend',
       prompt: `[EXTEND] ${sanitizedPrompt}`,
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
-      aspect_ratio: aspectRatio,
-      resolution,
       request_payload: {
         prompt: sanitizedPrompt,
-        resolution,
-        aspect_ratio: aspectRatio,
-        mode_image: 'frame',
-        model,
+        ref_history,
+        endpoint: 'video-extend/veo',
       },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || data?.detail?.error_message || null),
