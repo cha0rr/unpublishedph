@@ -188,6 +188,7 @@ export function useGenerator(): GeneratorResult {
       if (finalUrl) {
         setProgress(100);
         setResultUrl(finalUrl);
+        setResultUuid(uuid);
         setState("success");
         setStatusText("Vídeo pronto!");
         playSound();
