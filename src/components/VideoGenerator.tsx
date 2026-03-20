@@ -274,13 +274,7 @@ export function VideoGenerator() {
             resolution={resolution}
             model={model}
             onExtended={(newUrl) => {
-              // Replace current video with the extended one
-              reset();
-              // Small delay to allow reset, then set new result
-              setTimeout(() => {
-                // We need to directly set the result - use generate's internal state
-                // Instead, we'll just update the URL by triggering a fake success
-              }, 0);
+              setSuccessState(newUrl);
             }}
           />
         </div>
