@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Sparkles, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { concatVideos } from "@/lib/videoConcat";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -24,10 +25,10 @@ interface ExtendVideoDialogProps {
   aspectRatio: string;
   resolution: string;
   model: string;
-  onExtended: (newVideoUrl: string) => void;
+  onExtended: (newVideoUrl: string, newUuid: string) => void;
 }
 
-type ExtendState = "idle" | "generating" | "polling" | "success" | "error";
+type ExtendState = "idle" | "generating" | "polling" | "concatenating" | "success" | "error";
 
 function getSimulatedProgress(elapsedMs: number): number {
   const totalEstimate = 50000;
@@ -165,8 +166,8 @@ export function ExtendVideoDialog({
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
 
-      const uuid = data?.uuid;
-      if (!uuid) throw new Error("UUID da geração não retornado.");
+      const newUuid = data?.uuid;
+      if (!newUuid) throw new Error("UUID da geração não retornado.");
 
       setState("polling");
       startTimeRef.current = Date.now();
@@ -178,20 +179,32 @@ export function ExtendVideoDialog({
         setStatusText(`Gerando continuação... ${sim}%`);
       }, 300);
 
-      const finalUrl = await pollHistory(uuid);
+      const extensionUrl = await pollHistory(newUuid);
       stopProgress();
 
       if (cancelledRef.current) return;
+      if (!extensionUrl) throw new Error("URL do resultado não encontrada.");
 
-      if (finalUrl) {
-        setProgress(100);
-        setState("success");
-        setStatusText("Continuação pronta!");
-        onExtended(finalUrl);
-        setTimeout(() => onOpenChange(false), 800);
-      } else {
-        throw new Error("URL do resultado não encontrada.");
-      }
+      // Concatenate original + extension
+      setState("concatenating");
+      setProgress(0);
+      setStatusText("Concatenando vídeos...");
+
+      const concatenatedBlob = await concatVideos(
+        videoUrl,
+        extensionUrl,
+        accessToken,
+        (msg) => setStatusText(msg)
+      );
+
+      if (cancelledRef.current) return;
+
+      const blobUrl = URL.createObjectURL(concatenatedBlob);
+      setProgress(100);
+      setState("success");
+      setStatusText("Vídeo estendido pronto!");
+      onExtended(blobUrl, newUuid);
+      setTimeout(() => onOpenChange(false), 800);
     } catch (err: any) {
       stopProgress();
       if (cancelledRef.current) return;
@@ -199,9 +212,9 @@ export function ExtendVideoDialog({
       setState("error");
       setStatusText("");
     }
-  }, [prompt, videoUuid, pollHistory, stopProgress, onExtended, onOpenChange]);
+  }, [prompt, videoUrl, videoUuid, pollHistory, stopProgress, onExtended, onOpenChange]);
 
-  const isLoading = state === "generating" || state === "polling";
+  const isLoading = state === "generating" || state === "polling" || state === "concatenating";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!isLoading) onOpenChange(v); }}>
@@ -269,7 +282,7 @@ export function ExtendVideoDialog({
             className="w-full h-10 rounded-lg bg-gradient-to-r from-primary/80 to-primary text-primary-foreground hover:from-primary hover:to-primary/90 shadow-[0_0_15px_hsl(196_89%_61%/0.3)]"
           >
             {isLoading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Gerando continuação...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> {state === "concatenating" ? "Concatenando..." : "Gerando continuação..."}</>
             ) : (
               <><Sparkles className="h-4 w-4" /> Gerar continuação</>
             )}
