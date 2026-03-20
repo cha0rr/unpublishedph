@@ -142,6 +142,7 @@ export function useGenerator(): GeneratorResult {
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
+    setResultUuid(null);
     setError(null);
     setProgress(0);
     setStatusText("Enviando solicitação...");
