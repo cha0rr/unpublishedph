@@ -209,5 +209,15 @@ export function useGenerator(): GeneratorResult {
     setStatusText("");
   }, [stopProgressSimulation]);
 
-  return { state, resultUrl, error, progress, statusText, generate, reset };
+  const setSuccessState = useCallback((url: string) => {
+    cancelledRef.current = true;
+    stopProgressSimulation();
+    setState("success");
+    setResultUrl(url);
+    setError(null);
+    setProgress(100);
+    setStatusText("Vídeo pronto!");
+  }, [stopProgressSimulation]);
+
+  return { state, resultUrl, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
 }
