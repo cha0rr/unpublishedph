@@ -214,11 +214,12 @@ export function useGenerator(): GeneratorResult {
     setStatusText("");
   }, [stopProgressSimulation]);
 
-  const setSuccessState = useCallback((url: string) => {
+  const setSuccessState = useCallback((url: string, uuid?: string) => {
     cancelledRef.current = true;
     stopProgressSimulation();
     setState("success");
     setResultUrl(url);
+    if (uuid) setResultUuid(uuid);
     setError(null);
     setProgress(100);
     setStatusText("Vídeo pronto!");

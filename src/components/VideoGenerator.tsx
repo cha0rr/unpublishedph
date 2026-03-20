@@ -274,8 +274,8 @@ export function VideoGenerator() {
             aspectRatio={aspectRatio}
             resolution={resolution}
             model={model}
-            onExtended={(newUrl) => {
-              setSuccessState(newUrl);
+            onExtended={(newUrl, newUuid) => {
+              setSuccessState(newUrl, newUuid);
             }}
           />
         </div>
