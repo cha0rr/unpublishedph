@@ -8,6 +8,17 @@ const corsHeaders = {
 const RATE_LIMIT_PER_HOUR = 10;
 const MAX_PROMPT_LENGTH = 2000;
 
+async function authenticateUser(authHeader: string) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error } = await userClient.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,16 +33,59 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- PROXY MODE: GET request with ?action=proxy&url=... ---
+    const url = new URL(req.url);
+    if (req.method === 'GET' && url.searchParams.get('action') === 'proxy') {
+      const user = await authenticateUser(authHeader);
+      if (!user) {
+        return new Response(JSON.stringify({ error: 'Token inválido.' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const videoUrl = url.searchParams.get('url');
+      if (!videoUrl) {
+        return new Response(JSON.stringify({ error: 'url é obrigatório.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Proxy: downloading video', videoUrl.substring(0, 80));
+      const videoRes = await fetch(videoUrl);
+      if (!videoRes.ok) {
+        return new Response(JSON.stringify({ error: `Falha ao baixar vídeo: ${videoRes.status}` }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const videoBody = await videoRes.arrayBuffer();
+      console.log('Proxy: video downloaded, size:', videoBody.byteLength);
+      return new Response(videoBody, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': videoRes.headers.get('Content-Type') || 'video/mp4',
+          'Content-Length': String(videoBody.byteLength),
+        },
+      });
+    }
+
+    // --- EXTEND MODE: POST with FormData (ref_images = last frame image) ---
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
+    const user = await authenticateUser(authHeader);
+    if (!user) {
       return new Response(JSON.stringify({ success: false, error: 'Token inválido.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -78,12 +132,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Parse JSON body ---
-    const body = await req.json();
-    const { prompt, videoUrl, aspectRatio = '16:9', resolution = '720p', model = 'veo-3.1-fast' } = body;
+    // Parse FormData with the last frame image
+    const formData = await req.formData();
+    const prompt = formData.get('prompt') as string;
+    const refImage = formData.get('ref_images') as File;
+    const aspectRatio = (formData.get('aspectRatio') as string) || '16:9';
+    const resolution = (formData.get('resolution') as string) || '720p';
+    const model = (formData.get('model') as string) || 'veo-3.1-fast';
 
-    if (!prompt || !videoUrl) {
-      return new Response(JSON.stringify({ success: false, error: 'prompt e videoUrl são obrigatórios.' }), {
+    if (!prompt || !refImage) {
+      return new Response(JSON.stringify({ success: false, error: 'prompt e ref_images são obrigatórios.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -99,19 +157,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Download the source video server-side (no CORS issues) ---
-    console.log('Downloading source video:', videoUrl.substring(0, 100));
-    const videoResponse = await fetch(videoUrl);
-    if (!videoResponse.ok) {
-      return new Response(JSON.stringify({ success: false, error: `Falha ao baixar vídeo fonte: HTTP ${videoResponse.status}` }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const videoBlob = await videoResponse.blob();
-    console.log('Video downloaded, size:', videoBlob.size);
-
-    // --- Build FormData for GeminiGen API using mode_image: "frame" with the video file ---
+    // Build FormData for GeminiGen API - use mode_image: "frame" with the image
     const outForm = new FormData();
     outForm.append('prompt', sanitizedPrompt);
     outForm.append('resolution', resolution);
@@ -119,15 +165,15 @@ Deno.serve(async (req) => {
     outForm.append('model', model);
     outForm.append('watermark', 'false');
     outForm.append('mode_image', 'frame');
-    // Send the video as a file reference - the API will extract the last frame
-    outForm.append('files', videoBlob, 'source_video.mp4');
+    outForm.append('files', refImage, 'last_frame.png');
 
-    console.log('GeminiGen extend (frame mode) request:', {
+    console.log('GeminiGen extend request:', {
       prompt: sanitizedPrompt.substring(0, 50),
       model,
       aspectRatio,
       resolution,
-      videoSize: videoBlob.size,
+      imageSize: refImage.size,
+      imageType: refImage.type,
       mode_image: 'frame',
     });
 
@@ -141,7 +187,6 @@ Deno.serve(async (req) => {
     console.log('GeminiGen extend raw response:', rawText.substring(0, 2000));
     let data: any;
     try { data = JSON.parse(rawText); } catch { data = { raw: rawText.substring(0, 500) }; }
-    console.log('GeminiGen extend response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
 
     const generationUuid = data.uuid;
     const userEmail = user.email as string;
@@ -164,10 +209,9 @@ Deno.serve(async (req) => {
         aspect_ratio: aspectRatio,
         mode_image: 'frame',
         model,
-        source_video_url: videoUrl,
       },
       response_payload: data,
-      error_message: response.ok ? null : (data.error || data.message || null),
+      error_message: response.ok ? null : (data.error || data.message || data?.detail?.error_message || null),
     });
 
     return new Response(JSON.stringify({ success: response.ok, uuid: generationUuid || null, status: response.status }), {
