@@ -198,7 +198,7 @@ export function ExtendVideoDialog({
     }
   }, [prompt, videoUrl, videoUuid, pollHistory, stopProgress, onExtended, onOpenChange]);
 
-  const isLoading = state === "generating" || state === "polling" || state === "concatenating";
+  const isLoading = state === "generating" || state === "polling";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!isLoading) onOpenChange(v); }}>
