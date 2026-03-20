@@ -8,22 +8,6 @@ const corsHeaders = {
 const RATE_LIMIT_PER_HOUR = 10;
 const MAX_PROMPT_LENGTH = 2000;
 
-const ALLOWED_PROXY_HOSTS = [
-  'api.geminigen.ai',
-  'cdn.geminigen.ai',
-  'storage.geminigen.ai',
-  'r2.geminigen.ai',
-  'pub-',
-];
-
-function isAllowedProxyUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return ALLOWED_PROXY_HOSTS.some((h) => parsed.hostname.includes(h) || parsed.hostname.startsWith(h));
-  } catch {
-    return false;
-  }
-}
 
 async function authenticateUser(authHeader: string) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
