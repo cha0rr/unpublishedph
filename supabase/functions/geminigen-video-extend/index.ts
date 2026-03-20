@@ -8,22 +8,6 @@ const corsHeaders = {
 const RATE_LIMIT_PER_HOUR = 10;
 const MAX_PROMPT_LENGTH = 2000;
 
-const ALLOWED_PROXY_HOSTS = [
-  'api.geminigen.ai',
-  'cdn.geminigen.ai',
-  'storage.geminigen.ai',
-  'r2.geminigen.ai',
-  'pub-',
-];
-
-function isAllowedProxyUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return ALLOWED_PROXY_HOSTS.some((h) => parsed.hostname.includes(h) || parsed.hostname.startsWith(h));
-  } catch {
-    return false;
-  }
-}
 
 async function authenticateUser(authHeader: string) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -41,70 +25,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // --- GET: Proxy for downloading media (avoids CORS) ---
-  if (req.method === 'GET') {
-    const url = new URL(req.url);
-    const targetUrl = url.searchParams.get('url');
-
-    if (!targetUrl) {
-      return new Response(JSON.stringify({ error: 'Missing url param' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!isAllowedProxyUrl(targetUrl)) {
-      return new Response(JSON.stringify({ error: 'URL not allowed' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Authenticate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const user = await authenticateUser(authHeader);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Token inválido.' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    try {
-      const mediaRes = await fetch(targetUrl);
-      if (!mediaRes.ok) {
-        return new Response(JSON.stringify({ error: `Upstream ${mediaRes.status}` }), {
-          status: mediaRes.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const contentType = mediaRes.headers.get('Content-Type') || 'application/octet-stream';
-      const body = await mediaRes.arrayBuffer();
-
-      return new Response(body, {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=3600',
-        },
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: 'Proxy fetch failed' }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-  }
-
-  // --- POST: Video extend ---
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,

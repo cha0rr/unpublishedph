@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Sparkles, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { concatVideos } from "@/lib/videoConcat";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -28,7 +27,7 @@ interface ExtendVideoDialogProps {
   onExtended: (newVideoUrl: string, newUuid: string) => void;
 }
 
-type ExtendState = "idle" | "generating" | "polling" | "concatenating" | "success" | "error";
+type ExtendState = "idle" | "generating" | "polling" | "success" | "error";
 
 function getSimulatedProgress(elapsedMs: number): number {
   const totalEstimate = 50000;
@@ -185,25 +184,10 @@ export function ExtendVideoDialog({
       if (cancelledRef.current) return;
       if (!extensionUrl) throw new Error("URL do resultado não encontrada.");
 
-      // Concatenate original + extension
-      setState("concatenating");
-      setProgress(0);
-      setStatusText("Concatenando vídeos...");
-
-      const concatenatedBlob = await concatVideos(
-        videoUrl,
-        extensionUrl,
-        accessToken,
-        (msg) => setStatusText(msg)
-      );
-
-      if (cancelledRef.current) return;
-
-      const blobUrl = URL.createObjectURL(concatenatedBlob);
       setProgress(100);
       setState("success");
       setStatusText("Vídeo estendido pronto!");
-      onExtended(blobUrl, newUuid);
+      onExtended(extensionUrl, newUuid);
       setTimeout(() => onOpenChange(false), 800);
     } catch (err: any) {
       stopProgress();
@@ -214,7 +198,7 @@ export function ExtendVideoDialog({
     }
   }, [prompt, videoUrl, videoUuid, pollHistory, stopProgress, onExtended, onOpenChange]);
 
-  const isLoading = state === "generating" || state === "polling" || state === "concatenating";
+  const isLoading = state === "generating" || state === "polling";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!isLoading) onOpenChange(v); }}>
@@ -282,7 +266,7 @@ export function ExtendVideoDialog({
             className="w-full h-10 rounded-lg bg-gradient-to-r from-primary/80 to-primary text-primary-foreground hover:from-primary hover:to-primary/90 shadow-[0_0_15px_hsl(196_89%_61%/0.3)]"
           >
             {isLoading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> {state === "concatenating" ? "Concatenando..." : "Gerando continuação..."}</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Gerando continuação...</>
             ) : (
               <><Sparkles className="h-4 w-4" /> Gerar continuação</>
             )}
