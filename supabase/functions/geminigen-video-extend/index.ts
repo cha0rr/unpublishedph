@@ -78,16 +78,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- Parse FormData (contains last frame image) ---
-    const formData = await req.formData();
-    const prompt = formData.get('prompt') as string;
-    const refImage = formData.get('ref_images') as File;
-    const aspectRatio = (formData.get('aspectRatio') as string) || '16:9';
-    const resolution = (formData.get('resolution') as string) || '720p';
-    const model = (formData.get('model') as string) || 'veo-3.1-fast';
+    // --- Parse JSON body ---
+    const body = await req.json();
+    const { prompt, videoUrl, aspectRatio = '16:9', resolution = '720p', model = 'veo-3.1-fast' } = body;
 
-    if (!prompt || !refImage) {
-      return new Response(JSON.stringify({ success: false, error: 'prompt e ref_images são obrigatórios.' }), {
+    if (!prompt || !videoUrl) {
+      return new Response(JSON.stringify({ success: false, error: 'prompt e videoUrl são obrigatórios.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -103,7 +99,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Build FormData for GeminiGen API using mode_image: "frame" ---
+    // --- Download the source video server-side (no CORS issues) ---
+    console.log('Downloading source video:', videoUrl.substring(0, 100));
+    const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      return new Response(JSON.stringify({ success: false, error: `Falha ao baixar vídeo fonte: HTTP ${videoResponse.status}` }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const videoBlob = await videoResponse.blob();
+    console.log('Video downloaded, size:', videoBlob.size);
+
+    // --- Build FormData for GeminiGen API using mode_image: "frame" with the video file ---
     const outForm = new FormData();
     outForm.append('prompt', sanitizedPrompt);
     outForm.append('resolution', resolution);
@@ -111,14 +119,15 @@ Deno.serve(async (req) => {
     outForm.append('model', model);
     outForm.append('watermark', 'false');
     outForm.append('mode_image', 'frame');
-    outForm.append('ref_images', refImage, 'last_frame.png');
+    // Send the video as a file reference - the API will extract the last frame
+    outForm.append('files', videoBlob, 'source_video.mp4');
 
     console.log('GeminiGen extend (frame mode) request:', {
       prompt: sanitizedPrompt.substring(0, 50),
       model,
       aspectRatio,
       resolution,
-      imageSize: refImage.size,
+      videoSize: videoBlob.size,
       mode_image: 'frame',
     });
 
@@ -155,6 +164,7 @@ Deno.serve(async (req) => {
         aspect_ratio: aspectRatio,
         mode_image: 'frame',
         model,
+        source_video_url: videoUrl,
       },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
