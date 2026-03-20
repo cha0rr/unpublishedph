@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
         prompt: sanitizedPrompt,
         resolution: finalResolution,
         aspect_ratio: finalAspectRatio,
-        mode_image: 'extend',
+        mode_video: 'extend',
         model: finalModel,
         source_video_url: sourceVideoUrl,
       },
