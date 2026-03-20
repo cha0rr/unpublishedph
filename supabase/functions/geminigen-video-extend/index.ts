@@ -121,8 +121,8 @@ Deno.serve(async (req) => {
     outForm.append('aspect_ratio', finalAspectRatio);
     outForm.append('model', finalModel);
     outForm.append('watermark', 'false');
-    outForm.append('mode_image', 'extend');
-    outForm.append('ref_images', videoBlob, 'source_video.mp4');
+    outForm.append('mode_video', 'extend');
+    outForm.append('ref_video', videoBlob, 'source_video.mp4');
 
     console.log('GeminiGen extend request:', {
       prompt: sanitizedPrompt.substring(0, 50),
