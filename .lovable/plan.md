@@ -1,59 +1,49 @@
 
 
-## Plano: Funcionalidade Extend Video
+## Plano: Corrigir Extend Video - Usar Last Frame como Referência
 
-### Contexto
+### Problema Raiz
 
-O projeto usa a API GeminiGen (`api.geminigen.ai/uapi/v1/video-gen/veo`) para gerar vídeos. A API Veo 3.1 suporta "scene extension" passando o vídeo fonte como arquivo junto com um novo prompt. A GeminiGen provavelmente expõe isso via o mesmo endpoint com um parâmetro de vídeo ou um endpoint dedicado.
+A API GeminiGen (`api.geminigen.ai/uapi/v1/video-gen/veo`) **não reconhece** os parâmetros `mode_video: "extend"` e `ref_video`. Ela simplesmente ignorou esses campos e gerou um vídeo novo do zero, usando apenas o prompt.
 
-### Arquivos a criar/modificar
+Conforme a documentação oficial do GeminiGen no GitHub, o fluxo de "Extend Video" funciona selecionando o **último frame** do vídeo gerado e usando-o como referência de imagem com `mode_image: "frame"`.
 
-**1. Nova Edge Function `supabase/functions/geminigen-video-extend/index.ts`**
-- Recebe JSON com: `prompt`, `sourceVideoUrl`, `aspectRatio`, `resolution`
-- Faz download do vídeo fonte via URL
-- Envia para a API GeminiGen com o vídeo como arquivo (`ref_images` ou campo `video`) + prompt + `mode_image: "extend"` (ou parâmetro equivalente)
-- Inclui autenticação, verificação de plano/role, rate limiting (mesma lógica das outras Edge Functions)
-- Retorna `{ success, uuid, status }`
+### Solução
 
-**2. Novo componente `src/components/ExtendVideoDialog.tsx`**
-- Modal premium com visual coerente (bordas border/50, backdrop-blur, gradiente azul/ciano)
-- Conteúdo:
-  - Preview do vídeo atual (player compacto)
-  - Título "Continuar este vídeo"
-  - Descrição "Descreva a continuação do vídeo gerado"
-  - Textarea para novo prompt (max 2000 chars)
-  - Aspect ratio e qualidade (resolution) exibidos como badges readonly
-  - Botão "Gerar continuação" com gradiente primary
-- Estados internos:
-  - Loading com texto "Gerando continuação..." + spinner + progress bar
-  - Erro com mensagem amigável
-- Ao concluir: chama callback `onExtended(newVideoUrl)` e fecha o modal
+Extrair o último frame do vídeo no **client-side** (via canvas) e enviá-lo como imagem de referência com `mode_image: "frame"`.
 
-**3. Modificar `src/components/VideoGenerator.tsx`**
-- Na seção de resultado (state === "success"), adicionar botão "Estender Vídeo" ao lado de Download e Novo Vídeo
-- Manter estado `currentVideo` com `{ videoUrl, aspectRatio, resolution, prompt }`
-- Quando extend concluir: substituir `resultUrl` pelo novo vídeo, atualizar prompt
-- O vídeo estendido pode ser estendido novamente (loop)
+### Alterações
 
-**4. Atualizar `supabase/config.toml`**
-- Registrar `[functions.geminigen-video-extend]` com `verify_jwt = false`
+**1. `src/components/ExtendVideoDialog.tsx`**
+- Antes de enviar a requisição, extrair o último frame do vídeo usando um elemento `<video>` + `<canvas>`
+- A função `extractLastFrame()` vai:
+  - Criar um video element, definir `currentTime` para a duração total
+  - Capturar o frame via `canvas.toBlob()`
+  - Retornar um `File` com a imagem do último frame
+- Enviar o frame como `FormData` (não mais JSON) para a edge function, com o campo `ref_images`
 
-### Fluxo
+**2. `supabase/functions/geminigen-video-extend/index.ts`**
+- Mudar de `req.json()` para `req.formData()`
+- Remover o download do vídeo fonte (não é mais necessário)
+- Usar `mode_image: "frame"` em vez de `mode_video: "extend"`
+- Enviar a imagem do último frame como `ref_images` (campo que a API já reconhece)
+- Remover `ref_video` completamente
+
+### Fluxo Corrigido
 
 ```text
-Vídeo gerado → Clica "Estender Vídeo" → Modal abre
-  → Preview do vídeo + textarea + configs readonly
-  → Clica "Gerar continuação"
-  → Edge Function baixa vídeo, envia para GeminiGen com novo prompt
-  → Poll via geminigen-history (reutiliza useGenerator existente)
-  → Novo vídeo substitui o atual
-  → Pronto para novo extend
+Vídeo gerado → Clica "Estender Vídeo"
+  → Client extrai último frame via canvas
+  → Envia FormData: prompt + lastFrame (imagem) + aspect_ratio + resolution + model
+  → Edge Function recebe FormData
+  → Monta request para GeminiGen com mode_image="frame" + ref_images=[lastFrame]
+  → API reconhece o frame e gera continuação visual coerente
+  → Poll via geminigen-history → novo vídeo substitui o atual
 ```
 
-### Detalhes técnicos
+### Detalhes Técnicos
 
-- A Edge Function faz `fetch(sourceVideoUrl)` para obter o vídeo como blob, depois monta FormData com o arquivo + prompt + aspect_ratio + resolution + model
-- O polling reutiliza a mesma Edge Function `geminigen-history` já existente
-- O `ExtendVideoDialog` terá seu próprio hook de estado para geração (similar a useGenerator mas simplificado, ou reutiliza useGenerator com params diferentes)
-- Ícone: `FastForward` ou `ArrowRightFromLine` do lucide-react
+- A extração do frame usa `HTMLVideoElement.currentTime = video.duration` seguido de `canvas.drawImage()` e `canvas.toBlob('image/png')`
+- O vídeo precisa ter CORS habilitado (`crossOrigin = "anonymous"`) para a extração funcionar - se falhar por CORS, o frame será enviado via proxy na edge function como fallback
+- O campo `ref_images` com `mode_image: "frame"` já é um padrão funcional usado no `geminigen-video-frame` existente
 
