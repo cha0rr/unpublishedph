@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
+import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
 import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward } from "lucide-react";
 type ModeImage = "none" | "ingredient";
 
