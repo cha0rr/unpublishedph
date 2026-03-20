@@ -26,12 +26,65 @@ interface ExtendVideoDialogProps {
   onExtended: (newVideoUrl: string) => void;
 }
 
-type ExtendState = "idle" | "generating" | "polling" | "success" | "error";
+type ExtendState = "idle" | "extracting" | "generating" | "polling" | "success" | "error";
 
 function getSimulatedProgress(elapsedMs: number): number {
   const totalEstimate = 50000;
   const ratio = elapsedMs / totalEstimate;
   return Math.max(1, Math.min(95, Math.round(100 * (1 - Math.exp(-2.5 * ratio)))));
+}
+
+async function extractLastFrame(videoUrl: string): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "auto";
+    video.muted = true;
+    video.src = videoUrl;
+
+    const timeout = setTimeout(() => {
+      reject(new Error("Timeout ao extrair frame do vídeo."));
+    }, 15000);
+
+    video.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error("Erro ao carregar vídeo para extração de frame."));
+    };
+
+    video.onloadedmetadata = () => {
+      // Seek to last frame (duration - small offset)
+      video.currentTime = Math.max(0, video.duration - 0.05);
+    };
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          clearTimeout(timeout);
+          reject(new Error("Não foi possível criar contexto canvas."));
+          return;
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            clearTimeout(timeout);
+            if (blob) {
+              resolve(new File([blob], "last_frame.png", { type: "image/png" }));
+            } else {
+              reject(new Error("Falha ao converter canvas para blob."));
+            }
+          },
+          "image/png"
+        );
+      } catch (err) {
+        clearTimeout(timeout);
+        reject(new Error("Erro ao capturar frame: possível restrição CORS."));
+      }
+    };
+  });
 }
 
 export function ExtendVideoDialog({
@@ -66,7 +119,6 @@ export function ExtendVideoDialog({
     };
   }, [stopProgress]);
 
-  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
       setPrompt("");
@@ -138,30 +190,39 @@ export function ExtendVideoDialog({
   const handleExtend = useCallback(async () => {
     if (!prompt.trim()) return;
     cancelledRef.current = false;
-    setState("generating");
+    setState("extracting");
     setError(null);
     setProgress(0);
-    setStatusText("Enviando solicitação de extensão...");
+    setStatusText("Extraindo último frame do vídeo...");
 
     try {
+      // Step 1: Extract last frame
+      const lastFrame = await extractLastFrame(videoUrl);
+      if (cancelledRef.current) return;
+
+      setState("generating");
+      setStatusText("Enviando solicitação de extensão...");
+
+      // Step 2: Get auth token
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
+      // Step 3: Build FormData with last frame
+      const formData = new FormData();
+      formData.append("prompt", prompt.trim());
+      formData.append("ref_images", lastFrame);
+      formData.append("aspectRatio", aspectRatio);
+      formData.append("resolution", resolution);
+      formData.append("model", model);
+
       const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-video-extend`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          sourceVideoUrl: videoUrl,
-          aspectRatio,
-          resolution,
-          model,
-        }),
+        body: formData,
       });
 
       const data = await res.json();
@@ -203,7 +264,7 @@ export function ExtendVideoDialog({
     }
   }, [prompt, videoUrl, aspectRatio, resolution, model, pollHistory, stopProgress, onExtended, onOpenChange]);
 
-  const isLoading = state === "generating" || state === "polling";
+  const isLoading = state === "extracting" || state === "generating" || state === "polling";
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!isLoading) onOpenChange(v); }}>
@@ -219,12 +280,10 @@ export function ExtendVideoDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Video preview */}
           <div className={`overflow-hidden rounded-xl border border-border/30 bg-muted/20 ${aspectRatio === "9:16" ? "aspect-[9/16] max-w-[200px] mx-auto" : "aspect-video"}`}>
-            <video src={videoUrl} className="h-full w-full object-cover" muted loop autoPlay playsInline />
+            <video src={videoUrl} className="h-full w-full object-cover" muted loop autoPlay playsInline crossOrigin="anonymous" />
           </div>
 
-          {/* Readonly settings */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="border-primary/30 text-primary text-xs">
               {aspectRatio}
@@ -237,7 +296,6 @@ export function ExtendVideoDialog({
             </Badge>
           </div>
 
-          {/* Prompt input */}
           <div className="space-y-1.5">
             <Textarea
               placeholder="Descreva como o vídeo deve continuar..."
@@ -252,7 +310,6 @@ export function ExtendVideoDialog({
             </p>
           </div>
 
-          {/* Progress */}
           {isLoading && statusText && (
             <div className="space-y-2 rounded-lg border border-border/30 bg-muted/10 p-3">
               <div className="flex items-center gap-2">
@@ -263,14 +320,12 @@ export function ExtendVideoDialog({
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
-          {/* Action button */}
           <Button
             onClick={handleExtend}
             disabled={!prompt.trim() || isLoading}

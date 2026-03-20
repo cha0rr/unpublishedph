@@ -71,28 +71,29 @@ Deno.serve(async (req) => {
         .gte('created_at', oneHourAgo);
 
       if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) {
-        return new Response(JSON.stringify({ success: false, error: `Limite de ${RATE_LIMIT_PER_HOUR} gerações por hora atingido. Aguarde alguns minutos.` }), {
+        return new Response(JSON.stringify({ success: false, error: `Limite de ${RATE_LIMIT_PER_HOUR} gerações por hora atingido.` }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     }
 
-    // --- Parse JSON body ---
-    const body = await req.json();
-    const { prompt, sourceVideoUrl, aspectRatio, resolution, model } = body;
+    // --- Parse FormData (contains last frame image) ---
+    const formData = await req.formData();
+    const prompt = formData.get('prompt') as string;
+    const refImage = formData.get('ref_images') as File;
+    const aspectRatio = (formData.get('aspectRatio') as string) || '16:9';
+    const resolution = (formData.get('resolution') as string) || '720p';
+    const model = (formData.get('model') as string) || 'veo-3.1-fast';
 
-    if (!prompt || !sourceVideoUrl) {
-      return new Response(JSON.stringify({ success: false, error: 'prompt e sourceVideoUrl são obrigatórios.' }), {
+    if (!prompt || !refImage) {
+      return new Response(JSON.stringify({ success: false, error: 'prompt e ref_images são obrigatórios.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const sanitizedPrompt = (prompt as string).substring(0, MAX_PROMPT_LENGTH).trim();
-    const finalResolution = resolution || '720p';
-    const finalAspectRatio = aspectRatio || '16:9';
-    const finalModel = model || 'veo-3.1-fast';
+    const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_LENGTH).trim();
 
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
@@ -102,34 +103,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Download source video ---
-    console.log('Downloading source video...');
-    const videoResponse = await fetch(sourceVideoUrl);
-    if (!videoResponse.ok) {
-      return new Response(JSON.stringify({ success: false, error: 'Falha ao baixar o vídeo fonte.' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const videoBlob = await videoResponse.blob();
-    console.log(`Source video downloaded: ${videoBlob.size} bytes`);
-
-    // --- Build FormData for GeminiGen API ---
+    // --- Build FormData for GeminiGen API using mode_image: "frame" ---
     const outForm = new FormData();
     outForm.append('prompt', sanitizedPrompt);
-    outForm.append('resolution', finalResolution);
-    outForm.append('aspect_ratio', finalAspectRatio);
-    outForm.append('model', finalModel);
+    outForm.append('resolution', resolution);
+    outForm.append('aspect_ratio', aspectRatio);
+    outForm.append('model', model);
     outForm.append('watermark', 'false');
-    outForm.append('mode_video', 'extend');
-    outForm.append('ref_video', videoBlob, 'source_video.mp4');
+    outForm.append('mode_image', 'frame');
+    outForm.append('ref_images', refImage, 'last_frame.png');
 
-    console.log('GeminiGen extend request:', {
+    console.log('GeminiGen extend (frame mode) request:', {
       prompt: sanitizedPrompt.substring(0, 50),
-      model: finalModel,
-      aspectRatio: finalAspectRatio,
-      resolution: finalResolution,
-      videoSize: videoBlob.size,
+      model,
+      aspectRatio,
+      resolution,
+      imageSize: refImage.size,
+      mode_image: 'frame',
     });
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
@@ -153,19 +143,18 @@ Deno.serve(async (req) => {
       email: userEmail,
       role: userRole,
       plan: profile?.plan || null,
-      model: finalModel,
+      model,
       prompt: `[EXTEND] ${sanitizedPrompt}`,
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
-      aspect_ratio: finalAspectRatio,
-      resolution: finalResolution,
+      aspect_ratio: aspectRatio,
+      resolution,
       request_payload: {
         prompt: sanitizedPrompt,
-        resolution: finalResolution,
-        aspect_ratio: finalAspectRatio,
-        mode_video: 'extend',
-        model: finalModel,
-        source_video_url: sourceVideoUrl,
+        resolution,
+        aspect_ratio: aspectRatio,
+        mode_image: 'frame',
+        model,
       },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
