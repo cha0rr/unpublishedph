@@ -63,7 +63,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("register", {
-        body: { ...form, payment_method: "" },
+        body: form,
       });
 
       if (fnError) throw new Error(fnError.message);
