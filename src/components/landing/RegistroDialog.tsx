@@ -28,14 +28,12 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
     password: "",
     whatsapp: "",
     usage_type: "",
-    payment_method: "",
     plan: selectedPlan,
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  // Sync plan when dialog opens with a different plan
   useState(() => {
     setForm((prev) => ({ ...prev, plan: selectedPlan }));
   });
@@ -52,8 +50,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
       `*Email:* ${form.email}\n` +
       `*WhatsApp:* ${form.whatsapp}\n` +
       `*Plano:* ${planLabel}\n` +
-      `*Tipo de uso:* ${form.usage_type}\n` +
-      `*Pagamento:* ${form.payment_method}`
+      `*Tipo de uso:* ${form.usage_type}`
     );
   };
 
@@ -64,32 +61,17 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("register", {
-        body: form,
+        body: { ...form, payment_method: "" },
       });
 
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Erro ao registrar.");
 
-      const userId = data.userId;
+      setSuccess(true);
 
-      const { data: mpData, error: mpError } = await supabase.functions.invoke("mercadopago-create-preference", {
-        body: {
-          userId,
-          plan: form.plan,
-          email: form.email,
-          origin: window.location.origin,
-        },
-      });
-
-      if (mpError) throw new Error(mpError.message);
-      if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
-
-      const checkoutUrl = mpData.init_point;
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      } else {
-        throw new Error("URL de checkout não disponível.");
-      }
+      // Open WhatsApp with the registration summary
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage()}`;
+      window.open(whatsappUrl, "_blank");
     } catch (err: any) {
       setError(err.message || "Erro inesperado.");
     } finally {
@@ -99,7 +81,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
 
   const handleClose = (value: boolean) => {
     if (!value) {
-      // Reset state when closing
       setSuccess(false);
       setError("");
       setForm({
@@ -108,7 +89,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
         password: "",
         whatsapp: "",
         usage_type: "",
-        payment_method: "",
         plan: selectedPlan,
       });
     }
@@ -121,9 +101,9 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
         {success ? (
           <div className="text-center py-4">
             <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Redirecionando para pagamento...</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Solicitação enviada!</h2>
             <p className="text-muted-foreground mb-6">
-              Você será redirecionado para o Mercado Pago para concluir o pagamento.
+              Sua conta foi criada e está pendente de aprovação pelo administrador. Você receberá uma confirmação em breve.
             </p>
             <Button variant="outline" onClick={() => handleClose(false)} className="border-border text-foreground">
               Fechar
@@ -139,7 +119,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Plan */}
               <div className="space-y-2">
                 <Label className="text-foreground">Plano</Label>
                 <Select value={form.plan} onValueChange={(v) => handleChange("plan", v)}>
@@ -153,7 +132,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 </Select>
               </div>
 
-              {/* Full Name */}
               <div className="space-y-2">
                 <Label className="text-foreground">Nome completo *</Label>
                 <Input
@@ -165,7 +143,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 />
               </div>
 
-              {/* Email */}
               <div className="space-y-2">
                 <Label className="text-foreground">Email *</Label>
                 <Input
@@ -178,7 +155,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 />
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <Label className="text-foreground">Senha *</Label>
                 <Input
@@ -192,7 +168,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 />
               </div>
 
-              {/* WhatsApp */}
               <div className="space-y-2">
                 <Label className="text-foreground">WhatsApp *</Label>
                 <Input
@@ -204,7 +179,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 />
               </div>
 
-              {/* Usage Type */}
               <div className="space-y-2">
                 <Label className="text-foreground">Tipo de uso</Label>
                 <Textarea
@@ -214,8 +188,6 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                   className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground min-h-[80px] resize-none"
                 />
               </div>
-
-              {/* Payment is handled by Mercado Pago */}
 
               {error && (
                 <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
