@@ -192,6 +192,19 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label className="text-foreground">Forma de pagamento *</Label>
+                <Select value={form.payment_method} onValueChange={(v) => handleChange("payment_method", v)}>
+                  <SelectTrigger className="bg-muted/30 border-border text-foreground">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="cartao">Cartão</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {error && (
                 <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
                   <p className="text-sm text-destructive">{error}</p>
