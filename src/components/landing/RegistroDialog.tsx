@@ -28,6 +28,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
     password: "",
     whatsapp: "",
     usage_type: "",
+    payment_method: "",
     plan: selectedPlan,
   });
   const [loading, setLoading] = useState(false);
