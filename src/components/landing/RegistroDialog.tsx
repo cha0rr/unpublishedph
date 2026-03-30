@@ -28,6 +28,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
     password: "",
     whatsapp: "",
     usage_type: "",
+    payment_method: "",
     plan: selectedPlan,
   });
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,8 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
       `*Email:* ${form.email}\n` +
       `*WhatsApp:* ${form.whatsapp}\n` +
       `*Plano:* ${planLabel}\n` +
-      `*Tipo de uso:* ${form.usage_type}`
+      `*Tipo de uso:* ${form.usage_type}\n` +
+      `*Pagamento:* ${form.payment_method}`
     );
   };
 
@@ -61,7 +63,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("register", {
-        body: { ...form, payment_method: "" },
+        body: form,
       });
 
       if (fnError) throw new Error(fnError.message);
@@ -89,6 +91,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
         password: "",
         whatsapp: "",
         usage_type: "",
+        payment_method: "",
         plan: selectedPlan,
       });
     }
@@ -187,6 +190,19 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                   placeholder="Ex: Marketing, redes sociais, conteúdo para clientes..."
                   className="bg-muted/30 border-border text-foreground placeholder:text-muted-foreground min-h-[80px] resize-none"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-foreground">Forma de pagamento *</Label>
+                <Select value={form.payment_method} onValueChange={(v) => handleChange("payment_method", v)}>
+                  <SelectTrigger className="bg-muted/30 border-border text-foreground">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="cartao">Cartão</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {error && (
