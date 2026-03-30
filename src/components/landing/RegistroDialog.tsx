@@ -51,7 +51,8 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
       `*Email:* ${form.email}\n` +
       `*WhatsApp:* ${form.whatsapp}\n` +
       `*Plano:* ${planLabel}\n` +
-      `*Tipo de uso:* ${form.usage_type}`
+      `*Tipo de uso:* ${form.usage_type}\n` +
+      `*Pagamento:* ${form.payment_method}`
     );
   };
 
