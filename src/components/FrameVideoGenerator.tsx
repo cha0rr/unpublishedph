@@ -8,7 +8,6 @@ import { Sparkles, Loader2, RotateCcw, Upload, X, Cpu } from "lucide-react";
 
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
-  { value: "veo-3.1", label: "Veo 3.1" },
   { value: "veo-3.1-fast", label: "Veo 3.1 Fast" },
 ];
 
