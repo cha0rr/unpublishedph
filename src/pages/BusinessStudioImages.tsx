@@ -136,11 +136,6 @@ export default function BusinessStudioImages() {
     setReferenceFiles(prev => [...prev, { file: null, preview: resultUrl }]);
   };
 
-  const cleanupUpload = async (path: string) => {
-    try {
-      await supabase.storage.from("image-references").remove([path]);
-    } catch {}
-  };
 
   const handleGenerate = async () => {
     if (!prompt.trim() || isProcessing) return;
