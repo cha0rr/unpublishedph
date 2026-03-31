@@ -367,10 +367,15 @@ export default function BusinessStudioImages() {
               {/* Generate Button */}
               <Button
                 onClick={handleGenerate}
-                disabled={!prompt.trim() || isProcessing}
+                disabled={!prompt.trim() || isProcessing || uploading}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
               >
-                {isProcessing ? (
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Enviando referência...
+                  </>
+                ) : isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Gerando...
