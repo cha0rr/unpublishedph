@@ -1,37 +1,34 @@
 
 
-## Plano: Upload de imagem de referência no Studio Imagens
+## Plano: Múltiplas imagens de referência com labels
 
 ### Problema
-O `BusinessStudioImages.tsx` ainda usa campos de texto para URLs de referência e UUID de referência. Precisa ser substituído por upload de arquivo local, igual ao `ImageGenerator.tsx`.
-
-### Abordagem
-Reutilizar o mesmo padrão do `ImageGenerator.tsx`: upload para o bucket `image-references` (já existe), obter URL pública, enviar como `file_urls`. Após a geração completar (sucesso ou erro), deletar o arquivo do bucket automaticamente para não acumular.
+Atualmente o Studio Imagens aceita apenas 1 imagem de referência. O usuário quer poder adicionar várias, cada uma rotulada como "Imagem 1", "Imagem 2", etc., para poder referenciá-las no prompt.
 
 ### Alterações
 
-**1. `src/pages/BusinessStudioImages.tsx`**
-- Remover estados `refHistory` e `fileUrlsText`
-- Remover os dois campos de UI correspondentes (input UUID e textarea URLs)
-- Adicionar estados `referenceFile`, `referencePreview`, `uploading` e ref `fileInputRef`
-- Adicionar área de upload com preview (mesmo padrão do ImageGenerator)
-- No `handleGenerate`: fazer upload para `image-references/{userId}/{timestamp}.ext`, obter URL pública, enviar como `file_urls`
-- Após geração (sucesso/erro): deletar o arquivo do bucket via `supabase.storage.from('image-references').remove([path])`
-- Adicionar botão "Usar como referência" no resultado
+**`src/pages/BusinessStudioImages.tsx`**
 
-**2. `supabase/functions/geminigen-image/index.ts`**
-- Adicionar suporte ao parâmetro `files` da API: quando `file_urls` contém URLs, baixar os arquivos na edge function e reenviá-los como campo `files` no FormData (multipart), alinhando com a documentação da API
-- Manter também suporte a `file_urls` direto para compatibilidade
+1. **Trocar estados singulares por arrays**:
+   - `referenceFile: File | null` → `referenceFiles: { file: File | null; preview: string }[]`
+   - Cada entrada tem um `file` (null quando vem de URL do resultado) e `preview` (objectURL ou resultUrl)
 
-**3. Nenhuma edge function de limpeza necessária** -- o frontend deleta o arquivo do bucket após a geração finalizar
+2. **UI de referências**:
+   - Exibir grid de imagens adicionadas, cada uma com label "Imagem 1", "Imagem 2", etc. e botão X para remover individualmente
+   - Após a última imagem adicionada, sempre mostrar um botão "+" / área de upload para adicionar mais
+   - Dica no prompt: "Use [Imagem 1], [Imagem 2]... no prompt para referenciar"
 
-### Fluxo
-```text
-1. Usuário seleciona imagem local → preview aparece
-2. Digita prompt
-3. Clica "Gerar Imagem"
-4. Upload para bucket → URL pública → envio para API
-5. Geração completa → deleta arquivo do bucket
-6. Botão "Usar como referência" no resultado
-```
+3. **handleGenerate**:
+   - Fazer upload de todos os arquivos em sequência para o bucket `image-references`
+   - Coletar todas as URLs públicas em `file_urls: string[]`
+   - Após geração, limpar todos os uploads do bucket
+
+4. **"Usar como referência"**:
+   - Adiciona o resultUrl como nova entrada no array (em vez de substituir)
+
+### Mesma alteração no `src/components/ImageGenerator.tsx`
+- Aplicar o mesmo padrão de múltiplas referências para manter consistência entre Pro e Business
+
+### Nenhuma alteração na edge function
+- `file_urls` já aceita array com múltiplos elementos
 
