@@ -31,21 +31,21 @@ export function ImageGenerator() {
       alert("Selecione apenas arquivos de imagem.");
       return;
     }
-    setReferenceFile(file);
-    setReferencePreview(URL.createObjectURL(file));
+    setReferenceFiles(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const clearReference = () => {
-    setReferenceFile(null);
-    if (referencePreview) URL.revokeObjectURL(referencePreview);
-    setReferencePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const removeReference = (index: number) => {
+    setReferenceFiles(prev => {
+      const item = prev[index];
+      if (item.file) URL.revokeObjectURL(item.preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const useResultAsReference = () => {
     if (!resultUrl) return;
-    setReferenceFile(null);
-    setReferencePreview(resultUrl);
+    setReferenceFiles(prev => [...prev, { file: null, preview: resultUrl }]);
   };
 
   const handleGenerate = async () => {
