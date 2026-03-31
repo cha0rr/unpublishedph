@@ -1,40 +1,37 @@
 
 
-## Plano: Upload de imagem de referência na geração de imagens
+## Plano: Upload de imagem de referência no Studio Imagens
 
 ### Problema
-O usuário quer enviar uma imagem local como referência para a geração. A edge function já aceita `file_urls` (array de URLs), mas não há como fazer upload de arquivo local.
+O `BusinessStudioImages.tsx` ainda usa campos de texto para URLs de referência e UUID de referência. Precisa ser substituído por upload de arquivo local, igual ao `ImageGenerator.tsx`.
 
-### Solução
-Criar um bucket Supabase Storage para uploads temporários de referência. No frontend, o usuário seleciona um arquivo, faz upload para o bucket, obtém a URL pública e envia como `file_urls` na geração.
+### Abordagem
+Reutilizar o mesmo padrão do `ImageGenerator.tsx`: upload para o bucket `image-references` (já existe), obter URL pública, enviar como `file_urls`. Após a geração completar (sucesso ou erro), deletar o arquivo do bucket automaticamente para não acumular.
 
 ### Alterações
 
-**1. Migration -- Criar bucket `image-references` (público)**
-- Bucket público para que a API GeminiGen consiga acessar a URL
-- RLS: usuários autenticados podem fazer upload; leitura pública
+**1. `src/pages/BusinessStudioImages.tsx`**
+- Remover estados `refHistory` e `fileUrlsText`
+- Remover os dois campos de UI correspondentes (input UUID e textarea URLs)
+- Adicionar estados `referenceFile`, `referencePreview`, `uploading` e ref `fileInputRef`
+- Adicionar área de upload com preview (mesmo padrão do ImageGenerator)
+- No `handleGenerate`: fazer upload para `image-references/{userId}/{timestamp}.ext`, obter URL pública, enviar como `file_urls`
+- Após geração (sucesso/erro): deletar o arquivo do bucket via `supabase.storage.from('image-references').remove([path])`
+- Adicionar botão "Usar como referência" no resultado
 
-**2. `src/components/ImageGenerator.tsx`**
-- Adicionar estado `referenceFile` (File | null) e `referencePreview` (string para preview local)
-- Área de upload com `<input type="file" accept="image/*">` estilizada como drop zone
-- Preview da imagem selecionada com botão de remover (X)
-- No `handleGenerate`: fazer upload do arquivo para `image-references/{userId}/{timestamp}.ext` via Supabase Storage, obter URL pública, passar como `file_urls: [publicUrl]`
-- Botão "Usar como referência" no resultado (copia URL do resultado gerado para referência)
+**2. `supabase/functions/geminigen-image/index.ts`**
+- Adicionar suporte ao parâmetro `files` da API: quando `file_urls` contém URLs, baixar os arquivos na edge function e reenviá-los como campo `files` no FormData (multipart), alinhando com a documentação da API
+- Manter também suporte a `file_urls` direto para compatibilidade
 
-**3. Nenhuma alteração na edge function** -- já aceita `file_urls`
+**3. Nenhuma edge function de limpeza necessária** -- o frontend deleta o arquivo do bucket após a geração finalizar
 
 ### Fluxo
 ```text
 1. Usuário seleciona imagem local → preview aparece
-2. Digita prompt descrevendo o que quer
+2. Digita prompt
 3. Clica "Gerar Imagem"
-4. Upload do arquivo → obtém URL pública → envia para API
-5. Resultado aparece → botão "Usar como referência" disponível
+4. Upload para bucket → URL pública → envio para API
+5. Geração completa → deleta arquivo do bucket
+6. Botão "Usar como referência" no resultado
 ```
-
-### Detalhes técnicos
-- Upload via `supabase.storage.from('image-references').upload(path, file)`
-- URL pública via `supabase.storage.from('image-references').getPublicUrl(path)`
-- Aceitar apenas imagens (jpg, png, webp) até 5MB
-- Preview local via `URL.createObjectURL(file)`
 
