@@ -82,8 +82,11 @@ export default function BusinessStudioImages() {
   const [resolution, setResolution] = useState("auto");
   const [outputFormat, setOutputFormat] = useState("png");
   const [style, setStyle] = useState("auto");
-  const [refHistory, setRefHistory] = useState("");
-  const [fileUrlsText, setFileUrlsText] = useState("");
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && (!user || !hasAccess)) {
