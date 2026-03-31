@@ -53,33 +53,47 @@ export function ImageGenerator() {
     startCooldown();
 
     let fileUrls: string[] | undefined;
+    const uploadedPaths: string[] = [];
 
-    if (referenceFile) {
+    if (referenceFiles.length > 0) {
       setUploading(true);
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
         if (!userId) throw new Error("Usuário não autenticado.");
 
-        const ext = referenceFile.name.split(".").pop() || "png";
-        const path = `${userId}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("image-references").upload(path, referenceFile);
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
-        fileUrls = [urlData.publicUrl];
+        const urls: string[] = [];
+        for (const ref of referenceFiles) {
+          if (ref.file) {
+            const ext = ref.file.name.split(".").pop() || "png";
+            const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+            const { error: uploadError } = await supabase.storage.from("image-references").upload(path, ref.file);
+            if (uploadError) throw uploadError;
+            const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
+            urls.push(urlData.publicUrl);
+            uploadedPaths.push(path);
+          } else {
+            urls.push(ref.preview);
+          }
+        }
+        fileUrls = urls;
       } catch (err: any) {
         alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
         setUploading(false);
         return;
       }
       setUploading(false);
-    } else if (referencePreview && !referenceFile) {
-      // Using a URL directly (from previous result)
-      fileUrls = [referencePreview];
     }
 
-    generate({ prompt: prompt.trim(), model, file_urls: fileUrls });
+    try {
+      await generate({ prompt: prompt.trim(), model, file_urls: fileUrls });
+    } finally {
+      if (uploadedPaths.length > 0) {
+        try {
+          await supabase.storage.from("image-references").remove(uploadedPaths);
+        } catch {}
+      }
+    }
   };
 
   const isProcessing = state === "generating" || state === "polling";
