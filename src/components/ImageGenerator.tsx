@@ -126,13 +126,59 @@ export function ImageGenerator() {
         </Select>
       </div>
 
+      {/* Image Reference Upload */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-foreground">Imagem de referência (opcional)</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+          }}
+          disabled={isProcessing}
+        />
+        {referencePreview ? (
+          <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/30">
+            <img src={referencePreview} alt="Referência" className="w-full h-auto max-h-48 object-contain" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-background/80 hover:bg-background h-8 w-8 rounded-full"
+              onClick={clearReference}
+              disabled={isProcessing}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessing}
+            className="w-full flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:border-primary/40 hover:bg-card/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Upload className="h-6 w-6 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Clique para selecionar uma imagem de referência</span>
+            <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
+          </button>
+        )}
+      </div>
+
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
-        disabled={isProcessing || !prompt.trim() || isCooling}
+        disabled={isProcessing || uploading || !prompt.trim() || isCooling}
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
       >
-        {isProcessing ? (
+        {uploading ? (
+          <>
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            Enviando referência...
+          </>
+        ) : isProcessing ? (
           <>
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
             Gerando...
@@ -179,6 +225,9 @@ export function ImageGenerator() {
               <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
+            </Button>
+            <Button variant="outline" className="border-border/50" onClick={useResultAsReference}>
+              <ImageIcon className="h-4 w-4 mr-2" /> Usar como referência
             </Button>
             <Button variant="outline" className="border-border/50" onClick={reset}>
               <RotateCcw className="h-4 w-4 mr-2" /> Nova Imagem
