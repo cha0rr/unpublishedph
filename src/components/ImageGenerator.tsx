@@ -16,13 +16,71 @@ const models = [
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("nano-banana-2");
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_image_cooldown", durationMs: 90000 });
 
-  const handleGenerate = () => {
+  const handleFileSelect = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Arquivo muito grande. Máximo 5MB.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      alert("Selecione apenas arquivos de imagem.");
+      return;
+    }
+    setReferenceFile(file);
+    setReferencePreview(URL.createObjectURL(file));
+  };
+
+  const clearReference = () => {
+    setReferenceFile(null);
+    if (referencePreview) URL.revokeObjectURL(referencePreview);
+    setReferencePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const useResultAsReference = () => {
+    if (!resultUrl) return;
+    setReferenceFile(null);
+    setReferencePreview(resultUrl);
+  };
+
+  const handleGenerate = async () => {
     if (!prompt.trim()) return;
     startCooldown();
-    generate({ prompt: prompt.trim(), model });
+
+    let fileUrls: string[] | undefined;
+
+    if (referenceFile) {
+      setUploading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) throw new Error("Usuário não autenticado.");
+
+        const ext = referenceFile.name.split(".").pop() || "png";
+        const path = `${userId}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("image-references").upload(path, referenceFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
+        fileUrls = [urlData.publicUrl];
+      } catch (err: any) {
+        alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    } else if (referencePreview && !referenceFile) {
+      // Using a URL directly (from previous result)
+      fileUrls = [referencePreview];
+    }
+
+    generate({ prompt: prompt.trim(), model, file_urls: fileUrls });
   };
 
   const isProcessing = state === "generating" || state === "polling";
