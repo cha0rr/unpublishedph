@@ -106,13 +106,69 @@ export default function BusinessStudioImages() {
 
   const isProcessing = state === "generating" || state === "polling";
 
-  const handleGenerate = () => {
+  const handleFileSelect = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Arquivo muito grande. Máximo 5MB.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      alert("Selecione apenas arquivos de imagem.");
+      return;
+    }
+    setReferenceFile(file);
+    setReferencePreview(URL.createObjectURL(file));
+  };
+
+  const clearReference = () => {
+    setReferenceFile(null);
+    if (referencePreview) URL.revokeObjectURL(referencePreview);
+    setReferencePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const useResultAsReference = () => {
+    if (!resultUrl) return;
+    setReferenceFile(null);
+    setReferencePreview(resultUrl);
+  };
+
+  const cleanupUpload = async (path: string) => {
+    try {
+      await supabase.storage.from("image-references").remove([path]);
+    } catch {}
+  };
+
+  const handleGenerate = async () => {
     if (!prompt.trim() || isProcessing) return;
 
-    const fileUrls = fileUrlsText
-      .split("\n")
-      .map((u) => u.trim())
-      .filter(Boolean);
+    let fileUrls: string[] | undefined;
+    let currentUploadedPath: string | null = null;
+
+    if (referenceFile) {
+      setUploading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) throw new Error("Usuário não autenticado.");
+
+        const ext = referenceFile.name.split(".").pop() || "png";
+        const path = `${userId}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("image-references").upload(path, referenceFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
+        fileUrls = [urlData.publicUrl];
+        currentUploadedPath = path;
+        setUploadedPath(path);
+      } catch (err: any) {
+        alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    } else if (referencePreview && !referenceFile) {
+      fileUrls = [referencePreview];
+    }
 
     const params: ImageGenerateParams = {
       prompt: prompt.trim(),
@@ -121,11 +177,17 @@ export default function BusinessStudioImages() {
       resolution,
       output_format: outputFormat,
       style: style !== "auto" ? style : undefined,
-      ref_history: refHistory.trim() || undefined,
-      file_urls: fileUrls.length > 0 ? fileUrls : undefined,
+      file_urls: fileUrls,
     };
 
-    generate(params);
+    try {
+      await generate(params);
+    } finally {
+      if (currentUploadedPath) {
+        cleanupUpload(currentUploadedPath);
+        setUploadedPath(null);
+      }
+    }
   };
 
   return (
