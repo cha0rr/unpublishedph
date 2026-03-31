@@ -141,7 +141,10 @@ export function ImageGenerator() {
 
       {/* Image Reference Upload */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Imagem de referência (opcional)</label>
+        <label className="text-sm font-medium text-foreground">Imagens de referência (opcional)</label>
+        <p className="text-xs text-muted-foreground">
+          Use [Imagem 1], [Imagem 2]... no prompt para referenciar cada imagem.
+        </p>
         <input
           ref={fileInputRef}
           type="file"
@@ -153,31 +156,40 @@ export function ImageGenerator() {
           }}
           disabled={isProcessing}
         />
-        {referencePreview ? (
-          <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/30">
-            <img src={referencePreview} alt="Referência" className="w-full h-auto max-h-48 object-contain" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 bg-background/80 hover:bg-background h-8 w-8 rounded-full"
-              onClick={clearReference}
-              disabled={isProcessing}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+        {referenceFiles.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {referenceFiles.map((ref, index) => (
+              <div key={index} className="relative rounded-lg overflow-hidden border border-border/50 bg-card/30 group">
+                <img src={ref.preview} alt={`Imagem ${index + 1}`} className="w-full h-24 object-cover" />
+                <div className="absolute bottom-0 left-0 right-0 bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground text-center">
+                  Imagem {index + 1}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1 right-1 bg-background/80 hover:bg-background h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeReference(index)}
+                  disabled={isProcessing}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isProcessing}
-            className="w-full flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:border-primary/40 hover:bg-card/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Upload className="h-6 w-6 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Clique para selecionar uma imagem de referência</span>
-            <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
-          </button>
         )}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isProcessing}
+          className="w-full flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:border-primary/40 hover:bg-card/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Upload className="h-5 w-5 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {referenceFiles.length > 0 ? "Adicionar mais uma imagem" : "Clique para selecionar uma imagem de referência"}
+          </span>
+          <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
+        </button>
+      </div>
       </div>
 
       {/* Generate Button */}
