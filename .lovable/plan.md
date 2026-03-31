@@ -1,42 +1,40 @@
 
 
-## Plano: Remover Mercado Pago e modelo Veo 3.1
+## Plano: Upload de imagem de referência na geração de imagens
 
-### 1. RegistroDialog -- Remover integração Mercado Pago, manter envio WhatsApp
+### Problema
+O usuário quer enviar uma imagem local como referência para a geração. A edge function já aceita `file_urls` (array de URLs), mas não há como fazer upload de arquivo local.
 
-- Remover a chamada a `mercadopago-create-preference` do `handleSubmit`
-- Após registro bem-sucedido via edge function `register`, construir mensagem WhatsApp e abrir `https://wa.me/{WHATSAPP_NUMBER}?text={message}`
-- Exibir tela de sucesso informando que a conta está pendente de aprovação do administrador (não mais "redirecionando para pagamento")
-- Remover campo `payment_method` do formulário (pagamento não é mais gerenciado pelo sistema)
+### Solução
+Criar um bucket Supabase Storage para uploads temporários de referência. No frontend, o usuário seleciona um arquivo, faz upload para o bucket, obtém a URL pública e envia como `file_urls` na geração.
 
-### 2. PricingSection -- Remover menções a pagamento
+### Alterações
 
-- Sem mudanças estruturais, os planos continuam existindo para diferenciar funcionalidades
+**1. Migration -- Criar bucket `image-references` (público)**
+- Bucket público para que a API GeminiGen consiga acessar a URL
+- RLS: usuários autenticados podem fazer upload; leitura pública
 
-### 3. Remover rota `/pagamento-status`
+**2. `src/components/ImageGenerator.tsx`**
+- Adicionar estado `referenceFile` (File | null) e `referencePreview` (string para preview local)
+- Área de upload com `<input type="file" accept="image/*">` estilizada como drop zone
+- Preview da imagem selecionada com botão de remover (X)
+- No `handleGenerate`: fazer upload do arquivo para `image-references/{userId}/{timestamp}.ext` via Supabase Storage, obter URL pública, passar como `file_urls: [publicUrl]`
+- Botão "Usar como referência" no resultado (copia URL do resultado gerado para referência)
 
-- Remover import e `<Route>` de `PagamentoStatus` em `App.tsx`
-- O arquivo `src/pages/PagamentoStatus.tsx` pode ser deletado
+**3. Nenhuma alteração na edge function** -- já aceita `file_urls`
 
-### 4. VideoGenerator -- Remover modelo Veo 3.1
+### Fluxo
+```text
+1. Usuário seleciona imagem local → preview aparece
+2. Digita prompt descrevendo o que quer
+3. Clica "Gerar Imagem"
+4. Upload do arquivo → obtém URL pública → envia para API
+5. Resultado aparece → botão "Usar como referência" disponível
+```
 
-- Remover `{ value: "veo-3.1", label: "Veo 3.1" }` do array `MODEL_OPTIONS`
-- Manter apenas `veo-3-fast` e `veo-3.1-fast`
-
-### 5. Edge function `register` -- Remover campo `payment_method` como obrigatório
-
-- O campo já é opcional na validação, sem mudança necessária
-
-### 6. Edge functions de Mercado Pago
-
-- Não deletar os arquivos (podem ser úteis futuramente), mas remover referências no frontend
-
-### Resumo das alterações por arquivo
-
-| Arquivo | Ação |
-|---|---|
-| `src/components/landing/RegistroDialog.tsx` | Remover MP, adicionar WhatsApp redirect + tela sucesso pendente |
-| `src/components/VideoGenerator.tsx` | Remover Veo 3.1 do MODEL_OPTIONS |
-| `src/App.tsx` | Remover rota `/pagamento-status` |
-| `src/pages/PagamentoStatus.tsx` | Deletar |
+### Detalhes técnicos
+- Upload via `supabase.storage.from('image-references').upload(path, file)`
+- URL pública via `supabase.storage.from('image-references').getPublicUrl(path)`
+- Aceitar apenas imagens (jpg, png, webp) até 5MB
+- Preview local via `URL.createObjectURL(file)`
 
