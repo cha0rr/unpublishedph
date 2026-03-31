@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useImageGenerator, ImageGenerateParams } from "@/hooks/useImageGenerator";
+import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/landing/Navbar";
 import { TechBackground } from "@/components/landing/TechBackground";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -24,6 +24,7 @@ import {
   RotateCcw,
   AlertCircle,
   Upload,
+  X,
 } from "lucide-react";
 
 const MODELS = [
@@ -81,8 +82,11 @@ export default function BusinessStudioImages() {
   const [resolution, setResolution] = useState("auto");
   const [outputFormat, setOutputFormat] = useState("png");
   const [style, setStyle] = useState("auto");
-  const [refHistory, setRefHistory] = useState("");
-  const [fileUrlsText, setFileUrlsText] = useState("");
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && (!user || !hasAccess)) {
@@ -102,13 +106,69 @@ export default function BusinessStudioImages() {
 
   const isProcessing = state === "generating" || state === "polling";
 
-  const handleGenerate = () => {
+  const handleFileSelect = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Arquivo muito grande. Máximo 5MB.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      alert("Selecione apenas arquivos de imagem.");
+      return;
+    }
+    setReferenceFile(file);
+    setReferencePreview(URL.createObjectURL(file));
+  };
+
+  const clearReference = () => {
+    setReferenceFile(null);
+    if (referencePreview) URL.revokeObjectURL(referencePreview);
+    setReferencePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const useResultAsReference = () => {
+    if (!resultUrl) return;
+    setReferenceFile(null);
+    setReferencePreview(resultUrl);
+  };
+
+  const cleanupUpload = async (path: string) => {
+    try {
+      await supabase.storage.from("image-references").remove([path]);
+    } catch {}
+  };
+
+  const handleGenerate = async () => {
     if (!prompt.trim() || isProcessing) return;
 
-    const fileUrls = fileUrlsText
-      .split("\n")
-      .map((u) => u.trim())
-      .filter(Boolean);
+    let fileUrls: string[] | undefined;
+    let currentUploadedPath: string | null = null;
+
+    if (referenceFile) {
+      setUploading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) throw new Error("Usuário não autenticado.");
+
+        const ext = referenceFile.name.split(".").pop() || "png";
+        const path = `${userId}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("image-references").upload(path, referenceFile);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
+        fileUrls = [urlData.publicUrl];
+        currentUploadedPath = path;
+        setUploadedPath(path);
+      } catch (err: any) {
+        alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    } else if (referencePreview && !referenceFile) {
+      fileUrls = [referencePreview];
+    }
 
     const params: ImageGenerateParams = {
       prompt: prompt.trim(),
@@ -117,11 +177,17 @@ export default function BusinessStudioImages() {
       resolution,
       output_format: outputFormat,
       style: style !== "auto" ? style : undefined,
-      ref_history: refHistory.trim() || undefined,
-      file_urls: fileUrls.length > 0 ? fileUrls : undefined,
+      file_urls: fileUrls,
     };
 
-    generate(params);
+    try {
+      await generate(params);
+    } finally {
+      if (currentUploadedPath) {
+        cleanupUpload(currentUploadedPath);
+        setUploadedPath(null);
+      }
+    }
   };
 
   return (
@@ -255,43 +321,61 @@ export default function BusinessStudioImages() {
                 </Select>
               </div>
 
-              {/* Ref History */}
+              {/* Image Reference Upload */}
               <div className="space-y-2">
                 <Label className="text-foreground font-medium">
-                  Referência (UUID anterior)
+                  Imagem de referência (opcional)
                 </Label>
-                <Input
-                  value={refHistory}
-                  onChange={(e) => setRefHistory(e.target.value)}
-                  placeholder="UUID de uma geração anterior (opcional)"
-                  className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground"
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                  }}
                   disabled={isProcessing}
-                  maxLength={100}
                 />
-              </div>
-
-              {/* File URLs */}
-              <div className="space-y-2">
-                <Label className="text-foreground font-medium">
-                  URLs de referência (uma por linha)
-                </Label>
-                <Textarea
-                  value={fileUrlsText}
-                  onChange={(e) => setFileUrlsText(e.target.value)}
-                  placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
-                  className="min-h-[80px] bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground resize-none text-sm"
-                  disabled={isProcessing}
-                  maxLength={2000}
-                />
+                {referencePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/30">
+                    <img src={referencePreview} alt="Referência" className="w-full h-auto max-h-48 object-contain" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-background/80 hover:bg-background h-8 w-8 rounded-full"
+                      onClick={clearReference}
+                      disabled={isProcessing}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="w-full flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:border-primary/40 hover:bg-card/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Clique para selecionar uma imagem de referência</span>
+                    <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
+                  </button>
+                )}
               </div>
 
               {/* Generate Button */}
               <Button
                 onClick={handleGenerate}
-                disabled={!prompt.trim() || isProcessing}
+                disabled={!prompt.trim() || isProcessing || uploading}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
               >
-                {isProcessing ? (
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Enviando referência...
+                  </>
+                ) : isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Gerando...
@@ -364,7 +448,15 @@ export default function BusinessStudioImages() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="flex-1 border-border/50"
+                        className="border-border/50"
+                        onClick={useResultAsReference}
+                      >
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Usar como referência
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-border/50"
                         onClick={reset}
                       >
                         <RotateCcw className="mr-2 h-4 w-4" />

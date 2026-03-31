@@ -133,10 +133,23 @@ Deno.serve(async (req) => {
     if (output_format) formData.append('output_format', output_format);
     if (style && style !== 'auto') formData.append('style', style);
     if (ref_history) formData.append('ref_history', ref_history);
+    // Download file_urls and attach as multipart 'files' per API docs
     if (file_urls && Array.isArray(file_urls)) {
       for (const url of file_urls) {
         if (url && typeof url === 'string' && url.trim()) {
-          formData.append('file_urls', url.trim());
+          try {
+            const fileRes = await fetch(url.trim());
+            if (fileRes.ok) {
+              const blob = await fileRes.blob();
+              const fileName = url.trim().split('/').pop() || 'reference.png';
+              formData.append('files', blob, fileName);
+            } else {
+              // Fallback: send as file_urls if download fails
+              formData.append('file_urls', url.trim());
+            }
+          } catch {
+            formData.append('file_urls', url.trim());
+          }
         }
       }
     }
