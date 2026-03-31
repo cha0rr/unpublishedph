@@ -448,7 +448,15 @@ export default function BusinessStudioImages() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="flex-1 border-border/50"
+                        className="border-border/50"
+                        onClick={useResultAsReference}
+                      >
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Usar como referência
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-border/50"
                         onClick={reset}
                       >
                         <RotateCcw className="mr-2 h-4 w-4" />
