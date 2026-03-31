@@ -321,34 +321,47 @@ export default function BusinessStudioImages() {
                 </Select>
               </div>
 
-              {/* Ref History */}
+              {/* Image Reference Upload */}
               <div className="space-y-2">
                 <Label className="text-foreground font-medium">
-                  Referência (UUID anterior)
+                  Imagem de referência (opcional)
                 </Label>
-                <Input
-                  value={refHistory}
-                  onChange={(e) => setRefHistory(e.target.value)}
-                  placeholder="UUID de uma geração anterior (opcional)"
-                  className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground"
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                  }}
                   disabled={isProcessing}
-                  maxLength={100}
                 />
-              </div>
-
-              {/* File URLs */}
-              <div className="space-y-2">
-                <Label className="text-foreground font-medium">
-                  URLs de referência (uma por linha)
-                </Label>
-                <Textarea
-                  value={fileUrlsText}
-                  onChange={(e) => setFileUrlsText(e.target.value)}
-                  placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
-                  className="min-h-[80px] bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground resize-none text-sm"
-                  disabled={isProcessing}
-                  maxLength={2000}
-                />
+                {referencePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/30">
+                    <img src={referencePreview} alt="Referência" className="w-full h-auto max-h-48 object-contain" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-background/80 hover:bg-background h-8 w-8 rounded-full"
+                      onClick={clearReference}
+                      disabled={isProcessing}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="w-full flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:border-primary/40 hover:bg-card/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Clique para selecionar uma imagem de referência</span>
+                    <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
+                  </button>
+                )}
               </div>
 
               {/* Generate Button */}
