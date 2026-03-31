@@ -16,8 +16,7 @@ const models = [
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("nano-banana-2");
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
-  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [referenceFiles, setReferenceFiles] = useState<{ file: File | null; preview: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
