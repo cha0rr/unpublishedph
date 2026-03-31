@@ -72,9 +72,10 @@ export default function BusinessStudioImages() {
   const { state, resultUrl, error, progress, statusText, generate, reset } =
     useImageGenerator();
 
+  const isPro = profile?.plan === "pro" && profile?.status === "approved";
   const isBusiness =
     profile?.plan === "business" && profile?.status === "approved";
-  const hasAccess = isAdmin || isBusiness;
+  const hasAccess = isAdmin || isBusiness || isPro;
 
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState("nano-banana-pro");
