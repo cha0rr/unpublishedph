@@ -190,7 +190,6 @@ export function ImageGenerator() {
           <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
         </button>
       </div>
-      </div>
 
       {/* Generate Button */}
       <Button
