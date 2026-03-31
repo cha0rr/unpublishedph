@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Sparkles, Download, RotateCcw, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Sparkles, Download, RotateCcw, AlertCircle, Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useImageGenerator } from "@/hooks/useImageGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
+import { supabase } from "@/integrations/supabase/client";
 
 const models = [
   { value: "nano-banana-2", label: "Nano Banana 2" },
