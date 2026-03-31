@@ -381,10 +381,6 @@ export default function BusinessStudioImages() {
                     {referenceFiles.length > 0 ? "Adicionar mais uma imagem" : "Clique para selecionar uma imagem de referência"}
                   </span>
                   <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
-                </button>
-                    <span className="text-xs text-muted-foreground/60">JPG, PNG ou WebP · Máx. 5MB</span>
-                  </button>
-                )}
               </div>
 
               {/* Generate Button */}
