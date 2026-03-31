@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useImageGenerator, ImageGenerateParams } from "@/hooks/useImageGenerator";
+import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/landing/Navbar";
 import { TechBackground } from "@/components/landing/TechBackground";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -24,6 +24,7 @@ import {
   RotateCcw,
   AlertCircle,
   Upload,
+  X,
 } from "lucide-react";
 
 const MODELS = [
