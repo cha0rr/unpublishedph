@@ -236,11 +236,11 @@ export function ExtendVideoDialog({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isLoading}
-              maxLength={2000}
+              maxLength={4000}
               className="min-h-[80px] resize-none border-border/40 bg-muted/10 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-primary/40 text-sm"
             />
-            <p className={`text-xs text-right ${prompt.length > 1800 ? "text-destructive" : "text-muted-foreground"}`}>
-              {prompt.length}/2000
+            <p className={`text-xs text-right ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
+              {prompt.length}/4000
             </p>
           </div>
 
