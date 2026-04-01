@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const RATE_LIMIT_PER_HOUR = 10;
-const MAX_PROMPT_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 4000;
 
 
 async function authenticateUser(authHeader: string) {

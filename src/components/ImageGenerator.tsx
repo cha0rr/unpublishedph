@@ -114,11 +114,11 @@ export function ImageGenerator() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           disabled={isProcessing}
-          maxLength={2000}
+          maxLength={4000}
           className="min-h-[120px] bg-card/50 border-border/50 backdrop-blur-sm resize-none focus:border-primary/50"
         />
-        <p className={`text-xs text-right ${prompt.length > 1800 ? "text-destructive" : "text-muted-foreground"}`}>
-          {prompt.length}/2000
+        <p className={`text-xs text-right ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
+          {prompt.length}/4000
         </p>
       </div>
 
