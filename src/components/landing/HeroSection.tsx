@@ -50,7 +50,7 @@ export function HeroSection() {
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
-              TikTok Shop
+              <span className="text-red-500 font-semibold">Tik</span><span className="text-foreground font-semibold">Tok</span> Shop
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
