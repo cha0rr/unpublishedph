@@ -9,7 +9,7 @@ const items = [
   { label: "Frutas Falantes", type: "Viral", src: "/videos/showcase-3.mp4", isVideo: true },
   { label: "Notícias & Fatos", type: "Viral", src: "/videos/showcase-4.mp4", isVideo: true },
   { label: "Review de Produto", type: "UGC", src: "/videos/showcase-5.mp4", isVideo: true },
-  { label: "Depoimento UGC", type: "UGC", src: "/videos/showcase-6.png", isVideo: false },
+  { label: "Depoimento UGC", type: "UGC", src: "/videos/showcase-6.mp4", isVideo: true },
 ];
 
 function getCardStyle(position: number, total: number) {
