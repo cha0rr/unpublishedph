@@ -39,7 +39,7 @@ export function HeroSection() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2" onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}>
                 <VideoIcon className="h-4 w-4" />
-                Começar a Criar
+                Começar a Escalar
             </Button>
           </div>
 
