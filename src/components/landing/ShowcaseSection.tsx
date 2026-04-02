@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 
 const items = [
   { label: "Cartomante / Místico", type: "Viral", src: "/videos/showcase-1.mp4", isVideo: true },
@@ -10,9 +12,12 @@ const items = [
   { label: "Depoimento UGC", type: "UGC", src: "/videos/showcase-6.png", isVideo: false },
 ];
 
-function CarouselCard({ item }: { item: typeof items[0] }) {
+function CarouselCard({ item, onClick }: { item: typeof items[0]; onClick: () => void }) {
   return (
-    <div className="relative w-[220px] sm:w-[260px] flex-shrink-0 aspect-[9/16] rounded-2xl border border-white/[0.06] overflow-hidden group">
+    <div
+      className="relative w-[220px] sm:w-[260px] flex-shrink-0 aspect-[9/16] rounded-2xl border border-white/[0.06] overflow-hidden group cursor-pointer"
+      onClick={onClick}
+    >
       {item.isVideo ? (
         <video
           src={item.src}
@@ -20,7 +25,7 @@ function CarouselCard({ item }: { item: typeof items[0] }) {
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
       ) : (
         <img
@@ -30,6 +35,13 @@ function CarouselCard({ item }: { item: typeof items[0] }) {
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="w-12 h-12 rounded-full bg-primary/80 flex items-center justify-center">
+          <svg className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary mb-1">
           {item.type}
@@ -41,17 +53,10 @@ function CarouselCard({ item }: { item: typeof items[0] }) {
 }
 
 export function ShowcaseSection() {
-  // Duplicate items for seamless infinite loop
-  const duplicated = [...items, ...items];
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [trackWidth, setTrackWidth] = useState(0);
+  const [selectedItem, setSelectedItem] = useState<typeof items[0] | null>(null);
 
-  useEffect(() => {
-    if (trackRef.current) {
-      // Half width = one set of items
-      setTrackWidth(trackRef.current.scrollWidth / 2);
-    }
-  }, []);
+  // Repeat items enough times for seamless CSS scroll
+  const repeated = [...items, ...items, ...items, ...items];
 
   return (
     <section className="relative py-16 sm:py-24 overflow-hidden">
@@ -70,26 +75,48 @@ export function ShowcaseSection() {
         </motion.div>
       </div>
 
-      <div className="relative w-full">
-        <motion.div
-          ref={trackRef}
-          className="flex gap-4 sm:gap-6"
-          animate={trackWidth > 0 ? { x: [0, -trackWidth] } : undefined}
-          transition={{
-            x: {
-              duration: items.length * 5,
-              repeat: Infinity,
-              ease: "linear",
-              repeatType: "loop",
-            },
-          }}
-          style={{ paddingLeft: "2rem" }}
-        >
-          {duplicated.map((item, i) => (
-            <CarouselCard key={`${item.label}-${i}`} item={item} />
+      <div className="relative w-full overflow-hidden">
+        <div className="showcase-track flex gap-4 sm:gap-6 pl-8">
+          {repeated.map((item, i) => (
+            <CarouselCard
+              key={`${item.label}-${i}`}
+              item={item}
+              onClick={() => setSelectedItem(item)}
+            />
           ))}
-        </motion.div>
+        </div>
       </div>
+
+      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <DialogContent className="max-w-sm p-0 bg-background border-white/10 overflow-hidden [&>button]:hidden">
+          <button
+            onClick={() => setSelectedItem(null)}
+            className="absolute top-3 right-3 z-50 w-8 h-8 rounded-full bg-background/80 flex items-center justify-center text-foreground hover:bg-background transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          {selectedItem && (
+            <div className="aspect-[9/16] w-full">
+              {selectedItem.isVideo ? (
+                <video
+                  src={selectedItem.src}
+                  autoPlay
+                  loop
+                  controls
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={selectedItem.src}
+                  alt={selectedItem.label}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
