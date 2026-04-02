@@ -28,14 +28,12 @@ export function HeroSection() {
           </motion.div>
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Transforme ideias em{" "}
-            <span className="text-gradient-cyan">vídeos incríveis</span>{" "}
-            com IA
+            Cresça contas no TikTok com{" "}
+            <span className="text-gradient-cyan">UGC gerado por IA</span>
           </h1>
 
           <p className="mt-4 sm:mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted-foreground">
-            O PH Studio gera vídeos profissionais com inteligência artificial.
-            Ilimitado e pronto para publicar.
+            Crie vídeos UGC realistas para escalar contas no TikTok, vender no TikTok Shop ou revender contas prontas.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
