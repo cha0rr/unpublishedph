@@ -24,7 +24,7 @@ export function HeroSection() {
             transition={{ delay: 0.3 }}
           >
             <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-            <span className="text-xs text-muted-foreground">Veo 3.1 — Geração Ilimitada</span>
+            <span className="text-xs text-muted-foreground">UGC com IA para TikTok — Geração Ilimitada</span>
           </motion.div>
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
