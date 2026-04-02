@@ -66,6 +66,25 @@ const STYLES = [
   { value: "illustration", label: "Ilustração" },
 ];
 
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+const imageUrlToBase64 = async (url: string): Promise<string> => {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return fileToBase64(new File([blob], "ref.png", { type: blob.type }));
+};
+
+const cleanBase64 = (dataUrl: string): string => {
+  const match = dataUrl.match(/^data:[^;]+;base64,(.+)$/);
+  return match ? match[1] : dataUrl;
+};
+
 export default function BusinessStudioImages() {
   const { user, profile, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
