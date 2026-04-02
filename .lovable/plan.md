@@ -1,47 +1,32 @@
 
 
-## Plano: Expandir copy da landing para incluir vídeos virais além de UGC
+## Plano: Melhorias no Painel de Gerações do Admin
 
-### Contexto
-A landing está focada apenas em UGC, mas o público também cria vídeos virais em nichos como cartomante, fazendeiros, frutas falantes e notícias para crescer contas rapidamente.
+### O que será feito
 
-### Alterações
+Adicionar funcionalidades de pesquisa, ranking de usuários e estatísticas detalhadas ao painel de gerações admin.
 
-**1. `src/components/landing/HeroSection.tsx`**
-- Badge: "UGC com IA para TikTok" → "Vídeos com IA para TikTok — Geração Ilimitada"
-- Título: "Cresça contas no TikTok com **vídeos gerados por IA**" (mais amplo que só UGC)
-- Subtítulo: "Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no TikTok."
-- Tags de rodapé: "UGC & Vídeos Virais", "TikTok Shop", "Venda de contas"
+### Funcionalidades
 
-**2. `src/components/landing/BenefitsSection.tsx`**
-- Título: "Por que usar PH Studio para **TikTok**?" (manter)
-- Reescrever cards:
-  1. "Vídeos Virais com IA" — Cartomante, fazendeiros, frutas falantes, notícias... crie qualquer nicho viral.
-  2. "UGC Realista" — Reviews, unboxings e depoimentos que parecem orgânicos.
-  3. "Escale Múltiplas Contas" — Conteúdo único para cada conta, sem esforço.
-  4. "Geração Ilimitada" — Sem limites. Crie quantos vídeos precisar para crescer rápido.
+1. **Barra de pesquisa por e-mail** — campo de busca que filtra as gerações por usuário
+2. **Cards de ranking** — exibir o usuário que mais gerou, o que menos gerou e o modelo mais usado (separado por imagem/vídeo)
+3. **Tabela de resumo por usuário** — após pesquisar ou filtrar, mostrar uma tabela agrupada por usuário com: total de gerações, total de créditos usados
+4. **Filtro por modelo** — dropdown para filtrar por modelo específico
 
-**3. `src/components/landing/ShowcaseSection.tsx`**
-- Título: "Exemplos de **vídeos para TikTok**"
-- Subtítulo: "UGC, virais, nichos criativos — veja o que você pode criar."
-- Reescrever labels dos items para misturar nichos:
-  1. "Cartomante / Místico" (tipo: Viral)
-  2. "Fazendeiro / Rural" (tipo: Viral)
-  3. "Frutas Falantes" (tipo: Viral)
-  4. "Notícias & Fatos" (tipo: Viral)
-  5. "Review de Produto" (tipo: UGC)
-  6. "Unboxing / Depoimento" (tipo: UGC)
+### Detalhes técnicos
 
-**4. `src/components/landing/HowItWorks.tsx`**
-- Passo 1: "Descreva seu vídeo" — "UGC, cartomante, fazendeiro, frutas falantes, notícias... descreva o que quiser."
-- Passos 2 e 3: manter como estão
+**Arquivo alterado:** `src/pages/AdminGenerations.tsx`
 
-**5. `src/components/landing/FinalCTA.tsx`**
-- Subtítulo: "Comece a gerar vídeos virais e UGC agora. Sem limites, sem complicação."
+- Adicionar estado `searchTerm` para filtro por e-mail
+- Adicionar estado `selectedModel` para filtro por modelo
+- Computar dados derivados a partir das gerações carregadas:
+  - `userStats`: agrupamento por e-mail com contagem de gerações e soma de créditos
+  - `topUser` / `bottomUser`: usuário com mais e menos gerações
+  - `topImageModel` / `topVideoModel`: modelo mais usado (separando por tipo — modelos de imagem vs vídeo baseado no nome do modelo)
+- Adicionar componente `Input` para pesquisa e `Select` para filtro de modelo
+- Adicionar seção de cards com ranking (quem mais gerou, quem menos gerou, modelo mais usado imagem, modelo mais usado vídeo)
+- Adicionar tabela resumo por usuário mostrando e-mail, total gerações e total créditos
+- A tabela detalhada existente continua abaixo, filtrada pelo termo de pesquisa e modelo selecionado
 
-**6. `src/components/landing/Footer.tsx`**
-- Descrição: "Plataforma de vídeos com IA para criadores e vendedores no TikTok."
-
-### Sem alterações estruturais
-Apenas copy e labels. Nenhum componente novo.
+**Nenhuma alteração de banco de dados necessária** — todos os dados já existem na tabela `image_generations`.
 
