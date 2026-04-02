@@ -69,8 +69,9 @@ export function ImageGenerator() {
             const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
             const { error: uploadError } = await supabase.storage.from("image-references").upload(path, ref.file);
             if (uploadError) throw uploadError;
-            const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
-            urls.push(urlData.publicUrl);
+            const { data: urlData, error: signError } = await supabase.storage.from("image-references").createSignedUrl(path, 3600);
+            if (signError || !urlData?.signedUrl) throw new Error("Erro ao gerar URL assinada.");
+            urls.push(urlData.signedUrl);
             uploadedPaths.push(path);
           } else {
             urls.push(ref.preview);
