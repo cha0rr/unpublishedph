@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useImageGenerator, ImageGenerateParams } from "@/hooks/useImageGenerator";
-import { supabase } from "@/integrations/supabase/client";
+// supabase import removed - no longer needed for storage upload
 import { Navbar } from "@/components/landing/Navbar";
 import { TechBackground } from "@/components/landing/TechBackground";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,25 @@ const STYLES = [
   { value: "3d-render", label: "3D Render" },
   { value: "illustration", label: "Ilustração" },
 ];
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+const imageUrlToBase64 = async (url: string): Promise<string> => {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return fileToBase64(new File([blob], "ref.png", { type: blob.type }));
+};
+
+const cleanBase64 = (dataUrl: string): string => {
+  const match = dataUrl.match(/^data:[^;]+;base64,(.+)$/);
+  return match ? match[1] : dataUrl;
+};
 
 export default function BusinessStudioImages() {
   const { user, profile, isAdmin, loading } = useAuth();
@@ -141,33 +160,24 @@ export default function BusinessStudioImages() {
   const handleGenerate = async () => {
     if (!prompt.trim() || isProcessing) return;
 
-    let fileUrls: string[] | undefined;
-    const uploadedPaths: string[] = [];
+    let fileBase64: string[] | undefined;
 
     if (referenceFiles.length > 0) {
       setUploading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        if (!userId) throw new Error("Usuário não autenticado.");
-
-        const urls: string[] = [];
+        const base64List: string[] = [];
         for (const ref of referenceFiles) {
           if (ref.file) {
-            const ext = ref.file.name.split(".").pop() || "png";
-            const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-            const { error: uploadError } = await supabase.storage.from("image-references").upload(path, ref.file);
-            if (uploadError) throw uploadError;
-            const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
-            urls.push(urlData.publicUrl);
-            uploadedPaths.push(path);
+            const dataUrl = await fileToBase64(ref.file);
+            base64List.push(cleanBase64(dataUrl));
           } else {
-            urls.push(ref.preview);
+            const dataUrl = await imageUrlToBase64(ref.preview);
+            base64List.push(cleanBase64(dataUrl));
           }
         }
-        fileUrls = urls;
+        fileBase64 = base64List;
       } catch (err: any) {
-        alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
+        alert("Erro ao processar imagem: " + (err.message || "Tente novamente."));
         setUploading(false);
         return;
       }
@@ -181,18 +191,10 @@ export default function BusinessStudioImages() {
       resolution,
       output_format: outputFormat,
       style: style !== "auto" ? style : undefined,
-      file_urls: fileUrls,
+      file_base64: fileBase64,
     };
 
-    try {
-      await generate(params);
-    } finally {
-      if (uploadedPaths.length > 0) {
-        try {
-          await supabase.storage.from("image-references").remove(uploadedPaths);
-        } catch {}
-      }
-    }
+    await generate(params);
   };
 
   return (
