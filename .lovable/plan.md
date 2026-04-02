@@ -1,32 +1,44 @@
 
 
-## Plano: Melhorias no Painel de Gerações do Admin
+## Plano: Análise Financeira no Painel Admin
 
 ### O que será feito
 
-Adicionar funcionalidades de pesquisa, ranking de usuários e estatísticas detalhadas ao painel de gerações admin.
+Criar uma nova página `/admin/financeiro` com análise financeira detalhada baseada nos dados de gerações existentes, usando a tabela de custos por modelo fornecida.
+
+### Tabela de custos
+
+| Modelo | Créditos/geração | Custo/geração (R$) |
+|--------|-------------------|---------------------|
+| veo-3.1 / veo-3.1-fast | 3 | R$ 0,075 |
+| nano-banana-2 | 2 | R$ 0,05 |
+| nano-banana-pro | 2 | R$ 0,05 |
+| Valor do crédito: R$ 0,025 | | |
 
 ### Funcionalidades
 
-1. **Barra de pesquisa por e-mail** — campo de busca que filtra as gerações por usuário
-2. **Cards de ranking** — exibir o usuário que mais gerou, o que menos gerou e o modelo mais usado (separado por imagem/vídeo)
-3. **Tabela de resumo por usuário** — após pesquisar ou filtrar, mostrar uma tabela agrupada por usuário com: total de gerações, total de créditos usados
-4. **Filtro por modelo** — dropdown para filtrar por modelo específico
+1. **Cards de resumo financeiro** — custo total estimado (R$), total de créditos consumidos, custo médio por geração, total de gerações
+2. **Filtros por período** — filtrar por data (hoje, 7 dias, 30 dias, personalizado) para análise temporal
+3. **Custo por modelo** — tabela/cards mostrando quanto cada modelo consumiu em créditos e R$
+4. **Custo por usuário** — ranking dos usuários que mais gastaram (em R$), com detalhamento por modelo
+5. **Insights automáticos** — alertas como "modelo X representa Y% do custo total", tendência de gasto diário
 
 ### Detalhes técnicos
 
-**Arquivo alterado:** `src/pages/AdminGenerations.tsx`
+**Arquivos criados/alterados:**
 
-- Adicionar estado `searchTerm` para filtro por e-mail
-- Adicionar estado `selectedModel` para filtro por modelo
-- Computar dados derivados a partir das gerações carregadas:
-  - `userStats`: agrupamento por e-mail com contagem de gerações e soma de créditos
-  - `topUser` / `bottomUser`: usuário com mais e menos gerações
-  - `topImageModel` / `topVideoModel`: modelo mais usado (separando por tipo — modelos de imagem vs vídeo baseado no nome do modelo)
-- Adicionar componente `Input` para pesquisa e `Select` para filtro de modelo
-- Adicionar seção de cards com ranking (quem mais gerou, quem menos gerou, modelo mais usado imagem, modelo mais usado vídeo)
-- Adicionar tabela resumo por usuário mostrando e-mail, total gerações e total créditos
-- A tabela detalhada existente continua abaixo, filtrada pelo termo de pesquisa e modelo selecionado
+1. **`src/pages/AdminFinanceiro.tsx`** (novo) — página principal com:
+   - Mapa de custos por modelo (constante)
+   - Função para calcular custo: `créditos × R$ 0,025`
+   - Filtro de período com date picker
+   - Cards: custo total, créditos totais, custo médio/geração, gerações no período
+   - Tabela de custo por modelo (gerações, créditos, valor R$, % do total)
+   - Tabela de custo por usuário (email, gerações, créditos, valor R$)
+   - Seção de insights (modelo mais caro, usuário mais caro, custo médio diário)
 
-**Nenhuma alteração de banco de dados necessária** — todos os dados já existem na tabela `image_generations`.
+2. **`src/App.tsx`** — adicionar rota `/admin/financeiro`
+
+3. **`src/pages/Admin.tsx`** — adicionar link de navegação para a página financeira (se houver menu de navegação admin)
+
+**Nenhuma alteração de banco de dados** — todos os cálculos são feitos no frontend a partir dos dados de `image_generations` (campos `model`, `used_credit`, `created_at`, `email`).
 
