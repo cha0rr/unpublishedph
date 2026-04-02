@@ -129,6 +129,20 @@
   contain: layout style paint;
 }
 
+.tiktok-text {
+  color: #000;
+  font-weight: 800;
+  text-shadow: -2px -2px 0 #25F4EE, 2px 2px 0 #FE2C55;
+  letter-spacing: -0.02em;
+}
+
+.tiktok-text-sm {
+  color: #000;
+  font-weight: 700;
+  text-shadow: -1px -1px 0 #25F4EE, 1px 1px 0 #FE2C55;
+  letter-spacing: -0.02em;
+}
+
 #lovable-badge {
   display: none !important;
 }
