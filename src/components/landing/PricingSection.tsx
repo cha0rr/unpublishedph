@@ -10,7 +10,7 @@ const plans = [
     price: "R$ 49,90",
     period: "/mês",
     slug: "basico",
-    description: "Para começar a criar vídeos com IA.",
+    description: "Para quem está começando a criar contas no TikTok.",
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
