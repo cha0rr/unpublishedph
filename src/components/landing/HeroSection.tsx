@@ -33,7 +33,7 @@ export function HeroSection() {
           </h1>
 
           <p className="mt-4 sm:mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted-foreground">
-            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no <span className="tiktok-text-sm">TikTok</span>.
+            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no TikTok.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
