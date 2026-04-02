@@ -1,7 +1,7 @@
-import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const items = [
   { label: "Cartomante / Místico", type: "Viral", src: "/videos/showcase-1.mp4", isVideo: true },
@@ -12,76 +12,68 @@ const items = [
   { label: "Depoimento UGC", type: "UGC", src: "/videos/showcase-6.png", isVideo: false },
 ];
 
-function CarouselCard({ item, onClick }: { item: typeof items[0]; onClick: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+function getCardStyle(position: number, total: number) {
+  // position: 0 = front, 1 = right-behind, -1 = left-behind, etc.
+  const absPos = Math.abs(position);
+  const sign = position >= 0 ? 1 : -1;
 
-  // Only play video when card is visible in viewport
-  useEffect(() => {
-    if (!item.isVideo || !cardRef.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (videoRef.current) {
-          if (entry.isIntersecting) {
-            videoRef.current.play().catch(() => {});
-          } else {
-            videoRef.current.pause();
-          }
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(cardRef.current);
-    return () => observer.disconnect();
-  }, [item.isVideo]);
+  if (absPos === 0) {
+    return {
+      x: 0,
+      scale: 1,
+      z: 50,
+      opacity: 1,
+      rotateY: 0,
+    };
+  }
 
-  return (
-    <div
-      ref={cardRef}
-      className="showcase-card relative w-[220px] sm:w-[260px] flex-shrink-0 aspect-[9/16] rounded-2xl border border-white/[0.06] overflow-hidden group cursor-pointer"
-      onClick={onClick}
-    >
-      {item.isVideo ? (
-        <video
-          ref={videoRef}
-          src={item.src}
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
-      ) : (
-        <img
-          src={item.src}
-          alt={item.label}
-          loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="w-12 h-12 rounded-full bg-primary/80 flex items-center justify-center">
-          <svg className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </div>
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary mb-1">
-          {item.type}
-        </span>
-        <p className="text-sm font-medium text-foreground">{item.label}</p>
-      </div>
-    </div>
-  );
+  const maxVisible = Math.floor(total / 2);
+  if (absPos > maxVisible) {
+    return {
+      x: sign * 120,
+      scale: 0.6,
+      z: -200,
+      opacity: 0,
+      rotateY: sign * 15,
+    };
+  }
+
+  return {
+    x: sign * absPos * 180,
+    scale: 1 - absPos * 0.12,
+    z: -absPos * 80,
+    opacity: Math.max(0.3, 1 - absPos * 0.25),
+    rotateY: sign * absPos * 5,
+  };
 }
 
 export function ShowcaseSection() {
+  const [activeIndex, setActiveIndex] = useState(0);
   const [selectedItem, setSelectedItem] = useState<typeof items[0] | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const total = items.length;
 
-  // Repeat items enough times for seamless CSS scroll
-  const repeated = [...items, ...items, ...items, ...items];
+  const next = useCallback(() => {
+    setActiveIndex((prev) => (prev + 1) % total);
+  }, [total]);
+
+  const prev = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + total) % total);
+  }, [total]);
+
+  // Auto-advance
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(next, 3000);
+    return () => clearInterval(interval);
+  }, [next, isPaused]);
+
+  function getPosition(index: number) {
+    let diff = index - activeIndex;
+    if (diff > total / 2) diff -= total;
+    if (diff < -total / 2) diff += total;
+    return diff;
+  }
 
   return (
     <section className="relative py-16 sm:py-24 overflow-hidden">
@@ -100,16 +92,114 @@ export function ShowcaseSection() {
         </motion.div>
       </div>
 
-      <div className="relative w-full overflow-hidden">
-        <div className="showcase-track flex gap-4 sm:gap-6 pl-8">
-          {repeated.map((item, i) => (
-            <CarouselCard
-              key={`${item.label}-${i}`}
-              item={item}
-              onClick={() => setSelectedItem(item)}
-            />
-          ))}
-        </div>
+      <div
+        className="relative w-full flex items-center justify-center"
+        style={{ height: 480, perspective: 1200 }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {items.map((item, index) => {
+          const position = getPosition(index);
+          const style = getCardStyle(position, total);
+          const isFront = position === 0;
+
+          return (
+            <motion.div
+              key={item.label}
+              className="absolute cursor-pointer"
+              animate={{
+                x: style.x,
+                scale: style.scale,
+                rotateY: style.rotateY,
+                opacity: style.opacity,
+              }}
+              transition={{
+                duration: 0.6,
+                ease: [0.4, 0, 0.2, 1],
+              }}
+              style={{
+                zIndex: 50 - Math.abs(position) * 10,
+                transformStyle: "preserve-3d",
+              }}
+              onClick={() => {
+                if (isFront) {
+                  setSelectedItem(item);
+                } else {
+                  setActiveIndex(index);
+                }
+              }}
+            >
+              <div
+                className={`relative w-[200px] sm:w-[240px] aspect-[9/16] rounded-2xl border overflow-hidden transition-shadow duration-300 ${
+                  isFront
+                    ? "border-primary/30 shadow-[0_0_40px_rgba(56,189,248,0.15)]"
+                    : "border-white/[0.06]"
+                }`}
+              >
+                {item.isVideo ? (
+                  <video
+                    src={item.src}
+                    autoPlay={isFront}
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  />
+                ) : (
+                  <img
+                    src={item.src}
+                    alt={item.label}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                {isFront && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="w-12 h-12 rounded-full bg-primary/80 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary mb-1">
+                    {item.type}
+                  </span>
+                  <p className="text-xs sm:text-sm font-medium text-foreground">{item.label}</p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+
+        {/* Navigation arrows */}
+        <button
+          onClick={prev}
+          className="absolute left-4 sm:left-1/4 z-[60] w-10 h-10 rounded-full bg-card/80 border border-white/10 flex items-center justify-center text-foreground hover:bg-card transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={next}
+          className="absolute right-4 sm:right-1/4 z-[60] w-10 h-10 rounded-full bg-card/80 border border-white/10 flex items-center justify-center text-foreground hover:bg-card transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Dots */}
+      <div className="flex justify-center gap-2 mt-6">
+        {items.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveIndex(i)}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              i === activeIndex ? "bg-primary w-6" : "bg-muted-foreground/30"
+            }`}
+          />
+        ))}
       </div>
 
       <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
