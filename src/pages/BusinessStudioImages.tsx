@@ -160,33 +160,24 @@ export default function BusinessStudioImages() {
   const handleGenerate = async () => {
     if (!prompt.trim() || isProcessing) return;
 
-    let fileUrls: string[] | undefined;
-    const uploadedPaths: string[] = [];
+    let fileBase64: string[] | undefined;
 
     if (referenceFiles.length > 0) {
       setUploading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        if (!userId) throw new Error("Usuário não autenticado.");
-
-        const urls: string[] = [];
+        const base64List: string[] = [];
         for (const ref of referenceFiles) {
           if (ref.file) {
-            const ext = ref.file.name.split(".").pop() || "png";
-            const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-            const { error: uploadError } = await supabase.storage.from("image-references").upload(path, ref.file);
-            if (uploadError) throw uploadError;
-            const { data: urlData } = supabase.storage.from("image-references").getPublicUrl(path);
-            urls.push(urlData.publicUrl);
-            uploadedPaths.push(path);
+            const dataUrl = await fileToBase64(ref.file);
+            base64List.push(cleanBase64(dataUrl));
           } else {
-            urls.push(ref.preview);
+            const dataUrl = await imageUrlToBase64(ref.preview);
+            base64List.push(cleanBase64(dataUrl));
           }
         }
-        fileUrls = urls;
+        fileBase64 = base64List;
       } catch (err: any) {
-        alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
+        alert("Erro ao processar imagem: " + (err.message || "Tente novamente."));
         setUploading(false);
         return;
       }
@@ -200,18 +191,10 @@ export default function BusinessStudioImages() {
       resolution,
       output_format: outputFormat,
       style: style !== "auto" ? style : undefined,
-      file_urls: fileUrls,
+      file_base64: fileBase64,
     };
 
-    try {
-      await generate(params);
-    } finally {
-      if (uploadedPaths.length > 0) {
-        try {
-          await supabase.storage.from("image-references").remove(uploadedPaths);
-        } catch {}
-      }
-    }
+    await generate(params);
   };
 
   return (
