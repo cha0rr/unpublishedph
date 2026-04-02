@@ -13,6 +13,7 @@ import Admin from "./pages/Admin.tsx";
 import GerarImagem from "./pages/GerarImagem.tsx";
 import BusinessStudioImages from "./pages/BusinessStudioImages.tsx";
 import AdminGenerations from "./pages/AdminGenerations.tsx";
+import AdminFinanceiro from "./pages/AdminFinanceiro.tsx";
 
 import NotFound from "./pages/NotFound.tsx";
 
