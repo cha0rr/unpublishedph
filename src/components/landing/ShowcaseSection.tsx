@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 
@@ -13,24 +13,49 @@ const items = [
 ];
 
 function CarouselCard({ item, onClick }: { item: typeof items[0]; onClick: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Only play video when card is visible in viewport
+  useEffect(() => {
+    if (!item.isVideo || !cardRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (videoRef.current) {
+          if (entry.isIntersecting) {
+            videoRef.current.play().catch(() => {});
+          } else {
+            videoRef.current.pause();
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [item.isVideo]);
+
   return (
     <div
-      className="relative w-[220px] sm:w-[260px] flex-shrink-0 aspect-[9/16] rounded-2xl border border-white/[0.06] overflow-hidden group cursor-pointer"
+      ref={cardRef}
+      className="showcase-card relative w-[220px] sm:w-[260px] flex-shrink-0 aspect-[9/16] rounded-2xl border border-white/[0.06] overflow-hidden group cursor-pointer"
       onClick={onClick}
     >
       {item.isVideo ? (
         <video
+          ref={videoRef}
           src={item.src}
-          autoPlay
           loop
           muted
           playsInline
+          preload="metadata"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
       ) : (
         <img
           src={item.src}
           alt={item.label}
+          loading="lazy"
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}

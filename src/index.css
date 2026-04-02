@@ -107,17 +107,26 @@
 .animate-grid-pulse { animation: grid-pulse 6s ease-in-out infinite; }
 
 @keyframes showcase-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 .showcase-track {
-  animation: showcase-scroll 40s linear infinite;
+  animation: showcase-scroll 60s linear infinite;
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 .showcase-track:hover {
   animation-play-state: paused;
+}
+
+.showcase-card {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout style paint;
 }
 
 #lovable-badge {
