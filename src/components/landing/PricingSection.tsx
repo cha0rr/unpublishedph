@@ -23,7 +23,7 @@ const plans = [
     price: "R$ 79,90",
     period: "/mês",
     slug: "pro",
-    description: "Tudo do Básico + ferramentas avançadas para profissionais.",
+    description: "Para quem gerencia múltiplas contas e precisa de volume.",
     features: [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
