@@ -5,20 +5,20 @@ const steps = [
   {
     num: "01",
     icon: PenLine,
-    title: "Escreva seu prompt",
-    description: "Descreva o vídeo que você quer criar — em português, de forma natural.",
+    title: "Descreva seu UGC",
+    description: "Diga o que quer: review de produto, unboxing, depoimento, demonstração...",
   },
   {
     num: "02",
     icon: SlidersHorizontal,
-    title: "Escolha o formato",
-    description: "Selecione a proporção e qualidade ideal para seu projeto.",
+    title: "Escolha o formato TikTok",
+    description: "9:16 vertical, ideal para a FYP e máximo alcance orgânico.",
   },
   {
     num: "03",
     icon: Download,
-    title: "Gere e baixe",
-    description: "Receba seu vídeo em instantes, pronto para uso.",
+    title: "Publique e escale",
+    description: "Baixe e poste direto nas suas contas. Sem marca d'água.",
   },
 ];
 
