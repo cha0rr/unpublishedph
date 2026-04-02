@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import logo from "@/assets/logo.jpeg";
+import logo from "@/assets/logo.png";
 
 const navLinks = [
   { label: "Início", href: "#hero" },

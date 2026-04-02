@@ -24,16 +24,16 @@ export function HeroSection() {
             transition={{ delay: 0.3 }}
           >
             <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-            <span className="text-xs text-muted-foreground">Vídeos com IA para TikTok — Geração Ilimitada</span>
+            <span className="text-xs text-muted-foreground">Vídeos com IA para <span className="text-red-500 font-semibold">Tik</span><span className="text-foreground font-semibold">Tok</span> — Geração Ilimitada</span>
           </motion.div>
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Cresça contas no TikTok com{" "}
+            Cresça contas no <span className="text-red-500">Tik</span><span className="text-foreground">Tok</span> com{" "}
             <span className="text-gradient-cyan">vídeos gerados por IA</span>
           </h1>
 
           <p className="mt-4 sm:mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted-foreground">
-            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no TikTok.
+            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no <span className="text-red-500 font-semibold">Tik</span><span className="text-foreground font-semibold">Tok</span>.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
@@ -50,7 +50,7 @@ export function HeroSection() {
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
-              TikTok Shop
+              <span className="text-red-500 font-semibold">Tik</span><span className="text-foreground font-semibold">Tok</span> Shop
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
