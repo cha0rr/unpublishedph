@@ -17,11 +17,11 @@ export function FinalCTA() {
         transition={{ duration: 0.6 }}
       >
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-5xl leading-tight">
-          Crie com velocidade.{" "}
-          <span className="text-gradient-cyan">Publique com impacto.</span>
+          Escale suas contas.{" "}
+          <span className="text-gradient-cyan">Venda mais no TikTok.</span>
         </h2>
         <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
-          Comece a gerar vídeos agora mesmo. Sem limites, sem complicação.
+          Comece a gerar UGC agora. Sem limites, sem complicação.
         </p>
         <div className="mt-10">
           <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8">
