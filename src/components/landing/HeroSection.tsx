@@ -46,15 +46,15 @@ export function HeroSection() {
           <div className="mt-8 sm:mt-10 flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
+              UGC & Vídeos Virais
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-1 w-1 rounded-full bg-primary" />
               TikTok Shop
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
               Venda de contas
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1 w-1 rounded-full bg-primary" />
-              UGC ilimitado
             </div>
           </div>
         </motion.div>
