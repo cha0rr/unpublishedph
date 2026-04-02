@@ -3,24 +3,24 @@ import { Zap, Sparkles, MousePointerClick, Briefcase } from "lucide-react";
 
 const benefits = [
   {
-    icon: Zap,
-    title: "Geração Rápida",
-    description: "Resultados em segundos. Infraestrutura otimizada para velocidade máxima.",
-  },
-  {
     icon: Sparkles,
-    title: "Qualidade Profissional",
-    description: "Conteúdo de alta resolução pronto para publicação e uso comercial.",
+    title: "UGC Realista",
+    description: "Vídeos que parecem orgânicos, perfeitos para o algoritmo do TikTok.",
   },
   {
-    icon: MousePointerClick,
-    title: "Interface Intuitiva",
-    description: "Descreva sua ideia e deixe a IA fazer o resto. Sem complexidade.",
+    icon: Zap,
+    title: "Escale Múltiplas Contas",
+    description: "Gere conteúdo único para cada conta sem esforço.",
   },
   {
     icon: Briefcase,
-    title: "Social Media & Negócios",
-    description: "Conteúdo ideal para redes sociais, marketing e apresentações.",
+    title: "TikTok Shop Ready",
+    description: "Vídeos prontos para promover produtos e converter vendas.",
+  },
+  {
+    icon: MousePointerClick,
+    title: "Geração Ilimitada",
+    description: "Sem limites, crie quantos vídeos precisar para crescer rápido.",
   },
 ];
 
