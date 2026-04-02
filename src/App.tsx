@@ -13,6 +13,7 @@ import Admin from "./pages/Admin.tsx";
 import GerarImagem from "./pages/GerarImagem.tsx";
 import BusinessStudioImages from "./pages/BusinessStudioImages.tsx";
 import AdminGenerations from "./pages/AdminGenerations.tsx";
+import AdminFinanceiro from "./pages/AdminFinanceiro.tsx";
 
 import NotFound from "./pages/NotFound.tsx";
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/gerar-imagem" element={<GerarImagem />} />
           <Route path="/business/studio-images" element={<BusinessStudioImages />} />
           <Route path="/admin/generations" element={<AdminGenerations />} />
+          <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
