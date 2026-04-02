@@ -29,11 +29,11 @@ export function HeroSection() {
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Cresça contas no TikTok com{" "}
-            <span className="text-gradient-cyan">UGC gerado por IA</span>
+            <span className="text-gradient-cyan">vídeos gerados por IA</span>
           </h1>
 
           <p className="mt-4 sm:mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted-foreground">
-            Crie vídeos UGC realistas para escalar contas no TikTok, vender no TikTok Shop ou revender contas prontas.
+            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no TikTok.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
