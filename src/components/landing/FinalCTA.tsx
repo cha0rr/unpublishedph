@@ -18,7 +18,7 @@ export function FinalCTA() {
       >
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-5xl leading-tight">
           Escale suas contas.{" "}
-          <span className="text-gradient-cyan">Venda mais no </span><span className="text-red-500">Tik</span><span className="text-foreground">Tok</span>.
+          <span className="text-gradient-cyan">Venda mais no </span><span className="text-red-500">Tik</span><span className="text-black">Tok</span>.
         </h2>
         <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
           Comece a gerar vídeos virais e UGC agora. Sem limites, sem complicação.
