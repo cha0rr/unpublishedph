@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { Loader2, AlertCircle, Clock } from "lucide-react";
-import logo from "@/assets/logo.jpeg";
+import logo from "@/assets/logo.png";
 
 const Login = () => {
   const navigate = useNavigate();
