@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { prompt, model, aspect_ratio, resolution, output_format, style, ref_history, file_urls } = body;
+    const { prompt, model, aspect_ratio, resolution, output_format, style, ref_history, file_urls, file_base64 } = body;
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: 'Prompt é obrigatório.' }), {
@@ -133,7 +133,28 @@ Deno.serve(async (req) => {
     if (output_format) formData.append('output_format', output_format);
     if (style && style !== 'auto') formData.append('style', style);
     if (ref_history) formData.append('ref_history', ref_history);
-    // Download file_urls and attach as multipart 'files' per API docs
+
+    // Handle base64 images sent directly from client
+    if (file_base64 && Array.isArray(file_base64)) {
+      for (let i = 0; i < file_base64.length; i++) {
+        const b64 = file_base64[i];
+        if (b64 && typeof b64 === 'string' && b64.trim()) {
+          try {
+            const binaryStr = atob(b64.trim());
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let j = 0; j < binaryStr.length; j++) {
+              bytes[j] = binaryStr.charCodeAt(j);
+            }
+            const blob = new Blob([bytes], { type: 'image/png' });
+            formData.append('files', blob, `reference_${i + 1}.png`);
+          } catch (e) {
+            console.error('Error decoding base64 image:', e);
+          }
+        }
+      }
+    }
+
+    // Fallback: Download file_urls and attach as multipart 'files'
     if (file_urls && Array.isArray(file_urls)) {
       for (const url of file_urls) {
         if (url && typeof url === 'string' && url.trim()) {
@@ -143,12 +164,9 @@ Deno.serve(async (req) => {
               const blob = await fileRes.blob();
               const fileName = url.trim().split('/').pop() || 'reference.png';
               formData.append('files', blob, fileName);
-            } else {
-              // Fallback: send as file_urls if download fails
-              formData.append('file_urls', url.trim());
             }
           } catch {
-            formData.append('file_urls', url.trim());
+            // skip failed downloads
           }
         }
       }
