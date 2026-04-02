@@ -39,7 +39,7 @@ export function HeroAnimation() {
           <span className="text-xs font-medium text-muted-foreground">Gerando vídeo com IA...</span>
         </div>
 
-        <div className="relative aspect-video w-full rounded-xl bg-muted/30 border border-white/[0.06] overflow-hidden mb-4">
+        <div className="relative aspect-[9/16] w-48 mx-auto rounded-xl bg-muted/30 border border-white/[0.06] overflow-hidden mb-4">
           <video
             src="/videos/hero-demo.mp4"
             autoPlay
