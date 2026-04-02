@@ -58,7 +58,7 @@ export function PricingSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Planos para <span className="text-gradient-cyan">escalar no TikTok</span>
+            Planos para <span className="text-gradient-cyan">escalar no <span className="text-red-500">Tik</span><span className="text-foreground">Tok</span></span>
           </h2>
           <p className="mt-4 text-muted-foreground">Geração ilimitada de UGC para suas contas.</p>
         </motion.div>

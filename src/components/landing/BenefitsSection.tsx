@@ -46,7 +46,7 @@ export function BenefitsSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Por que usar PH Studio para <span className="text-gradient-cyan">TikTok</span>?
+            Por que usar PH Studio para <span className="text-red-500">Tik</span><span className="text-foreground">Tok</span>?
           </h2>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
             Tudo que você precisa para escalar contas e vender mais.
