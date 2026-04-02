@@ -28,7 +28,7 @@ export function HeroSection() {
           </motion.div>
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Cresça contas no <span className="text-red-500">Tik</span><span className="text-black">Tok</span> com{" "}
+            Cresça contas no <span className="tiktok-text">TikTok</span> com{" "}
             <span className="text-gradient-cyan">vídeos gerados por IA</span>
           </h1>
 
