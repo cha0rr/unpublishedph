@@ -49,7 +49,7 @@ export function BenefitsSection() {
             Por que usar PH Studio para <span className="text-gradient-cyan">TikTok</span>?
           </h2>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Tecnologia de ponta com a simplicidade que você precisa.
+            Tudo que você precisa para escalar contas e vender mais.
           </p>
         </motion.div>
 

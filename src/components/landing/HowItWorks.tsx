@@ -36,7 +36,7 @@ export function HowItWorks() {
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Como <span className="text-gradient-cyan">funciona</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">Três passos simples para criar vídeos incríveis.</p>
+          <p className="mt-4 text-muted-foreground">Três passos para escalar suas contas no TikTok.</p>
         </motion.div>
 
         <div className="relative grid gap-6 sm:gap-8 md:grid-cols-3">

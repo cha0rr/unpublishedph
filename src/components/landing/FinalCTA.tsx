@@ -26,7 +26,7 @@ export function FinalCTA() {
         <div className="mt-10">
           <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8">
             <Link to="/gerar-video">
-              Começar a criar agora
+              Começar a escalar agora
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>

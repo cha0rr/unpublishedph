@@ -21,9 +21,9 @@ export function ShowcaseSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Criado com <span className="text-gradient-cyan">PH Studio</span>
+            Exemplos de <span className="text-gradient-cyan">UGC para TikTok</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">Explore o potencial criativo da plataforma.</p>
+          <p className="mt-4 text-muted-foreground">Veja o tipo de conteúdo que você pode criar para escalar.</p>
         </motion.div>
 
         <motion.div
