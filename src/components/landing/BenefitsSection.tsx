@@ -3,24 +3,24 @@ import { Zap, Sparkles, MousePointerClick, Briefcase } from "lucide-react";
 
 const benefits = [
   {
-    icon: Zap,
-    title: "Geração Rápida",
-    description: "Resultados em segundos. Infraestrutura otimizada para velocidade máxima.",
-  },
-  {
     icon: Sparkles,
-    title: "Qualidade Profissional",
-    description: "Conteúdo de alta resolução pronto para publicação e uso comercial.",
+    title: "UGC Realista",
+    description: "Vídeos que parecem orgânicos, perfeitos para o algoritmo do TikTok.",
   },
   {
-    icon: MousePointerClick,
-    title: "Interface Intuitiva",
-    description: "Descreva sua ideia e deixe a IA fazer o resto. Sem complexidade.",
+    icon: Zap,
+    title: "Escale Múltiplas Contas",
+    description: "Gere conteúdo único para cada conta sem esforço.",
   },
   {
     icon: Briefcase,
-    title: "Social Media & Negócios",
-    description: "Conteúdo ideal para redes sociais, marketing e apresentações.",
+    title: "TikTok Shop Ready",
+    description: "Vídeos prontos para promover produtos e converter vendas.",
+  },
+  {
+    icon: MousePointerClick,
+    title: "Geração Ilimitada",
+    description: "Sem limites, crie quantos vídeos precisar para crescer rápido.",
   },
 ];
 
@@ -46,10 +46,10 @@ export function BenefitsSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Por que escolher o <span className="text-gradient-cyan">PH Studio</span>?
+            Por que usar PH Studio para <span className="text-gradient-cyan">TikTok</span>?
           </h2>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Tecnologia de ponta com a simplicidade que você precisa.
+            Tudo que você precisa para escalar contas e vender mais.
           </p>
         </motion.div>
 

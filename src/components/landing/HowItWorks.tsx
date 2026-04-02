@@ -5,20 +5,20 @@ const steps = [
   {
     num: "01",
     icon: PenLine,
-    title: "Escreva seu prompt",
-    description: "Descreva o vídeo que você quer criar — em português, de forma natural.",
+    title: "Descreva seu UGC",
+    description: "Diga o que quer: review de produto, unboxing, depoimento, demonstração...",
   },
   {
     num: "02",
     icon: SlidersHorizontal,
-    title: "Escolha o formato",
-    description: "Selecione a proporção e qualidade ideal para seu projeto.",
+    title: "Escolha o formato TikTok",
+    description: "9:16 vertical, ideal para a FYP e máximo alcance orgânico.",
   },
   {
     num: "03",
     icon: Download,
-    title: "Gere e baixe",
-    description: "Receba seu vídeo em instantes, pronto para uso.",
+    title: "Publique e escale",
+    description: "Baixe e poste direto nas suas contas. Sem marca d'água.",
   },
 ];
 
@@ -36,7 +36,7 @@ export function HowItWorks() {
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
             Como <span className="text-gradient-cyan">funciona</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">Três passos simples para criar vídeos incríveis.</p>
+          <p className="mt-4 text-muted-foreground">Três passos para escalar suas contas no TikTok.</p>
         </motion.div>
 
         <div className="relative grid gap-6 sm:gap-8 md:grid-cols-3">

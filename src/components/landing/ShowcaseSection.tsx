@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 
 const items = [
-  { label: "Comercial de Produto", type: "Vídeo", color: "from-purple-500/20 to-primary/20", video: "/videos/showcase-comercial-produto.mp4" },
-  { label: "Vídeo Institucional", type: "Vídeo", color: "from-orange-500/20 to-primary/20", video: "/videos/showcase-video-institucional.mp4" },
-  { label: "Comercial de Moda", type: "Vídeo", color: "from-pink-500/20 to-primary/20", video: "/videos/showcase-comercial-moda.mp4" },
-  { label: "Animação Abstrata", type: "Vídeo", color: "from-green-500/20 to-primary/20", video: "/videos/showcase-animacao-abstrata.mp4" },
-  { label: "Vídeo para Redes Sociais", type: "Vídeo", color: "from-blue-500/20 to-primary/20", video: "/videos/showcase-redes-sociais.mp4" },
-  { label: "Trailer Cinematográfico", type: "Vídeo", color: "from-red-500/20 to-primary/20", video: "/videos/showcase-trailer-cinematografico.mp4" },
+  { label: "Review de Produto", type: "UGC", color: "from-purple-500/20 to-primary/20", video: "/videos/showcase-comercial-produto.mp4" },
+  { label: "Unboxing", type: "UGC", color: "from-orange-500/20 to-primary/20", video: "/videos/showcase-video-institucional.mp4" },
+  { label: "Depoimento UGC", type: "UGC", color: "from-pink-500/20 to-primary/20", video: "/videos/showcase-comercial-moda.mp4" },
+  { label: "Demonstração de Uso", type: "UGC", color: "from-green-500/20 to-primary/20", video: "/videos/showcase-animacao-abstrata.mp4" },
+  { label: "Antes e Depois", type: "UGC", color: "from-blue-500/20 to-primary/20", video: "/videos/showcase-redes-sociais.mp4" },
+  { label: "Haul de Compras", type: "UGC", color: "from-red-500/20 to-primary/20", video: "/videos/showcase-trailer-cinematografico.mp4" },
 ];
 
 export function ShowcaseSection() {
@@ -21,9 +21,9 @@ export function ShowcaseSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Criado com <span className="text-gradient-cyan">PH Studio</span>
+            Exemplos de <span className="text-gradient-cyan">UGC para TikTok</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">Explore o potencial criativo da plataforma.</p>
+          <p className="mt-4 text-muted-foreground">Veja o tipo de conteúdo que você pode criar para escalar.</p>
         </motion.div>
 
         <motion.div
