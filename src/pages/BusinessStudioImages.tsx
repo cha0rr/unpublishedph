@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useImageGenerator, ImageGenerateParams } from "@/hooks/useImageGenerator";
-import { supabase } from "@/integrations/supabase/client";
+// supabase import removed - no longer needed for storage upload
 import { Navbar } from "@/components/landing/Navbar";
 import { TechBackground } from "@/components/landing/TechBackground";
 import { Button } from "@/components/ui/button";
