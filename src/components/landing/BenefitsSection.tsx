@@ -4,23 +4,23 @@ import { Zap, Sparkles, MousePointerClick, Briefcase } from "lucide-react";
 const benefits = [
   {
     icon: Sparkles,
-    title: "UGC Realista",
-    description: "Vídeos que parecem orgânicos, perfeitos para o algoritmo do TikTok.",
+    title: "Vídeos Virais com IA",
+    description: "Cartomante, fazendeiros, frutas falantes, notícias... crie qualquer nicho viral.",
   },
   {
     icon: Zap,
-    title: "Escale Múltiplas Contas",
-    description: "Gere conteúdo único para cada conta sem esforço.",
+    title: "UGC Realista",
+    description: "Reviews, unboxings e depoimentos que parecem orgânicos.",
   },
   {
     icon: Briefcase,
-    title: "TikTok Shop Ready",
-    description: "Vídeos prontos para promover produtos e converter vendas.",
+    title: "Escale Múltiplas Contas",
+    description: "Conteúdo único para cada conta, sem esforço.",
   },
   {
     icon: MousePointerClick,
     title: "Geração Ilimitada",
-    description: "Sem limites, crie quantos vídeos precisar para crescer rápido.",
+    description: "Sem limites. Crie quantos vídeos precisar para crescer rápido.",
   },
 ];
 

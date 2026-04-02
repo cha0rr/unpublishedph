@@ -21,7 +21,7 @@ export function FinalCTA() {
           <span className="text-gradient-cyan">Venda mais no TikTok.</span>
         </h2>
         <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
-          Comece a gerar UGC agora. Sem limites, sem complicação.
+          Comece a gerar vídeos virais e UGC agora. Sem limites, sem complicação.
         </p>
         <div className="mt-10">
           <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8">

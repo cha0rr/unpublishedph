@@ -24,16 +24,16 @@ export function HeroSection() {
             transition={{ delay: 0.3 }}
           >
             <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-            <span className="text-xs text-muted-foreground">UGC com IA para TikTok — Geração Ilimitada</span>
+            <span className="text-xs text-muted-foreground">Vídeos com IA para TikTok — Geração Ilimitada</span>
           </motion.div>
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Cresça contas no TikTok com{" "}
-            <span className="text-gradient-cyan">UGC gerado por IA</span>
+            <span className="text-gradient-cyan">vídeos gerados por IA</span>
           </h1>
 
           <p className="mt-4 sm:mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted-foreground">
-            Crie vídeos UGC realistas para escalar contas no TikTok, vender no TikTok Shop ou revender contas prontas.
+            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no TikTok.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
@@ -46,15 +46,15 @@ export function HeroSection() {
           <div className="mt-8 sm:mt-10 flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
+              UGC & Vídeos Virais
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-1 w-1 rounded-full bg-primary" />
               TikTok Shop
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
               Venda de contas
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1 w-1 rounded-full bg-primary" />
-              UGC ilimitado
             </div>
           </div>
         </motion.div>

@@ -11,7 +11,7 @@ export function Footer() {
             <img src={logo} alt="PH Studio" className="h-9 w-auto rounded-lg" />
           </Link>
           <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-            Plataforma de UGC com IA para criadores e vendedores no TikTok.
+            Plataforma de vídeos com IA para criadores e vendedores no TikTok.
             Desenvolvido por PH Labs.
           </p>
           <div className="mt-6 flex gap-4">

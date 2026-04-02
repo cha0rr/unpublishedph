@@ -5,8 +5,8 @@ const steps = [
   {
     num: "01",
     icon: PenLine,
-    title: "Descreva seu UGC",
-    description: "Diga o que quer: review de produto, unboxing, depoimento, demonstração...",
+    title: "Descreva seu vídeo",
+    description: "UGC, cartomante, fazendeiro, frutas falantes, notícias... descreva o que quiser.",
   },
   {
     num: "02",
