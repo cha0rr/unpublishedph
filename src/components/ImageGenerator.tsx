@@ -52,49 +52,31 @@ export function ImageGenerator() {
     if (!prompt.trim()) return;
     startCooldown();
 
-    let fileUrls: string[] | undefined;
-    const uploadedPaths: string[] = [];
+    let fileBase64List: string[] | undefined;
 
     if (referenceFiles.length > 0) {
       setUploading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        if (!userId) throw new Error("Usuário não autenticado.");
-
-        const urls: string[] = [];
+        const base64List: string[] = [];
         for (const ref of referenceFiles) {
+          let dataUrl: string;
           if (ref.file) {
-            const ext = ref.file.name.split(".").pop() || "png";
-            const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-            const { error: uploadError } = await supabase.storage.from("image-references").upload(path, ref.file);
-            if (uploadError) throw uploadError;
-            const { data: urlData, error: signError } = await supabase.storage.from("image-references").createSignedUrl(path, 3600);
-            if (signError || !urlData?.signedUrl) throw new Error("Erro ao gerar URL assinada.");
-            urls.push(urlData.signedUrl);
-            uploadedPaths.push(path);
+            dataUrl = await fileToBase64(ref.file);
           } else {
-            urls.push(ref.preview);
+            dataUrl = await imageUrlToBase64(ref.preview);
           }
+          base64List.push(cleanBase64(dataUrl));
         }
-        fileUrls = urls;
+        fileBase64List = base64List;
       } catch (err: any) {
-        alert("Erro ao fazer upload: " + (err.message || "Tente novamente."));
+        alert("Erro ao processar imagens: " + (err.message || "Tente novamente."));
         setUploading(false);
         return;
       }
       setUploading(false);
     }
 
-    try {
-      await generate({ prompt: prompt.trim(), model, file_urls: fileUrls });
-    } finally {
-      if (uploadedPaths.length > 0) {
-        try {
-          await supabase.storage.from("image-references").remove(uploadedPaths);
-        } catch {}
-      }
-    }
+    await generate({ prompt: prompt.trim(), model, file_base64: fileBase64List });
   };
 
   const isProcessing = state === "generating" || state === "polling";
