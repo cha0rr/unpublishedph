@@ -371,9 +371,17 @@ const Admin = () => {
       <Navbar />
       <div className="mx-auto max-w-4xl px-4 pt-24 sm:pt-28 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="mb-8 flex items-center gap-3">
+          <div className="mb-4 flex items-center gap-3">
             <Shield className="h-6 w-6 text-primary" />
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Painel Administrativo</h1>
+          </div>
+          <div className="mb-8 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => navigate("/admin/generations")} className="text-xs">
+              📊 Gerações
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/admin/financeiro")} className="text-xs">
+              💰 Financeiro
+            </Button>
           </div>
 
           {loading ? (
