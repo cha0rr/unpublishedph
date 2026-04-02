@@ -1,7 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useImageGenerator, ImageGenerateParams } from "@/hooks/useImageGenerator";
+import {
+  useImageGenerator,
+  ImageGenerateParams,
+  ImageReferencePayload,
+} from "@/hooks/useImageGenerator";
 // supabase import removed - no longer needed for storage upload
 import { Navbar } from "@/components/landing/Navbar";
 import { TechBackground } from "@/components/landing/TechBackground";
@@ -85,6 +89,20 @@ const cleanBase64 = (dataUrl: string): string => {
   return match ? match[1] : dataUrl;
 };
 
+const getMimeTypeFromDataUrl = (dataUrl: string): string | undefined =>
+  dataUrl.match(/^data:([^;]+);base64,/i)?.[1];
+
+const normalizeReferencePrompt = (prompt: string, hasReferences: boolean): string => {
+  if (!hasReferences) return prompt;
+
+  return prompt
+    .replace(/\[\s*(?:image|imagem)\s*(\d+)\s*\]/gi, "__REF__$1__")
+    .replace(/\b(?:image|imagem)\s*(\d+)\b/gi, "__REF__$1__")
+    .replace(/__REF__(\d+)__/g, "[Imagem $1]");
+};
+
+type ReferenceFile = { file: File | null; preview: string };
+
 export default function BusinessStudioImages() {
   const { user, profile, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
@@ -102,7 +120,7 @@ export default function BusinessStudioImages() {
   const [resolution, setResolution] = useState("auto");
   const [outputFormat, setOutputFormat] = useState("png");
   const [style, setStyle] = useState("auto");
-  const [referenceFiles, setReferenceFiles] = useState<{ file: File | null; preview: string }[]>([]);
+  const [referenceFiles, setReferenceFiles] = useState<ReferenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,26 +174,43 @@ export default function BusinessStudioImages() {
     setReferenceFiles(prev => [...prev, { file: null, preview: resultUrl }]);
   };
 
+  const buildReferencePayload = async (
+    reference: ReferenceFile,
+    index: number,
+  ): Promise<ImageReferencePayload> => {
+    if (reference.file) {
+      const dataUrl = await fileToBase64(reference.file);
+
+      return {
+        data: cleanBase64(dataUrl),
+        mimeType: reference.file.type || undefined,
+        fileName: reference.file.name || `reference_${index + 1}`,
+      };
+    }
+
+    const dataUrl = await imageUrlToBase64(reference.preview);
+
+    return {
+      data: cleanBase64(dataUrl),
+      mimeType: getMimeTypeFromDataUrl(dataUrl),
+      fileName: `reference_${index + 1}`,
+    };
+  };
+
 
   const handleGenerate = async () => {
     if (!prompt.trim() || isProcessing) return;
 
-    let fileBase64: string[] | undefined;
+    let fileBase64: ImageGenerateParams["file_base64"];
 
     if (referenceFiles.length > 0) {
       setUploading(true);
       try {
-        const base64List: string[] = [];
-        for (const ref of referenceFiles) {
-          if (ref.file) {
-            const dataUrl = await fileToBase64(ref.file);
-            base64List.push(cleanBase64(dataUrl));
-          } else {
-            const dataUrl = await imageUrlToBase64(ref.preview);
-            base64List.push(cleanBase64(dataUrl));
-          }
-        }
-        fileBase64 = base64List;
+        fileBase64 = await Promise.all(
+          referenceFiles.map((reference, index) =>
+            buildReferencePayload(reference, index),
+          ),
+        );
       } catch (err: any) {
         alert("Erro ao processar imagem: " + (err.message || "Tente novamente."));
         setUploading(false);
@@ -184,8 +219,13 @@ export default function BusinessStudioImages() {
       setUploading(false);
     }
 
+    const normalizedPrompt = normalizeReferencePrompt(
+      prompt.trim(),
+      referenceFiles.length > 0,
+    );
+
     const params: ImageGenerateParams = {
-      prompt: prompt.trim(),
+      prompt: normalizedPrompt,
       model,
       aspect_ratio: aspectRatio,
       resolution,
@@ -334,7 +374,7 @@ export default function BusinessStudioImages() {
                   Imagens de referência (opcional)
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Use [Imagem 1], [Imagem 2]... no prompt para referenciar cada imagem.
+                  Use [Imagem 1], [Imagem 2] ou escreva imagem 1, imagem 2 no prompt.
                 </p>
                 <input
                   ref={fileInputRef}

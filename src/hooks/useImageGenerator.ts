@@ -20,7 +20,13 @@ export interface ImageGenerateParams {
   style?: string;
   ref_history?: string;
   file_urls?: string[];
-  file_base64?: string[];
+  file_base64?: ImageReferencePayload[] | string[];
+}
+
+export interface ImageReferencePayload {
+  data: string;
+  mimeType?: string;
+  fileName?: string;
 }
 
 interface ImageGeneratorResult {

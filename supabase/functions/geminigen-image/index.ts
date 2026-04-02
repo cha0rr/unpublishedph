@@ -7,6 +7,66 @@ const corsHeaders = {
 
 const RATE_LIMIT_PER_HOUR = 10;
 const MAX_PROMPT_LENGTH = 4000;
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const MIME_TYPE_TO_EXTENSION: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+};
+
+type ReferencePayload =
+  | string
+  | {
+      data?: string;
+      mimeType?: string;
+      mime_type?: string;
+      fileName?: string;
+      file_name?: string;
+    };
+
+function inferMimeTypeFromBase64(base64: string): string {
+  const cleaned = base64.trim().replace(/^data:[^;]+;base64,/, '');
+
+  if (cleaned.startsWith('iVBORw0KGgo')) return 'image/png';
+  if (cleaned.startsWith('/9j/')) return 'image/jpeg';
+  if (cleaned.startsWith('UklGR')) return 'image/webp';
+
+  return 'image/png';
+}
+
+function sanitizeMimeType(mimeType: string | undefined, fallbackBase64: string): string {
+  const normalized = mimeType?.trim().toLowerCase();
+  if (normalized && ALLOWED_IMAGE_MIME_TYPES.has(normalized)) {
+    return normalized;
+  }
+
+  return inferMimeTypeFromBase64(fallbackBase64);
+}
+
+function buildReferenceFileName(index: number, mimeType: string, fileName?: string): string {
+  const safeName = fileName?.trim().replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  if (safeName && safeName.includes('.')) {
+    return safeName;
+  }
+
+  const extension = MIME_TYPE_TO_EXTENSION[mimeType] ?? 'png';
+  return safeName ? `${safeName}.${extension}` : `reference_${index + 1}.${extension}`;
+}
+
+function normalizeReferencePrompt(prompt: string, hasReferences: boolean): string {
+  if (!hasReferences) return prompt;
+
+  const normalizedPrompt = prompt
+    .replace(/\[(?:image|imagem)\s*(\d+)\]/gi, '[Imagem $1]')
+    .replace(/(?<!\[)\b(?:image|imagem)\s*(\d+)\b(?!\])/gi, '[Imagem $1]');
+
+  const guidance = /\[Imagem\s+\d+\]/i.test(normalizedPrompt)
+    ? 'Use cada [Imagem N] anexada como referência visual fiel correspondente, preservando identidade, rosto, cabelo, proporções e características principais, alterando apenas o que o prompt pedir.'
+    : 'Use as imagens anexadas como referência visual fiel, preservando identidade, rosto, cabelo, proporções e características principais, alterando apenas o que o prompt pedir.';
+
+  return `${guidance}\n\n${normalizedPrompt}`.trim();
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -106,6 +166,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    const hasReferenceImages =
+      (Array.isArray(file_base64) && file_base64.length > 0) ||
+      (Array.isArray(file_urls) && file_urls.length > 0);
+
     // --- Prompt sanitization ---
     const sanitizedPrompt = String(prompt).substring(0, MAX_PROMPT_LENGTH).trim();
 
@@ -121,9 +185,9 @@ Deno.serve(async (req) => {
 
     const formData = new FormData();
 
-    let finalPrompt = sanitizedPrompt;
+    let finalPrompt = normalizeReferencePrompt(sanitizedPrompt, hasReferenceImages);
     if (style && style !== 'auto') {
-      finalPrompt = `[Style: ${style}] ${sanitizedPrompt}`;
+      finalPrompt = `[Style: ${style}] ${finalPrompt}`;
     }
 
     formData.append('prompt', finalPrompt);
@@ -137,16 +201,29 @@ Deno.serve(async (req) => {
     // Handle base64 images sent directly from client
     if (file_base64 && Array.isArray(file_base64)) {
       for (let i = 0; i < file_base64.length; i++) {
-        const b64 = file_base64[i];
-        if (b64 && typeof b64 === 'string' && b64.trim()) {
+        const reference = file_base64[i] as ReferencePayload;
+        const rawBase64 = typeof reference === 'string' ? reference : reference?.data;
+
+        if (rawBase64 && typeof rawBase64 === 'string' && rawBase64.trim()) {
           try {
-            const binaryStr = atob(b64.trim());
+            const cleanedBase64 = rawBase64.trim().replace(/^data:[^;]+;base64,/, '');
+            const mimeType = sanitizeMimeType(
+              typeof reference === 'string' ? undefined : reference.mimeType ?? reference.mime_type,
+              cleanedBase64,
+            );
+            const fileName = buildReferenceFileName(
+              i,
+              mimeType,
+              typeof reference === 'string' ? undefined : reference.fileName ?? reference.file_name,
+            );
+
+            const binaryStr = atob(cleanedBase64);
             const bytes = new Uint8Array(binaryStr.length);
             for (let j = 0; j < binaryStr.length; j++) {
               bytes[j] = binaryStr.charCodeAt(j);
             }
-            const blob = new Blob([bytes], { type: 'image/png' });
-            formData.append('files', blob, `reference_${i + 1}.png`);
+            const blob = new Blob([bytes], { type: mimeType });
+            formData.append('files', blob, fileName);
           } catch (e) {
             console.error('Error decoding base64 image:', e);
           }
@@ -211,7 +288,9 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message || 'Erro interno.' }), {
+    const message = error instanceof Error ? error.message : 'Erro interno.';
+
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
