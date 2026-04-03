@@ -41,13 +41,25 @@ const Registro = () => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const buildWhatsAppMessage = () => {
+    const planLabel = plans[form.plan] || form.plan;
+    return encodeURIComponent(
+      `🎬 *Nova solicitação PH Studio*\n\n` +
+      `*Nome:* ${form.full_name}\n` +
+      `*Email:* ${form.email}\n` +
+      `*WhatsApp:* ${form.whatsapp}\n` +
+      `*Plano:* ${planLabel}\n` +
+      `*Tipo de uso:* ${form.usage_type}\n` +
+      `*Pagamento:* ${form.payment_method}`
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      // Step 1: Register the user
       const { data, error: fnError } = await supabase.functions.invoke("register", {
         body: form,
       });
@@ -55,28 +67,9 @@ const Registro = () => {
       if (fnError) throw new Error(fnError.message);
       if (!data?.success) throw new Error(data?.error || "Erro ao registrar.");
 
-      const userId = data.userId;
-
-      // Step 2: Create Mercado Pago checkout preference
-      const { data: mpData, error: mpError } = await supabase.functions.invoke("mercadopago-create-preference", {
-        body: {
-          userId,
-          plan: form.plan,
-          email: form.email,
-          origin: window.location.origin,
-        },
-      });
-
-      if (mpError) throw new Error(mpError.message);
-      if (!mpData?.success) throw new Error(mpData?.error || "Erro ao criar pagamento.");
-
-      // Step 3: Redirect to Mercado Pago checkout
-      const checkoutUrl = mpData.init_point;
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-      } else {
-        throw new Error("URL de checkout não disponível.");
-      }
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage()}`;
+      window.open(whatsappUrl, "_blank");
+      setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Erro inesperado.");
     } finally {
@@ -95,9 +88,9 @@ const Registro = () => {
             className="glass-card p-8 text-center"
           >
             <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h2 className="text-2xl font-bold text-foreground mb-2">Redirecionando para pagamento...</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Solicitação enviada!</h2>
             <p className="text-muted-foreground mb-6">
-              Você será redirecionado para o Mercado Pago para concluir o pagamento do seu plano.
+              Sua conta foi criada e está pendente de aprovação. Conclua o contato pelo WhatsApp para ativar seu acesso.
             </p>
             <Button variant="outline" onClick={() => navigate("/login")} className="border-border text-foreground">
               Ir para Login
@@ -203,7 +196,19 @@ const Registro = () => {
               />
             </div>
 
-            {/* Payment is handled by Mercado Pago */}
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <Label className="text-foreground">Forma de pagamento preferida</Label>
+              <Select value={form.payment_method} onValueChange={(v) => handleChange("payment_method", v)}>
+                <SelectTrigger className="bg-muted/30 border-border text-foreground">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">Pix</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {error && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
