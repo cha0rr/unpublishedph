@@ -51,10 +51,10 @@ const GerarRoteiro = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (predefinedPrompt?: string) => {
+    const trimmed = (predefinedPrompt || input).trim();
     if (!trimmed || isLoading) return;
-
+    if (!predefinedPrompt) setInput("");
     const userMsg: Message = { role: "user", content: trimmed };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
