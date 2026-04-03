@@ -146,6 +146,30 @@ export type Database = {
         }
         Relationships: []
       }
+      system_prompts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tab_violations: {
         Row: {
           created_at: string | null
