@@ -265,7 +265,7 @@ const GerarRoteiro = () => {
             rows={1}
           />
           <Button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!input.trim() || isLoading}
             size="sm"
             className="h-10 w-10 p-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
