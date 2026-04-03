@@ -1,24 +1,31 @@
-## Plano: Gerador de Roteiros e Prompts
 
-### Funcionalidades
 
-1. **Tabela `system_prompts`** — armazena o system prompt configurado pelo admin (chave única por tipo, ex: `script_generator`)
-2. **Edge Function `deepseek-chat`** — recebe mensagens do usuário, adiciona o system prompt do banco, e chama a API DeepSeek (`deepseek-chat`). Valida que o usuário é Pro e aprovado.
-3. **Página `/admin/roteiros`** — admin edita o system prompt em um textarea e salva. Link adicionado no painel admin.
-4. **Página `/gerar-roteiro`** — interface de chat para usuários Pro aprovados. Campo de entrada, botão enviar, respostas com streaming renderizadas em markdown.
-5. **Secret `DEEPSEEK_API_KEY`** — será solicitada via ferramenta de secrets.
+## Plano: Botões predefinidos com imagens no Gerador de Roteiros
+
+### O que será feito
+
+Adicionar 4 botões visuais com imagens na tela inicial do chat (quando não há mensagens), cada um representando um tipo de roteiro. Ao clicar, o prompt é enviado automaticamente e o roteiro é gerado.
+
+### Botões predefinidos
+
+| Botão | Prompt enviado | Imagem |
+|-------|---------------|--------|
+| Frutas Falantes | "Gere um roteiro de Frutas Falantes" | Imagem gerada via URL pública (emoji/ilustração) |
+| Fazendeira Hot | "Gere um roteiro de Fazendeira Hot" | Imagem temática |
+| Cartomante | "Gere um roteiro de Cartomante" | Imagem temática |
+| Notícias Virais | "Gere um roteiro de Notícias Virais" | Imagem temática |
 
 ### Alterações
 
-| Arquivo | Ação |
-|---------|------|
-| Migration | Criar tabela `system_prompts` com RLS (admin read/write, users read) |
-| `supabase/functions/deepseek-chat/index.ts` | Nova edge function |
-| `src/pages/AdminRoteiros.tsx` | Nova página admin |
-| `src/pages/GerarRoteiro.tsx` | Nova página do gerador |
-| `src/App.tsx` | Adicionar rotas |
-| `src/pages/Admin.tsx` | Adicionar link para `/admin/roteiros` |
-| `supabase/config.toml` | Adicionar config da função |
+**`src/pages/GerarRoteiro.tsx`**:
+- Criar array de templates com `label`, `prompt` e `image` (URLs de imagens públicas — usarei imagens de placeholder estilizadas com emojis/ícones via componentes visuais, já que não temos imagens reais)
+- Substituir a área vazia (quando `messages.length === 0`) por um grid 2x2 com cards clicáveis
+- Cada card terá: imagem de fundo/topo, título do roteiro
+- Ao clicar, definir o `input` com o prompt e chamar `sendMessage` automaticamente
+- Usar função `sendPredefined(prompt)` que seta o input e dispara o envio
 
-### Custos por modelo
-- DeepSeek Chat: API externa, custo gerenciado pelo usuário via sua chave API
+### Design dos cards
+- Grid responsivo: 2 colunas em mobile, 4 em desktop
+- Cards com imagem (aspect-ratio quadrada), título abaixo, hover com scale
+- Imagens serão geradas como componentes com gradientes e emojis grandes (🍊🍋 para frutas, 🤠👩‍🌾 para fazendeira, 🔮🃏 para cartomante, 📰🔥 para notícias) já que não temos assets reais
+
