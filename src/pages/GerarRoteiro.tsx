@@ -3,11 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import imgFrutas from "@/assets/roteiro-frutas.jpg";
+import imgFazendeira from "@/assets/roteiro-fazendeira.jpg";
+import imgCartomante from "@/assets/roteiro-cartomante.jpg";
+import imgNoticias from "@/assets/roteiro-noticias.jpg";
+
+const PREDEFINED_TEMPLATES = [
+  { label: "Frutas Falantes", prompt: "Gere um roteiro de Frutas Falantes", image: imgFrutas },
+  { label: "Fazendeira Hot", prompt: "Gere um roteiro de Fazendeira Hot", image: imgFazendeira },
+  { label: "Cartomante", prompt: "Gere um roteiro de Cartomante", image: imgCartomante },
+  { label: "Notícias Virais", prompt: "Gere um roteiro de Notícias Virais", image: imgNoticias },
+];
 
 interface Message {
   role: "user" | "assistant";
@@ -41,14 +51,14 @@ const GerarRoteiro = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (predefinedPrompt?: string) => {
+    const trimmed = (predefinedPrompt || input).trim();
     if (!trimmed || isLoading) return;
-
+    if (!predefinedPrompt) setInput("");
     const userMsg: Message = { role: "user", content: trimmed };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
-    setInput("");
+    setIsLoading(true);
     setIsLoading(true);
 
     let assistantContent = "";
@@ -195,14 +205,24 @@ const GerarRoteiro = () => {
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-20">
-              <FileText className="h-12 w-12 text-primary/30 mb-4" />
-              <h2 className="text-lg font-semibold text-foreground/70 mb-2">
-                Como posso ajudar?
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Descreva o tipo de roteiro ou prompt que você precisa. Posso criar roteiros para vídeos, prompts para geração de imagens e muito mais.
-              </p>
+            <div className="flex flex-col items-center justify-center h-full py-10">
+              <FileText className="h-10 w-10 text-primary/30 mb-3" />
+              <h2 className="text-lg font-semibold text-foreground/70 mb-1">Escolha um roteiro</h2>
+              <p className="text-sm text-muted-foreground mb-6">Clique em um modelo ou digite seu próprio prompt abaixo.</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-2xl">
+                {PREDEFINED_TEMPLATES.map((t) => (
+                  <motion.button
+                    key={t.label}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => sendMessage(t.prompt)}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
+                  >
+                    <img src={t.image} alt={t.label} loading="lazy" width={512} height={512} className="w-full aspect-square object-cover rounded-lg" />
+                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{t.label}</span>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -255,7 +275,7 @@ const GerarRoteiro = () => {
             rows={1}
           />
           <Button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!input.trim() || isLoading}
             size="sm"
             className="h-10 w-10 p-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
