@@ -58,7 +58,7 @@ const GerarRoteiro = () => {
     const userMsg: Message = { role: "user", content: trimmed };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
-    setInput("");
+    setIsLoading(true);
     setIsLoading(true);
 
     let assistantContent = "";
