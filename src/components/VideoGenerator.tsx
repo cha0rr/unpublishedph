@@ -69,6 +69,7 @@ export function VideoGenerator() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
+    setVideoSegments([]);
     startCooldown();
     generate({
       prompt: prompt.trim(),
@@ -250,6 +251,36 @@ export function VideoGenerator() {
             segments={videoSegments.length > 0 ? videoSegments : [resultUrl]}
             aspectRatio={aspectRatio}
           />
+
+          {/* Timeline de segmentos */}
+          {videoSegments.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              {videoSegments.map((segUrl, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    // Navigate SequentialVideoPlayer to this segment
+                    const event = new CustomEvent("segment-jump", { detail: idx });
+                    window.dispatchEvent(event);
+                  }}
+                  className={`shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                    idx === videoSegments.length - 1
+                      ? "border-primary ring-1 ring-primary/30"
+                      : "border-border/40 hover:border-primary/50"
+                  }`}
+                >
+                  <video
+                    src={segUrl}
+                    muted
+                    preload="metadata"
+                    className="w-full h-full object-cover pointer-events-none"
+                  />
+                  <span className="sr-only">Parte {idx + 1}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-3 flex-wrap">
             <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
               <a href={resultUrl} download target="_blank" rel="noopener noreferrer">

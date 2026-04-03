@@ -18,6 +18,18 @@ export function SequentialVideoPlayer({ segments, aspectRatio }: SequentialVideo
     if (segments.length === 1) setCurrentIndex(0);
   }, [segments.length]);
 
+  // Listen for segment-jump events from timeline
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const idx = (e as CustomEvent).detail;
+      if (typeof idx === "number" && idx >= 0 && idx < segments.length) {
+        setCurrentIndex(idx);
+      }
+    };
+    window.addEventListener("segment-jump", handler);
+    return () => window.removeEventListener("segment-jump", handler);
+  }, [segments.length]);
+
   // Auto-play when segment changes
   useEffect(() => {
     const vid = videoRef.current;
