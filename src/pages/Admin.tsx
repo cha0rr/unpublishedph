@@ -382,6 +382,9 @@ const Admin = () => {
             <Button size="sm" variant="outline" onClick={() => navigate("/admin/financeiro")} className="text-xs">
               💰 Financeiro
             </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/admin/roteiros")} className="text-xs">
+              📝 Roteiros
+            </Button>
           </div>
 
           {loading ? (

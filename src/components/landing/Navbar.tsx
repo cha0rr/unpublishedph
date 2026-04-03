@@ -154,9 +154,14 @@ export function Navbar() {
                     </>
                   )}
                   {(isPro || isAdmin) && (
-                    <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
-                      Studio Imagens
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
+                        Studio Imagens
+                      </Button>
+                      <Button size="sm" variant="outline" className={currentPath === "/gerar-roteiro" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-roteiro"); }}>
+                        Roteiros
+                      </Button>
+                    </>
                   )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
