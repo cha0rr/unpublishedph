@@ -14,6 +14,8 @@ import GerarImagem from "./pages/GerarImagem.tsx";
 import BusinessStudioImages from "./pages/BusinessStudioImages.tsx";
 import AdminGenerations from "./pages/AdminGenerations.tsx";
 import AdminFinanceiro from "./pages/AdminFinanceiro.tsx";
+import AdminRoteiros from "./pages/AdminRoteiros.tsx";
+import GerarRoteiro from "./pages/GerarRoteiro.tsx";
 
 import NotFound from "./pages/NotFound.tsx";
 
