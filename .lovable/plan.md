@@ -1,20 +1,24 @@
 
 
-## Plano: Corrigir referência de imagem no Studio Imagens
+## Plano: Remover Mercado Pago e redirecionar para WhatsApp
 
-### Problema
+### O que será feito
 
-A página `BusinessStudioImages.tsx` ainda usa o fluxo antigo de upload para o Supabase Storage (`file_urls`), que não funciona porque a Edge Function não consegue acessar as URLs. O componente `ImageGenerator.tsx` já foi corrigido anteriormente para usar `file_base64`, mas o Studio Imagens não recebeu a mesma correção.
-
-### Solução
-
-Atualizar `src/pages/BusinessStudioImages.tsx` para converter as imagens de referência em Base64 no cliente e enviá-las via `file_base64` (mesmo padrão já usado no `ImageGenerator.tsx`), eliminando o upload para o Storage.
+Remover toda a integração com o Mercado Pago e, após o registro do usuário, redirecionar para o WhatsApp com os dados do formulário (mesmo padrão já usado no `RegistroDialog.tsx`).
 
 ### Alterações
 
-**`src/pages/BusinessStudioImages.tsx`**:
-- Adicionar funções utilitárias `fileToBase64`, `imageUrlToBase64` e `cleanBase64` (mesmas do `ImageGenerator.tsx`)
-- Reescrever `handleGenerate` para converter referências em Base64 em vez de fazer upload para o Storage
-- Enviar `file_base64` nos parâmetros em vez de `file_urls`
-- Remover toda a lógica de upload/cleanup do Storage (`supabase.storage.from("image-references")`)
+1. **`src/pages/Registro.tsx`**:
+   - Remover Steps 2 e 3 (chamada `mercadopago-create-preference` e redirect para checkout)
+   - Adicionar função `buildWhatsAppMessage()` com resumo do cadastro (mesmo padrão do `RegistroDialog.tsx`)
+   - Após registro bem-sucedido, abrir WhatsApp (`window.open`) e mostrar tela de sucesso
+   - Restaurar campo de forma de pagamento (Pix/Cartão) no formulário para incluir na mensagem do WhatsApp
+   - Atualizar tela de sucesso para refletir que a conta está pendente de aprovação (não mais "redirecionando para pagamento")
+
+2. **Deletar Edge Functions do Mercado Pago**:
+   - `supabase/functions/mercadopago-create-preference/` — deletar arquivo
+   - `supabase/functions/mercadopago-webhook/` — deletar arquivo
+   - Usar `supabase--delete_edge_functions` para remover do deploy
+
+3. **`src/components/landing/RegistroDialog.tsx`** — sem alterações (já usa o fluxo correto com WhatsApp)
 
