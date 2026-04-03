@@ -205,14 +205,24 @@ const GerarRoteiro = () => {
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-20">
-              <FileText className="h-12 w-12 text-primary/30 mb-4" />
-              <h2 className="text-lg font-semibold text-foreground/70 mb-2">
-                Como posso ajudar?
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Descreva o tipo de roteiro ou prompt que você precisa. Posso criar roteiros para vídeos, prompts para geração de imagens e muito mais.
-              </p>
+            <div className="flex flex-col items-center justify-center h-full py-10">
+              <FileText className="h-10 w-10 text-primary/30 mb-3" />
+              <h2 className="text-lg font-semibold text-foreground/70 mb-1">Escolha um roteiro</h2>
+              <p className="text-sm text-muted-foreground mb-6">Clique em um modelo ou digite seu próprio prompt abaixo.</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-2xl">
+                {PREDEFINED_TEMPLATES.map((t) => (
+                  <motion.button
+                    key={t.label}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => sendMessage(t.prompt)}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
+                  >
+                    <img src={t.image} alt={t.label} loading="lazy" width={512} height={512} className="w-full aspect-square object-cover rounded-lg" />
+                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{t.label}</span>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           )}
 
