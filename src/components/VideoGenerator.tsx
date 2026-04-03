@@ -69,6 +69,7 @@ export function VideoGenerator() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
+    setVideoSegments([]);
     startCooldown();
     generate({
       prompt: prompt.trim(),
