@@ -3,11 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import imgFrutas from "@/assets/roteiro-frutas.jpg";
+import imgFazendeira from "@/assets/roteiro-fazendeira.jpg";
+import imgCartomante from "@/assets/roteiro-cartomante.jpg";
+import imgNoticias from "@/assets/roteiro-noticias.jpg";
+
+const PREDEFINED_TEMPLATES = [
+  { label: "Frutas Falantes", prompt: "Gere um roteiro de Frutas Falantes", image: imgFrutas },
+  { label: "Fazendeira Hot", prompt: "Gere um roteiro de Fazendeira Hot", image: imgFazendeira },
+  { label: "Cartomante", prompt: "Gere um roteiro de Cartomante", image: imgCartomante },
+  { label: "Notícias Virais", prompt: "Gere um roteiro de Notícias Virais", image: imgNoticias },
+];
 
 interface Message {
   role: "user" | "assistant";
