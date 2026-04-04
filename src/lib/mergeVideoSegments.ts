@@ -1,5 +1,10 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
+import { supabase } from "@/integrations/supabase/client";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SEGMENT_PROXY_URL = `${SUPABASE_URL}/functions/v1/video-segment-proxy`;
 
 let ffmpegInstance: FFmpeg | null = null;
 
@@ -20,29 +25,40 @@ async function getFFmpeg(onProgress?: (msg: string) => void): Promise<FFmpeg> {
 }
 
 async function downloadSegment(url: string): Promise<Uint8Array> {
-  // Try direct fetch first
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    return new Uint8Array(buffer);
-  } catch (directErr) {
-    console.warn("Direct fetch failed, trying with no-cache:", directErr);
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+
+  if (!accessToken) {
+    throw new Error("Sessão expirada. Faça login novamente.");
   }
 
-  // Retry with cache bypass
-  try {
-    const separator = url.includes("?") ? "&" : "?";
-    const cacheBustUrl = `${url}${separator}_t=${Date.now()}`;
-    const resp = await fetch(cacheBustUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    return new Uint8Array(buffer);
-  } catch (retryErr) {
-    throw new Error(
-      `Não foi possível baixar o segmento de vídeo. Isso pode ser causado por restrições de CORS do servidor. URL: ${url.substring(0, 80)}...`
-    );
+  const resp = await fetch(SEGMENT_PROXY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!resp.ok) {
+    let message = `HTTP ${resp.status}`;
+
+    try {
+      const data = await resp.json();
+      if (data?.error) {
+        message = data.error;
+      }
+    } catch {
+      // Keep HTTP fallback message when proxy does not return JSON.
+    }
+
+    throw new Error(`Não foi possível baixar o segmento de vídeo. ${message}`);
   }
+
+  const buffer = await resp.arrayBuffer();
+  return new Uint8Array(buffer);
 }
 
 export async function mergeVideoSegments(
