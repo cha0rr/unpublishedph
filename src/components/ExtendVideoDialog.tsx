@@ -110,6 +110,11 @@ export function ExtendVideoDialog({
         if (!data) throw new Error("Resposta inválida.");
         consecutiveErrors = 0;
 
+        const errMsg = data.error_message || "";
+        if (errMsg.includes("PUBLIC_ERROR") || errMsg.includes("violation of Google")) {
+          throw new Error("Reescreva seu prompt, pois contem palavras impróprias ou material de terceiros.");
+        }
+
         const status = Number(data.status);
         if (status === 2) {
           let finalUrl = data.generate_result;
@@ -121,7 +126,7 @@ export function ExtendVideoDialog({
           return finalUrl || null;
         }
         if (status === 3) {
-          throw new Error(data.error_message || "Falha ao estender vídeo.");
+          throw new Error(errMsg || "Falha ao estender vídeo.");
         }
       } catch (err: any) {
         consecutiveErrors++;

@@ -113,6 +113,12 @@ export function useGenerator(): GeneratorResult {
         continue;
       }
 
+      // Check for policy violation errors regardless of status
+      const errMsg = data.error_message || "";
+      if (errMsg.includes("PUBLIC_ERROR") || errMsg.includes("violation of Google")) {
+        throw new Error("Reescreva seu prompt, pois contem palavras impróprias ou material de terceiros.");
+      }
+
       const status = Number(data.status);
 
       if (status === 2) {
@@ -126,7 +132,6 @@ export function useGenerator(): GeneratorResult {
       }
 
       if (status === 3) {
-        const errMsg = data.error_message || "";
         const errCode = data.error_code ? ` (Código: ${data.error_code})` : "";
         throw new Error(errMsg + errCode || "Falha ao gerar vídeo.");
       }
