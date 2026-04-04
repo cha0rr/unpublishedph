@@ -87,10 +87,12 @@ export function SequentialVideoPlayer({ segments, aspectRatio }: SequentialVideo
         ref={videoRef}
         src={segments[currentIndex]}
         autoPlay
-        onEnded={handleEnded}
+        loop={segments.length === 1}
+        onEnded={segments.length > 1 ? handleEnded : undefined}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        className="h-full w-full object-cover"
+        onClick={togglePlay}
+        className="h-full w-full object-cover cursor-pointer"
       />
 
       {/* Segment indicator */}
