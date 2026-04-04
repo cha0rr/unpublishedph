@@ -1,5 +1,5 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { toBlobURL } from "@ffmpeg/util";
 
 let ffmpegInstance: FFmpeg | null = null;
 
@@ -19,24 +19,55 @@ async function getFFmpeg(onProgress?: (msg: string) => void): Promise<FFmpeg> {
   return ffmpeg;
 }
 
+async function downloadSegment(url: string): Promise<Uint8Array> {
+  // Try direct fetch first
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const buffer = await resp.arrayBuffer();
+    return new Uint8Array(buffer);
+  } catch (directErr) {
+    console.warn("Direct fetch failed, trying with no-cache:", directErr);
+  }
+
+  // Retry with cache bypass
+  try {
+    const separator = url.includes("?") ? "&" : "?";
+    const cacheBustUrl = `${url}${separator}_t=${Date.now()}`;
+    const resp = await fetch(cacheBustUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const buffer = await resp.arrayBuffer();
+    return new Uint8Array(buffer);
+  } catch (retryErr) {
+    throw new Error(
+      `Não foi possível baixar o segmento de vídeo. Isso pode ser causado por restrições de CORS do servidor. URL: ${url.substring(0, 80)}...`
+    );
+  }
+}
+
 export async function mergeVideoSegments(
   segmentUrls: string[],
   onProgress?: (msg: string) => void
 ): Promise<Blob> {
   if (segmentUrls.length === 0) throw new Error("Nenhum segmento para unificar.");
   if (segmentUrls.length === 1) {
-    const resp = await fetch(segmentUrls[0]);
-    if (!resp.ok) throw new Error("Falha ao baixar o vídeo.");
-    return resp.blob();
+    const data = await downloadSegment(segmentUrls[0]);
+    return new Blob([data.buffer as ArrayBuffer], { type: "video/mp4" });
   }
 
-  const ffmpeg = await getFFmpeg(onProgress);
-
-  // Download all segments
+  // Download all segments FIRST (before loading ffmpeg) to fail fast on CORS
+  const segmentData: Uint8Array[] = [];
   for (let i = 0; i < segmentUrls.length; i++) {
     onProgress?.(`Baixando parte ${i + 1}/${segmentUrls.length}...`);
-    const data = await fetchFile(segmentUrls[i]);
-    await ffmpeg.writeFile(`seg${i}.mp4`, data);
+    segmentData.push(await downloadSegment(segmentUrls[i]));
+  }
+
+  // Now load ffmpeg
+  const ffmpeg = await getFFmpeg(onProgress);
+
+  // Write downloaded data to virtual FS
+  for (let i = 0; i < segmentData.length; i++) {
+    await ffmpeg.writeFile(`seg${i}.mp4`, segmentData[i]);
   }
 
   // Build concat list
@@ -55,7 +86,7 @@ export async function mergeVideoSegments(
   const output = await ffmpeg.readFile("output.mp4") as Uint8Array;
 
   // Cleanup
-  for (let i = 0; i < segmentUrls.length; i++) {
+  for (let i = 0; i < segmentData.length; i++) {
     await ffmpeg.deleteFile(`seg${i}.mp4`);
   }
   await ffmpeg.deleteFile("list.txt");
