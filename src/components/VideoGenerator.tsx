@@ -142,71 +142,34 @@ export function VideoGenerator() {
     if (segs.length < 2) return;
     setIsMerging(true);
     try {
-      const video = document.createElement("video");
-      video.muted = true;
-      video.playsInline = true;
-      video.crossOrigin = "anonymous";
-
-      // Get dimensions from first segment
-      await new Promise<void>((resolve, reject) => {
-        video.onloadedmetadata = () => resolve();
-        video.onerror = () => reject(new Error("Failed to load video"));
-        video.src = segs[0];
-      });
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d")!;
-
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-          ? "video/webm;codecs=vp9"
-          : "video/webm",
-        videoBitsPerSecond: 5_000_000,
-      });
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-
-      const done = new Promise<Blob>((resolve) => {
-        mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: "video/webm" }));
-      });
-
-      mediaRecorder.start();
-
-      for (let i = 0; i < segs.length; i++) {
-        await new Promise<void>((resolve, reject) => {
-          video.onloadedmetadata = () => {
-            video.play().catch(reject);
-          };
-          video.onended = () => resolve();
-          video.onerror = () => reject(new Error("Failed to load segment"));
-          video.src = segs[i];
-        });
-        // Draw frames while playing
-        await new Promise<void>((resolve) => {
-          const drawFrame = () => {
-            if (video.ended || video.paused) { resolve(); return; }
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            requestAnimationFrame(drawFrame);
-          };
-          video.onended = () => resolve();
-          drawFrame();
-        });
+      // Fetch all segments as blobs first to avoid CORS issues
+      const blobs: Blob[] = [];
+      for (const url of segs) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Failed to fetch segment: ${resp.status}`);
+        blobs.push(await resp.blob());
       }
 
-      mediaRecorder.stop();
-      const blob = await done;
-
-      const url = URL.createObjectURL(blob);
+      // Concatenate all blobs into a single file
+      const merged = new Blob(blobs, { type: blobs[0].type || "video/mp4" });
+      const blobUrl = URL.createObjectURL(merged);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = "video-completo.webm";
+      a.href = blobUrl;
+      a.download = "video-completo.mp4";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (err) {
       console.error("Merge failed:", err);
+      // Fallback: download segments individually
+      for (let i = 0; i < segs.length; i++) {
+        const a = document.createElement("a");
+        a.href = segs[i];
+        a.download = `video-parte-${i + 1}.mp4`;
+        a.target = "_blank";
+        a.click();
+      }
     } finally {
       setIsMerging(false);
     }
@@ -406,10 +369,20 @@ export function VideoGenerator() {
           )}
 
           <div className="flex gap-3 flex-wrap">
-            <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
-              <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4 mr-2" /> Download
-              </a>
+            <Button
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                const segments = videoSegments.length > 0 ? videoSegments : [resultUrl];
+                const downloadUrl = segments[currentSegmentIndex] || resultUrl;
+                const a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = `video-parte-${currentSegmentIndex + 1}.mp4`;
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                a.click();
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" /> Download {videoSegments.length > 1 ? `(Parte ${currentSegmentIndex + 1})` : ""}
             </Button>
             {videoSegments.length > 1 && (
               <Button
