@@ -7,7 +7,7 @@ interface SequentialVideoPlayerProps {
   onSegmentChange?: (index: number) => void;
 }
 
-export function SequentialVideoPlayer({ segments, aspectRatio }: SequentialVideoPlayerProps) {
+export function SequentialVideoPlayer({ segments, aspectRatio, onSegmentChange }: SequentialVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
