@@ -44,6 +44,8 @@ export function VideoGenerator() {
   const [model, setModel] = useState("veo-3.1-fast");
   const [modeImage, setModeImage] = useState<ModeImage>("none");
   const [extendOpen, setExtendOpen] = useState(false);
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
+  const [isMerging, setIsMerging] = useState(false);
   const [videoSegments, setVideoSegments] = useState<string[]>([]);
 
   const [refImages, setRefImages] = useState<File[]>([]);
@@ -133,6 +135,81 @@ export function VideoGenerator() {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const handleMergeDownload = async () => {
+    const segs = videoSegments.length > 1 ? videoSegments : [];
+    if (segs.length < 2) return;
+    setIsMerging(true);
+    try {
+      const video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      video.crossOrigin = "anonymous";
+
+      // Get dimensions from first segment
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error("Failed to load video"));
+        video.src = segs[0];
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d")!;
+
+      const stream = canvas.captureStream(30);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+          ? "video/webm;codecs=vp9"
+          : "video/webm",
+        videoBitsPerSecond: 5_000_000,
+      });
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const done = new Promise<Blob>((resolve) => {
+        mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: "video/webm" }));
+      });
+
+      mediaRecorder.start();
+
+      for (let i = 0; i < segs.length; i++) {
+        await new Promise<void>((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            video.play().catch(reject);
+          };
+          video.onended = () => resolve();
+          video.onerror = () => reject(new Error("Failed to load segment"));
+          video.src = segs[i];
+        });
+        // Draw frames while playing
+        await new Promise<void>((resolve) => {
+          const drawFrame = () => {
+            if (video.ended || video.paused) { resolve(); return; }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(drawFrame);
+          };
+          video.onended = () => resolve();
+          drawFrame();
+        });
+      }
+
+      mediaRecorder.stop();
+      const blob = await done;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "video-completo.webm";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Merge failed:", err);
+    } finally {
+      setIsMerging(false);
+    }
   };
 
   return (
@@ -296,6 +373,7 @@ export function VideoGenerator() {
           <SequentialVideoPlayer
             segments={videoSegments.length > 0 ? videoSegments : [resultUrl]}
             aspectRatio={aspectRatio}
+            onSegmentChange={setCurrentSegmentIndex}
           />
 
           {/* Timeline de segmentos */}
@@ -310,7 +388,7 @@ export function VideoGenerator() {
                     window.dispatchEvent(event);
                   }}
                   className={`shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                    idx === videoSegments.length - 1
+                    idx === currentSegmentIndex
                       ? "border-primary ring-1 ring-primary/30"
                       : "border-border/40 hover:border-primary/50"
                   }`}
@@ -333,6 +411,19 @@ export function VideoGenerator() {
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
             </Button>
+            {videoSegments.length > 1 && (
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleMergeDownload}
+                disabled={isMerging}
+              >
+                {isMerging ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Unificando...</>
+                ) : (
+                  <><Film className="h-4 w-4 mr-2" /> Baixar vídeo longo</>
+                )}
+              </Button>
+            )}
             <Button
               variant="outline"
               className="flex-1 border-primary/30 text-primary hover:bg-primary/10"

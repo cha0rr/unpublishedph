@@ -4,9 +4,10 @@ import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 interface SequentialVideoPlayerProps {
   segments: string[];
   aspectRatio: string;
+  onSegmentChange?: (index: number) => void;
 }
 
-export function SequentialVideoPlayer({ segments, aspectRatio }: SequentialVideoPlayerProps) {
+export function SequentialVideoPlayer({ segments, aspectRatio, onSegmentChange }: SequentialVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -17,6 +18,11 @@ export function SequentialVideoPlayer({ segments, aspectRatio }: SequentialVideo
   useEffect(() => {
     if (segments.length === 1) setCurrentIndex(0);
   }, [segments.length]);
+
+  // Notify parent of segment changes
+  useEffect(() => {
+    onSegmentChange?.(currentIndex);
+  }, [currentIndex, onSegmentChange]);
 
   // Listen for segment-jump events from timeline
   useEffect(() => {
