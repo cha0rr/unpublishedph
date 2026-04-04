@@ -5,18 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, FileText, Trash2 } from "lucide-react";
+import { Loader2, Send, FileText, Trash2, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
-import imgFrutas from "@/assets/roteiro-frutas.jpg";
-import imgFazendeira from "@/assets/roteiro-fazendeira.jpg";
-import imgCartomante from "@/assets/roteiro-cartomante.jpg";
-import imgNoticias from "@/assets/roteiro-noticias.jpg";
 
-const PREDEFINED_TEMPLATES = [
-  { label: "Frutas Falantes", prompt: "Gere um roteiro de Frutas Falantes", image: imgFrutas },
-  { label: "Fazendeira Hot", prompt: "Gere um roteiro de Fazendeira Hot", image: imgFazendeira },
-  { label: "Cartomante", prompt: "Gere um roteiro de Cartomante", image: imgCartomante },
-  { label: "Notícias Virais", prompt: "Gere um roteiro de Notícias Virais", image: imgNoticias },
+const EXAMPLE_PROMPTS = [
+  "Gere um roteiro de Frutas Falantes",
+  "Gere um roteiro de Fazendeira Hot",
+  "Gere um roteiro de Cartomante",
+  "Gere um roteiro de Notícias Virais",
 ];
 
 interface Message {
