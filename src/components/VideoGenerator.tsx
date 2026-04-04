@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGenerator } from "@/hooks/useGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
 import { Button } from "@/components/ui/button";
