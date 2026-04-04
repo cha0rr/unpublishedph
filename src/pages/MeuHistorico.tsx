@@ -5,9 +5,10 @@ import { Footer } from "@/components/landing/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Download, Film, ImageIcon } from "lucide-react";
+import { Loader2, Download, Film, ImageIcon, FastForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 
 interface Generation {
   id: string;
@@ -16,6 +17,8 @@ interface Generation {
   image_url: string | null;
   created_at: string | null;
   aspect_ratio: string | null;
+  uuid: string | null;
+  resolution: string | null;
 }
 
 const MeuHistorico = () => {
@@ -24,6 +27,7 @@ const MeuHistorico = () => {
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"videos" | "images">("videos");
+  const [extendItem, setExtendItem] = useState<Generation | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -38,7 +42,7 @@ const MeuHistorico = () => {
       setLoading(true);
       const { data } = await supabase
         .from("image_generations")
-        .select("id, prompt, model, image_url, created_at, aspect_ratio")
+        .select("id, prompt, model, image_url, created_at, aspect_ratio, uuid, resolution")
         .eq("user_id", user.id)
         .eq("status", "completed")
         .order("created_at", { ascending: false });
@@ -148,13 +152,26 @@ const MeuHistorico = () => {
                     <span className="text-[10px] text-muted-foreground/70">
                       {item.model} • {item.created_at ? format(new Date(item.created_at), "dd/MM/yy HH:mm") : ""}
                     </span>
-                    {item.image_url && (
-                      <Button asChild size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary hover:bg-primary/10">
-                        <a href={item.image_url} download target="_blank" rel="noopener noreferrer">
-                          <Download className="h-3.5 w-3.5" />
-                        </a>
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {tab === "videos" && item.image_url && item.uuid && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-primary hover:bg-primary/10"
+                          onClick={() => setExtendItem(item)}
+                          title="Estender vídeo"
+                        >
+                          <FastForward className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {item.image_url && (
+                        <Button asChild size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary hover:bg-primary/10">
+                          <a href={item.image_url} download target="_blank" rel="noopener noreferrer">
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -162,6 +179,20 @@ const MeuHistorico = () => {
           </div>
         )}
       </div>
+      {extendItem && extendItem.image_url && extendItem.uuid && (
+        <ExtendVideoDialog
+          open={!!extendItem}
+          onOpenChange={(open) => { if (!open) setExtendItem(null); }}
+          videoUrl={extendItem.image_url}
+          videoUuid={extendItem.uuid}
+          aspectRatio={extendItem.aspect_ratio || "16:9"}
+          resolution={extendItem.resolution || "720p"}
+          model={extendItem.model}
+          onExtended={() => {
+            setExtendItem(null);
+          }}
+        />
+      )}
       <Footer />
     </div>
   );
