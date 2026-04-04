@@ -152,13 +152,26 @@ const MeuHistorico = () => {
                     <span className="text-[10px] text-muted-foreground/70">
                       {item.model} • {item.created_at ? format(new Date(item.created_at), "dd/MM/yy HH:mm") : ""}
                     </span>
-                    {item.image_url && (
-                      <Button asChild size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary hover:bg-primary/10">
-                        <a href={item.image_url} download target="_blank" rel="noopener noreferrer">
-                          <Download className="h-3.5 w-3.5" />
-                        </a>
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {tab === "videos" && item.image_url && item.uuid && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-primary hover:bg-primary/10"
+                          onClick={() => setExtendItem(item)}
+                          title="Estender vídeo"
+                        >
+                          <FastForward className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {item.image_url && (
+                        <Button asChild size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary hover:bg-primary/10">
+                          <a href={item.image_url} download target="_blank" rel="noopener noreferrer">
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
