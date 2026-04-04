@@ -19,6 +19,11 @@ export function SequentialVideoPlayer({ segments, aspectRatio, onSegmentChange }
     if (segments.length === 1) setCurrentIndex(0);
   }, [segments.length]);
 
+  // Notify parent of segment changes
+  useEffect(() => {
+    onSegmentChange?.(currentIndex);
+  }, [currentIndex, onSegmentChange]);
+
   // Listen for segment-jump events from timeline
   useEffect(() => {
     const handler = (e: Event) => {
