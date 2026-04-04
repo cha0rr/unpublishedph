@@ -411,6 +411,19 @@ export function VideoGenerator() {
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
             </Button>
+            {videoSegments.length > 1 && (
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleMergeDownload}
+                disabled={isMerging}
+              >
+                {isMerging ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Unificando...</>
+                ) : (
+                  <><Film className="h-4 w-4 mr-2" /> Baixar vídeo longo</>
+                )}
+              </Button>
+            )}
             <Button
               variant="outline"
               className="flex-1 border-primary/30 text-primary hover:bg-primary/10"
