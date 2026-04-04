@@ -15,6 +15,7 @@ const plans = [
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
+      "Geração com ingredientes",
       "Uso comercial",
     ],
     highlighted: false,
