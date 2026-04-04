@@ -17,6 +17,8 @@ interface Generation {
   image_url: string | null;
   created_at: string | null;
   aspect_ratio: string | null;
+  uuid: string | null;
+  resolution: string | null;
 }
 
 const MeuHistorico = () => {
