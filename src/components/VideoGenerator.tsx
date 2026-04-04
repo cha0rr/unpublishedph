@@ -48,6 +48,7 @@ export function VideoGenerator() {
   const [extendOpen, setExtendOpen] = useState(false);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
   const [isMerging, setIsMerging] = useState(false);
+  const [mergeStatus, setMergeStatus] = useState("");
   const [videoSegments, setVideoSegments] = useState<string[]>([]);
 
   const [refImages, setRefImages] = useState<File[]>([]);
