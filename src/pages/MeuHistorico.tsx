@@ -27,6 +27,7 @@ const MeuHistorico = () => {
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"videos" | "images">("videos");
+  const [extendItem, setExtendItem] = useState<Generation | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
