@@ -5,18 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, FileText, Trash2 } from "lucide-react";
+import { Loader2, Send, FileText, Trash2, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
-import imgFrutas from "@/assets/roteiro-frutas.jpg";
-import imgFazendeira from "@/assets/roteiro-fazendeira.jpg";
-import imgCartomante from "@/assets/roteiro-cartomante.jpg";
-import imgNoticias from "@/assets/roteiro-noticias.jpg";
 
-const PREDEFINED_TEMPLATES = [
-  { label: "Frutas Falantes", prompt: "Gere um roteiro de Frutas Falantes", image: imgFrutas },
-  { label: "Fazendeira Hot", prompt: "Gere um roteiro de Fazendeira Hot", image: imgFazendeira },
-  { label: "Cartomante", prompt: "Gere um roteiro de Cartomante", image: imgCartomante },
-  { label: "Notícias Virais", prompt: "Gere um roteiro de Notícias Virais", image: imgNoticias },
+const EXAMPLE_PROMPTS = [
+  "Gere um roteiro de Frutas Falantes",
+  "Gere um roteiro de Fazendeira Hot",
+  "Gere um roteiro de Cartomante",
+  "Gere um roteiro de Notícias Virais",
 ];
 
 interface Message {
@@ -207,20 +203,17 @@ const GerarRoteiro = () => {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full py-10">
               <FileText className="h-10 w-10 text-primary/30 mb-3" />
-              <h2 className="text-lg font-semibold text-foreground/70 mb-1">Escolha um roteiro</h2>
-              <p className="text-sm text-muted-foreground mb-6">Clique em um modelo ou digite seu próprio prompt abaixo.</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-2xl">
-                {PREDEFINED_TEMPLATES.map((t) => (
-                  <motion.button
-                    key={t.label}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => sendMessage(t.prompt)}
-                    className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
+              <h2 className="text-lg font-semibold text-foreground/70 mb-1">Gerador de Roteiros & Prompts</h2>
+              <p className="text-sm text-muted-foreground mb-6">Digite seu pedido abaixo. Aqui estão alguns exemplos:</p>
+              <div className="flex flex-col gap-2 w-full max-w-md">
+                {EXAMPLE_PROMPTS.map((example) => (
+                  <div
+                    key={example}
+                    className="flex items-start gap-2 rounded-lg border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground"
                   >
-                    <img src={t.image} alt={t.label} loading="lazy" width={512} height={512} className="w-full aspect-square object-cover rounded-lg" />
-                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{t.label}</span>
-                  </motion.button>
+                    <Lightbulb className="h-4 w-4 text-primary/50 mt-0.5 shrink-0" />
+                    <span>{example}</span>
+                  </div>
                 ))}
               </div>
             </div>
