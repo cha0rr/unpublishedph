@@ -42,7 +42,7 @@ const MeuHistorico = () => {
       setLoading(true);
       const { data } = await supabase
         .from("image_generations")
-        .select("id, prompt, model, image_url, created_at, aspect_ratio")
+        .select("id, prompt, model, image_url, created_at, aspect_ratio, uuid, resolution")
         .eq("user_id", user.id)
         .eq("status", "completed")
         .order("created_at", { ascending: false });
