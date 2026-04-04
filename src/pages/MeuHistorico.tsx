@@ -117,14 +117,15 @@ const MeuHistorico = () => {
                   {tab === "videos" && item.image_url ? (
                     <video
                       src={item.image_url}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-pointer"
                       muted
-                      preload="metadata"
-                      onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
-                      onMouseLeave={(e) => {
+                      autoPlay
+                      loop
+                      playsInline
+                      preload="auto"
+                      onClick={(e) => {
                         const v = e.target as HTMLVideoElement;
-                        v.pause();
-                        v.currentTime = 0;
+                        v.paused ? v.play() : v.pause();
                       }}
                     />
                   ) : item.image_url ? (
