@@ -61,5 +61,5 @@ export async function mergeVideoSegments(
   await ffmpeg.deleteFile("list.txt");
   await ffmpeg.deleteFile("output.mp4");
 
-  return new Blob([output], { type: "video/mp4" });
+  return new Blob([output.buffer as ArrayBuffer], { type: "video/mp4" });
 }
