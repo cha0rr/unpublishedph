@@ -5,9 +5,10 @@ import { Footer } from "@/components/landing/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Download, Film, ImageIcon } from "lucide-react";
+import { Loader2, Download, Film, ImageIcon, FastForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 
 interface Generation {
   id: string;
