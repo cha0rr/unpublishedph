@@ -137,6 +137,81 @@ export function VideoGenerator() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
+  const handleMergeDownload = async () => {
+    const segs = videoSegments.length > 1 ? videoSegments : [];
+    if (segs.length < 2) return;
+    setIsMerging(true);
+    try {
+      const video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      video.crossOrigin = "anonymous";
+
+      // Get dimensions from first segment
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error("Failed to load video"));
+        video.src = segs[0];
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d")!;
+
+      const stream = canvas.captureStream(30);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+          ? "video/webm;codecs=vp9"
+          : "video/webm",
+        videoBitsPerSecond: 5_000_000,
+      });
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const done = new Promise<Blob>((resolve) => {
+        mediaRecorder.onstop = () => resolve(new Blob(chunks, { type: "video/webm" }));
+      });
+
+      mediaRecorder.start();
+
+      for (let i = 0; i < segs.length; i++) {
+        await new Promise<void>((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            video.play().catch(reject);
+          };
+          video.onended = () => resolve();
+          video.onerror = () => reject(new Error("Failed to load segment"));
+          video.src = segs[i];
+        });
+        // Draw frames while playing
+        await new Promise<void>((resolve) => {
+          const drawFrame = () => {
+            if (video.ended || video.paused) { resolve(); return; }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(drawFrame);
+          };
+          video.onended = () => resolve();
+          drawFrame();
+        });
+      }
+
+      mediaRecorder.stop();
+      const blob = await done;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "video-completo.webm";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Merge failed:", err);
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
   return (
     <div className="w-full space-y-4">
       <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 space-y-3 transition-all focus-within:border-primary/40 focus-within:shadow-[0_0_20px_hsl(196_89%_61%/0.1)]">
