@@ -156,9 +156,14 @@ export function VideoGenerator() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       toast.success("Vídeo unificado baixado com sucesso!");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Merge failed:", err);
-      toast.error("Falha ao unificar vídeos. Verifique sua conexão e tente novamente.");
+      const msg = err?.message || "";
+      if (msg.includes("CORS")) {
+        toast.error("Não foi possível baixar os segmentos devido a restrições do servidor. Baixe cada parte individualmente.");
+      } else {
+        toast.error(`Falha ao unificar vídeos: ${msg || "Verifique sua conexão e tente novamente."}`);
+      }
     } finally {
       setIsMerging(false);
       setMergeStatus("");
