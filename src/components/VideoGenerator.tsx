@@ -381,7 +381,7 @@ export function VideoGenerator() {
                 disabled={isMerging}
               >
                 {isMerging ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Unificando...</>
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {mergeStatus || "Unificando..."}</>
                 ) : (
                   <><Film className="h-4 w-4 mr-2" /> Baixar vídeo longo</>
                 )}
