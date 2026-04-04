@@ -340,7 +340,7 @@ export function VideoGenerator() {
             >
               <FastForward className="h-4 w-4 mr-2" /> Estender Vídeo
             </Button>
-            <Button variant="outline" className="border-border/50" onClick={() => { reset(); setVideoSegments([]); }}>
+            <Button variant="outline" className="border-border/50" onClick={() => { reset(); setVideoSegments([]); clearVideoState(); }}>
               <RotateCcw className="h-4 w-4 mr-2" /> Novo Vídeo
             </Button>
           </div>

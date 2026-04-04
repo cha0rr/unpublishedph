@@ -179,6 +179,20 @@ const MeuHistorico = () => {
           </div>
         )}
       </div>
+      {extendItem && extendItem.image_url && extendItem.uuid && (
+        <ExtendVideoDialog
+          open={!!extendItem}
+          onOpenChange={(open) => { if (!open) setExtendItem(null); }}
+          videoUrl={extendItem.image_url}
+          videoUuid={extendItem.uuid}
+          aspectRatio={extendItem.aspect_ratio || "16:9"}
+          resolution={extendItem.resolution || "720p"}
+          model={extendItem.model}
+          onExtended={() => {
+            setExtendItem(null);
+          }}
+        />
+      )}
       <Footer />
     </div>
   );
