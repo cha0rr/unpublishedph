@@ -52,7 +52,7 @@ export async function mergeVideoSegments(
     "output.mp4",
   ]);
 
-  const output = await ffmpeg.readFile("output.mp4");
+  const output = await ffmpeg.readFile("output.mp4") as Uint8Array;
 
   // Cleanup
   for (let i = 0; i < segmentUrls.length; i++) {
