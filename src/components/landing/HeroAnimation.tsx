@@ -41,7 +41,7 @@ export function HeroAnimation() {
 
         <div className="relative aspect-[9/16] w-48 mx-auto rounded-xl bg-muted/30 border border-white/[0.06] overflow-hidden mb-4">
           <video
-            src="/videos/hero-demo.mp4"
+            src="/videos/showcase-1.mp4"
             autoPlay
             loop
             muted
