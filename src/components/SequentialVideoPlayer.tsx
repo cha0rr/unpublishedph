@@ -4,6 +4,7 @@ import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 interface SequentialVideoPlayerProps {
   segments: string[];
   aspectRatio: string;
+  onSegmentChange?: (index: number) => void;
 }
 
 export function SequentialVideoPlayer({ segments, aspectRatio }: SequentialVideoPlayerProps) {
