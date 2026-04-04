@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
 import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward } from "lucide-react";
+import { mergeVideoSegments } from "@/lib/mergeVideoSegments";
+import { toast } from "sonner";
 type ModeImage = "none" | "ingredient";
 
 const MODEL_OPTIONS = [
