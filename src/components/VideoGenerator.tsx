@@ -406,10 +406,20 @@ export function VideoGenerator() {
           )}
 
           <div className="flex gap-3 flex-wrap">
-            <Button asChild className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90">
-              <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4 mr-2" /> Download
-              </a>
+            <Button
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                const segments = videoSegments.length > 0 ? videoSegments : [resultUrl];
+                const downloadUrl = segments[currentSegmentIndex] || resultUrl;
+                const a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = `video-parte-${currentSegmentIndex + 1}.mp4`;
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                a.click();
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" /> Download {videoSegments.length > 1 ? `(Parte ${currentSegmentIndex + 1})` : ""}
             </Button>
             {videoSegments.length > 1 && (
               <Button
