@@ -312,7 +312,7 @@ export function VideoGenerator() {
                     window.dispatchEvent(event);
                   }}
                   className={`shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                    idx === videoSegments.length - 1
+                    idx === currentSegmentIndex
                       ? "border-primary ring-1 ring-primary/30"
                       : "border-border/40 hover:border-primary/50"
                   }`}
