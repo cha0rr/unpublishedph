@@ -144,18 +144,10 @@ export function VideoGenerator() {
     const segs = videoSegments.length > 1 ? videoSegments : [];
     if (segs.length < 2) return;
     setIsMerging(true);
+    setMergeStatus("");
     try {
-      // Fetch all segments as blobs first to avoid CORS issues
-      const blobs: Blob[] = [];
-      for (const url of segs) {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Failed to fetch segment: ${resp.status}`);
-        blobs.push(await resp.blob());
-      }
-
-      // Concatenate all blobs into a single file
-      const merged = new Blob(blobs, { type: blobs[0].type || "video/mp4" });
-      const blobUrl = URL.createObjectURL(merged);
+      const blob = await mergeVideoSegments(segs, setMergeStatus);
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = "video-completo.mp4";
@@ -163,18 +155,13 @@ export function VideoGenerator() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      toast.success("Vídeo unificado baixado com sucesso!");
     } catch (err) {
       console.error("Merge failed:", err);
-      // Fallback: download segments individually
-      for (let i = 0; i < segs.length; i++) {
-        const a = document.createElement("a");
-        a.href = segs[i];
-        a.download = `video-parte-${i + 1}.mp4`;
-        a.target = "_blank";
-        a.click();
-      }
+      toast.error("Falha ao unificar vídeos. Verifique sua conexão e tente novamente.");
     } finally {
       setIsMerging(false);
+      setMergeStatus("");
     }
   };
 
