@@ -297,6 +297,7 @@ export function VideoGenerator() {
           <SequentialVideoPlayer
             segments={videoSegments.length > 0 ? videoSegments : [resultUrl]}
             aspectRatio={aspectRatio}
+            onSegmentChange={setCurrentSegmentIndex}
           />
 
           {/* Timeline de segmentos */}
