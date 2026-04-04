@@ -20,6 +20,23 @@ const MODE_LIMITS: Record<ModeImage, number> = {
   ingredient: 3,
 };
 
+const STORAGE_KEY = "ph_video_last_result";
+
+function saveVideoState(data: { url: string; uuid: string; segments: string[]; aspectRatio: string; resolution: string; model: string; prompt: string }) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function clearVideoState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+function loadVideoState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 export function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
@@ -34,6 +51,35 @@ export function VideoGenerator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
+
+  // Restore last video on mount
+  useEffect(() => {
+    const saved = loadVideoState();
+    if (saved?.url) {
+      setSuccessState(saved.url, saved.uuid);
+      if (saved.segments?.length > 0) setVideoSegments(saved.segments);
+      if (saved.aspectRatio) setAspectRatio(saved.aspectRatio);
+      if (saved.resolution) setResolution(saved.resolution);
+      if (saved.model) setModel(saved.model);
+      if (saved.prompt) setPrompt(saved.prompt);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save state whenever video result changes
+  useEffect(() => {
+    if (state === "success" && resultUrl) {
+      saveVideoState({
+        url: resultUrl,
+        uuid: resultUuid || "",
+        segments: videoSegments.length > 0 ? videoSegments : [resultUrl],
+        aspectRatio,
+        resolution,
+        model,
+        prompt,
+      });
+    }
+  }, [state, resultUrl, resultUuid, videoSegments, aspectRatio, resolution, model, prompt]);
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_video_cooldown", durationMs: 90000 });
 
   const isLoading = state === "generating" || state === "polling";
