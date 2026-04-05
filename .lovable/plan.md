@@ -1,35 +1,50 @@
 
-Objetivo
-- Fazer o botão “Baixar vídeo longo” gerar 1 arquivo único com o vídeo inicial + todas as extensões da timeline, na ordem correta.
 
-Diagnóstico
-- Hoje `src/components/VideoGenerator.tsx` usa `new Blob(blobs)` em `handleMergeDownload`.
-- Isso não concatena vídeos MP4 de verdade; apenas junta bytes, então o arquivo final pode ficar inválido ou o botão parecer que “não faz nada”.
-- O fluxo atual também alterna entre `resultUrl` e `videoSegments`, o que facilita bugs de usar só o último vídeo em vez da sequência inteira.
+## Plano: Adicionar geração de vídeo com Grok 3 (plano Pro)
 
-Plano de implementação
-1. Normalizar a fonte de verdade dos segmentos em `src/components/VideoGenerator.tsx`
-- Garantir que a geração inicial já grave `videoSegments = [primeiroVideo]`.
-- Manter cada extensão como append nessa mesma lista.
-- Fazer o botão “Baixar vídeo longo” usar sempre `videoSegments` completo, nunca `resultUrl` isolado.
+### Resumo
+Adicionar o modelo Grok 3 como nova opção ao lado dos modelos Veo existentes na página de geração de vídeo. Ao selecionar Grok 3, a interface muda para exibir as opções específicas desse modelo (orientação expandida, duração, modo de geração). Disponível apenas para usuários do plano Pro e admins.
 
-2. Trocar a pseudo-concatenação por merge real
-- Extrair a lógica para um helper dedicado (ex.: `src/lib/mergeVideoSegments.ts`).
-- Implementar merge client-side com `ffmpeg.wasm`, carregado sob demanda quando o usuário clicar no botão.
-- Fluxo: baixar cada segmento da timeline -> escrever no FS virtual -> montar arquivo de concat -> gerar um único vídeo final.
-- O download final sempre incluirá: `[primeiro vídeo, extensão 1, extensão 2, ...]`.
+### Etapas
 
-3. Melhorar o feedback do botão
-- Manter `isMerging` e adicionar progresso textual, como “Unificando 2/4”.
-- Remover o fallback silencioso atual que tenta baixar partes separadas.
-- Mostrar erro visível (toast ou mensagem inline) se algum segmento falhar, em vez de apenas voltar o botão ao estado clicável.
+**1. Atualizar `VideoGenerator.tsx` — nova UI para Grok 3**
+- Adicionar `grok-3` ao `MODEL_OPTIONS`
+- Quando Grok 3 selecionado, exibir:
+  - **Generation Mode**: dropdown com Normal, Extremely Crazy, Extremely Spicy or Crazy, Custom
+  - **Orientação expandida**: Landscape (16:9), Portrait (9:16), Square (1:1), Vertical (2:3), Horizontal (3:2) — com ícones visuais como na imagem
+  - **Resolução**: apenas 480p (Standard) e 720p (High) — ocultar 1080p
+  - **Duração**: 6s, 10s (radio buttons)
+  - **Image Reference**: botão "Select Image" para enviar 1 imagem de referência
+- Ocultar o seletor de "Image Reference Type" (ingredient/none) quando Grok selecionado — usar botão próprio
+- Passar `duration`, `mode`, `grokAspectRatio` no `generate()`
+- Verificar plano do usuário via `useAuth()` — se não for Pro nem admin, desabilitar/ocultar Grok 3 com tooltip "Disponível no plano Pro"
 
-4. Validar persistência e ordem
-- Confirmar que, após recarregar a página, o estado restaurado do `localStorage` continua permitindo baixar o vídeo longo com todos os segmentos.
-- Confirmar que o arquivo final respeita exatamente a ordem da timeline e sempre começa pelo primeiro vídeo gerado.
+**2. Atualizar `useGenerator.ts` — novos parâmetros**
+- Adicionar `duration`, `mode` a `GenerateParams`
+- Quando modelo for `grok-3`, anexar `duration` e `mode` ao FormData
 
-Detalhes técnicos
-- `new Blob([segment1, segment2, ...])` não produz um MP4 concatenado válido; é preciso fazer concat/remux real.
-- Para não pesar o carregamento normal da página, o ffmpeg deve ser lazy-loaded só no clique do botão.
-- Preferência por saída única em `.mp4`; se a origem bloquear `fetch` por CORS, o app deve falhar de forma explícita com mensagem clara, porque isso impede merge no navegador.
-- Não há necessidade de alterar banco ou schema para esta correção.
+**3. Atualizar Edge Function `geminigen-video`**
+- Detectar modelo `grok-3` e rotear para `/uapi/v1/video-gen/grok`
+- Converter aspect ratio: `16:9` → `landscape`, `9:16` → `portrait`, `1:1` → `square`, `2:3` → `vertical`, `3:2` → `horizontal`
+- Adicionar `duration` e `mode` ao FormData
+- Usar campo `files` em vez de `ref_images` para imagens de referência
+- Não enviar `watermark` para Grok
+
+**4. Atualizar `ExtendVideoDialog.tsx`**
+- Passar `model` no body da requisição de extensão para que a edge function saiba qual endpoint usar
+
+**5. Atualizar Edge Function `geminigen-video-extend`**
+- Receber campo `model` do cliente
+- Quando `grok-3`, rotear para `/uapi/v1/video-extend/grok` (mesmo padrão de endpoint)
+
+### Restrição de acesso
+- Grok 3 visível para todos, mas clicável apenas para plano Pro e admins
+- Usuários do plano Básico veem badge "Pro" e tooltip informando que precisam do plano Pro
+
+### Detalhes técnicos
+- Conversão de aspect ratio feita na edge function (mapeamento string)
+- Duração padrão: `6`, modo padrão: `normal`
+- Campo `files` (não `ref_images`) para upload de imagens no Grok
+- Nenhuma alteração de banco de dados necessária
+- O extend do Grok pode não existir na API (404 na doc) — implementar tentativa e tratar erro gracefully
+
