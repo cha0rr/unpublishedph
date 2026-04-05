@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useGenerator } from "@/hooks/useGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap } from "lucide-react";
 import { mergeVideoSegments } from "@/lib/mergeVideoSegments";
 import { toast } from "sonner";
 type ModeImage = "none" | "ingredient";
