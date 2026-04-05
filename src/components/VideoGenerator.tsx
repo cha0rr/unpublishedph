@@ -150,18 +150,47 @@ export function VideoGenerator() {
     clearAllFiles();
   };
 
+  const handleGrokFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setGrokRefImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setGrokRefPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+    if (grokFileInputRef.current) grokFileInputRef.current.value = "";
+  };
+
   const handleGenerate = () => {
     if (!prompt.trim()) return;
+    if (isGrok && !isGrokAllowed) {
+      toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
+      return;
+    }
     setVideoSegments([]);
     startCooldown();
-    generate({
-      prompt: prompt.trim(),
-      aspectRatio,
-      resolution,
-      model,
-      modeImage: refImages.length > 0 ? modeImage : "none",
-      refImages,
-    });
+
+    if (isGrok) {
+      generate({
+        prompt: prompt.trim(),
+        aspectRatio,
+        resolution,
+        model,
+        modeImage: grokRefImage ? "ingredient" : "none",
+        refImages: grokRefImage ? [grokRefImage] : [],
+        duration: grokDuration,
+        mode: grokMode,
+      });
+    } else {
+      generate({
+        prompt: prompt.trim(),
+        aspectRatio,
+        resolution,
+        model,
+        modeImage: refImages.length > 0 ? modeImage : "none",
+        refImages,
+      });
+    }
   };
 
   const canGenerate = prompt.trim().length > 0 && !isLoading && !isCooling;
