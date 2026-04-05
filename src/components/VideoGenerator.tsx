@@ -251,81 +251,220 @@ export function VideoGenerator() {
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <Cpu className="h-3 w-3" /> Modelo
           </p>
-          <ToggleGroup
-            type="single"
-            value={model}
-            onValueChange={(v) => v && setModel(v)}
-            className="justify-start gap-1"
-          >
-            {MODEL_OPTIONS.map((opt) => (
-              <ToggleGroupItem
-                key={opt.value}
-                value={opt.value}
-                className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-              >
-                {opt.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-
-        {/* Image Reference Type selector */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Layers className="h-3 w-3" /> Image Reference Type
-          </p>
-          <ToggleGroup
-            type="single"
-            value={modeImage}
-            onValueChange={handleModeChange}
-            className="justify-start gap-1"
-          >
-            <ToggleGroupItem
-              value="none"
-              className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+          <TooltipProvider>
+            <ToggleGroup
+              type="single"
+              value={model}
+              onValueChange={(v) => {
+                if (!v) return;
+                if (v === "grok-3" && !isGrokAllowed) return;
+                setModel(v);
+                // Reset resolution to 720p if switching to grok and currently 1080p
+                if (v === "grok-3" && resolution === "1080p") setResolution("720p");
+              }}
+              className="justify-start gap-1"
             >
-              <Film className="h-3.5 w-3.5 mr-1" />
-              Sem referência
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="ingredient"
-              className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-            >
-              <ImageIcon className="h-3.5 w-3.5 mr-1" />
-              Ingredient Images
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-
-        {/* Reference Images upload */}
-        {modeImage !== "none" && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground mb-1">
-              Ingredient Images — <span className="text-muted-foreground/70">Envie até 3 imagens de referência como ingredientes</span>
-            </p>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-            <div className="flex gap-2 flex-wrap">
-              {refPreviews.map((preview, idx) => (
-                <div key={idx} className="relative group rounded-xl overflow-hidden border border-border/50 w-24 h-24 bg-muted/20">
-                  <img src={preview} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => removeFile(idx)}
-                    className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              {MODEL_OPTIONS.map((opt) => {
+                const isLocked = opt.pro && !isGrokAllowed;
+                const item = (
+                  <ToggleGroupItem
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={isLocked}
+                    className={`text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40 ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-              {refImages.length < maxImages && (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="w-24 h-24 rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    {opt.label}
+                    {opt.pro && (
+                      <span className="ml-1 text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                        {isLocked ? <Lock className="h-3 w-3 inline" /> : "PRO"}
+                      </span>
+                    )}
+                  </ToggleGroupItem>
+                );
+                if (isLocked) {
+                  return (
+                    <Tooltip key={opt.value}>
+                      <TooltipTrigger asChild>{item}</TooltipTrigger>
+                      <TooltipContent>Disponível no plano Pro</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+                return item;
+              })}
+            </ToggleGroup>
+          </TooltipProvider>
+        </div>
+
+        {/* Veo-specific controls */}
+        {!isGrok && (
+          <>
+            {/* Image Reference Type selector */}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Layers className="h-3 w-3" /> Image Reference Type
+              </p>
+              <ToggleGroup
+                type="single"
+                value={modeImage}
+                onValueChange={handleModeChange}
+                className="justify-start gap-1"
+              >
+                <ToggleGroupItem
+                  value="none"
+                  className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
                 >
-                  <Upload className="h-4 w-4" />
-                  <span className="text-[10px]">Upload</span>
-                </button>
-              )}
+                  <Film className="h-3.5 w-3.5 mr-1" />
+                  Sem referência
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="ingredient"
+                  className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+                >
+                  <ImageIcon className="h-3.5 w-3.5 mr-1" />
+                  Ingredient Images
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
+            {/* Reference Images upload */}
+            {modeImage !== "none" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground mb-1">
+                  Ingredient Images — <span className="text-muted-foreground/70">Envie até 3 imagens de referência como ingredientes</span>
+                </p>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                <div className="flex gap-2 flex-wrap">
+                  {refPreviews.map((preview, idx) => (
+                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-border/50 w-24 h-24 bg-muted/20">
+                      <img src={preview} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeFile(idx)}
+                        className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {refImages.length < maxImages && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading}
+                      className="w-24 h-24 rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span className="text-[10px]">Upload</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Grok-specific controls */}
+        {isGrok && (
+          <div className="space-y-3">
+            {/* Generation Mode */}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Zap className="h-3 w-3" /> Generation Mode
+              </p>
+              <ToggleGroup
+                type="single"
+                value={grokMode}
+                onValueChange={(v) => v && setGrokMode(v)}
+                className="justify-start gap-1 flex-wrap"
+              >
+                {GROK_MODE_OPTIONS.map((opt) => (
+                  <ToggleGroupItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+                  >
+                    {opt.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            {/* Orientation */}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Layers className="h-3 w-3" /> Orientação
+              </p>
+              <ToggleGroup
+                type="single"
+                value={aspectRatio}
+                onValueChange={(v) => v && setAspectRatio(v)}
+                className="justify-start gap-1 flex-wrap"
+              >
+                {GROK_ASPECT_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  return (
+                    <ToggleGroupItem
+                      key={opt.value}
+                      value={opt.value}
+                      className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+                    >
+                      <Icon className="h-3.5 w-3.5 mr-1" />
+                      {opt.label}
+                    </ToggleGroupItem>
+                  );
+                })}
+              </ToggleGroup>
+            </div>
+
+            {/* Duration */}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" /> Duração
+              </p>
+              <ToggleGroup
+                type="single"
+                value={grokDuration}
+                onValueChange={(v) => v && setGrokDuration(v)}
+                className="justify-start gap-1"
+              >
+                {GROK_DURATION_OPTIONS.map((opt) => (
+                  <ToggleGroupItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
+                  >
+                    {opt.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            {/* Grok Image Reference */}
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" /> Imagem de Referência <span className="text-muted-foreground/60">(opcional)</span>
+              </p>
+              <input ref={grokFileInputRef} type="file" accept="image/*" onChange={handleGrokFileSelect} className="hidden" />
+              <div className="flex gap-2 items-center">
+                {grokRefPreview ? (
+                  <div className="relative group rounded-xl overflow-hidden border border-border/50 w-24 h-24 bg-muted/20">
+                    <img src={grokRefPreview} alt="Ref Grok" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => { setGrokRefImage(null); setGrokRefPreview(null); }}
+                      className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => grokFileInputRef.current?.click()}
+                    disabled={isLoading}
+                    className="w-24 h-24 rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span className="text-[10px]">Select Image</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -333,14 +472,21 @@ export function VideoGenerator() {
         {/* Bottom toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => v && setAspectRatio(v)} className="gap-1">
-              <ToggleGroupItem value="16:9" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">16:9</ToggleGroupItem>
-              <ToggleGroupItem value="9:16" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">9:16</ToggleGroupItem>
-            </ToggleGroup>
+            {!isGrok && (
+              <>
+                <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => v && setAspectRatio(v)} className="gap-1">
+                  <ToggleGroupItem value="16:9" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">16:9</ToggleGroupItem>
+                  <ToggleGroupItem value="9:16" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">9:16</ToggleGroupItem>
+                </ToggleGroup>
+              </>
+            )}
 
             <ToggleGroup type="single" value={resolution} onValueChange={(v) => v && setResolution(v)} className="gap-1">
+              <ToggleGroupItem value="480p" className={`text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground ${!isGrok ? "hidden" : ""}`}>480p</ToggleGroupItem>
               <ToggleGroupItem value="720p" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">720p</ToggleGroupItem>
-              <ToggleGroupItem value="1080p" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">1080p</ToggleGroupItem>
+              {!isGrok && (
+                <ToggleGroupItem value="1080p" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">1080p</ToggleGroupItem>
+              )}
             </ToggleGroup>
           </div>
 
