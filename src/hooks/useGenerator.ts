@@ -21,6 +21,8 @@ export interface GenerateParams {
   model?: string;
   modeImage?: "none" | "ingredient" | "frame";
   refImages?: File[];
+  duration?: string;
+  mode?: string;
 }
 
 interface GeneratorResult {
@@ -143,7 +145,7 @@ export function useGenerator(): GeneratorResult {
   }, []);
 
   const generate = useCallback(async (params: GenerateParams) => {
-    const { prompt, aspectRatio, resolution = "720p", model = "veo-3.1-fast", modeImage = "none", refImages = [] } = params;
+    const { prompt, aspectRatio, resolution = "720p", model = "veo-3.1-fast", modeImage = "none", refImages = [], duration, mode } = params;
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
@@ -162,6 +164,9 @@ export function useGenerator(): GeneratorResult {
       formData.append("resolution", resolution);
       formData.append("aspect_ratio", aspectRatio);
       formData.append("model", model);
+
+      if (duration) formData.append("duration", duration);
+      if (mode) formData.append("mode", mode);
 
       if (modeImage !== "none" && refImages.length > 0) {
         formData.append("mode_image", modeImage);
