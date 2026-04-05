@@ -164,6 +164,7 @@ export function ExtendVideoDialog({
         body: JSON.stringify({
           prompt: prompt.trim(),
           ref_history: videoUuid,
+          model,
         }),
       });
 

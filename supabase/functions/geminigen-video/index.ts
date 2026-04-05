@@ -8,6 +8,14 @@ const corsHeaders = {
 const RATE_LIMIT_PER_HOUR = 10;
 const MAX_PROMPT_LENGTH = 4000;
 
+const GROK_ASPECT_MAP: Record<string, string> = {
+  '16:9': 'landscape',
+  '9:16': 'portrait',
+  '1:1': 'square',
+  '2:3': 'vertical',
+  '3:2': 'horizontal',
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -89,10 +97,22 @@ Deno.serve(async (req) => {
     const aspectRatio = (incomingForm.get('aspect_ratio') as string) || '16:9';
     const modeImage = (incomingForm.get('mode_image') as string) || '';
     const modelFromClient = (incomingForm.get('model') as string) || 'veo-3.1-fast';
+    const duration = (incomingForm.get('duration') as string) || '';
+    const mode = (incomingForm.get('mode') as string) || '';
 
     if (!prompt) {
       return new Response(JSON.stringify({ success: false, error: 'prompt é obrigatório.' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const isGrok = modelFromClient === 'grok-3';
+
+    // Grok requires pro plan or admin
+    if (isGrok && !isAdmin && profile?.plan !== 'pro') {
+      return new Response(JSON.stringify({ success: false, error: 'O modelo Grok 3 está disponível apenas no plano Pro.' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -108,25 +128,45 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Build outgoing FormData for GeminiGen API ---
+    // --- Build outgoing FormData ---
     const outForm = new FormData();
     outForm.append('prompt', sanitizedPrompt);
     outForm.append('resolution', resolution);
-    outForm.append('aspect_ratio', aspectRatio);
     outForm.append('model', modelFromClient);
-    outForm.append('watermark', 'false');
 
-    if (modeImage === 'ingredient' || modeImage === 'frame') {
-      outForm.append('mode_image', modeImage);
-      const refImages = incomingForm.getAll('ref_images') as File[];
-      for (const f of refImages) {
-        outForm.append('ref_images', f, f.name || 'reference.png');
+    let endpoint: string;
+
+    if (isGrok) {
+      endpoint = 'https://api.geminigen.ai/uapi/v1/video-gen/grok';
+      // Convert aspect ratio to Grok keywords
+      const grokAspect = GROK_ASPECT_MAP[aspectRatio] || 'landscape';
+      outForm.append('aspect_ratio', grokAspect);
+      // Add duration and mode
+      outForm.append('duration', duration || '6');
+      outForm.append('mode', mode || 'normal');
+      // Grok uses 'files' field for ref images
+      if (modeImage && modeImage !== 'none') {
+        const refImages = incomingForm.getAll('ref_images') as File[];
+        for (const f of refImages) {
+          outForm.append('files', f, f.name || 'reference.png');
+        }
+      }
+    } else {
+      endpoint = 'https://api.geminigen.ai/uapi/v1/video-gen/veo';
+      outForm.append('aspect_ratio', aspectRatio);
+      outForm.append('watermark', 'false');
+      if (modeImage === 'ingredient' || modeImage === 'frame') {
+        outForm.append('mode_image', modeImage);
+        const refImages = incomingForm.getAll('ref_images') as File[];
+        for (const f of refImages) {
+          outForm.append('ref_images', f, f.name || 'reference.png');
+        }
       }
     }
 
-    console.log('GeminiGen request:', { prompt: sanitizedPrompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution });
+    console.log('GeminiGen request:', { prompt: sanitizedPrompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution, endpoint, duration, mode });
 
-    const response = await fetch('https://api.geminigen.ai/uapi/v1/video-gen/veo', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'x-api-key': apiKey },
       body: outForm,
@@ -151,7 +191,7 @@ Deno.serve(async (req) => {
       status: response.ok ? 'pending' : 'failed',
       aspect_ratio: aspectRatio,
       resolution,
-      request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient },
+      request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient, ...(isGrok ? { duration, mode } : {}) },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || null),
     });

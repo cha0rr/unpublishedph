@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { prompt, ref_history } = await req.json();
+    const { prompt, ref_history, model } = await req.json();
 
     if (!prompt || !ref_history) {
       return new Response(JSON.stringify({ success: false, error: 'prompt e ref_history são obrigatórios.' }), {
@@ -102,6 +102,7 @@ Deno.serve(async (req) => {
     }
 
     const sanitizedPrompt = prompt.substring(0, MAX_PROMPT_LENGTH).trim();
+    const isGrok = model === 'grok-3';
 
     const apiKey = Deno.env.get('GEMINIGEN_API_KEY');
     if (!apiKey) {
@@ -115,12 +116,18 @@ Deno.serve(async (req) => {
     outForm.append('prompt', sanitizedPrompt);
     outForm.append('ref_history', ref_history);
 
+    const endpoint = isGrok
+      ? 'https://api.geminigen.ai/uapi/v1/video-extend/grok'
+      : 'https://api.geminigen.ai/uapi/v1/video-extend/veo';
+
     console.log('GeminiGen video-extend request:', {
       prompt: sanitizedPrompt.substring(0, 50),
       ref_history,
+      model: model || 'veo',
+      endpoint,
     });
 
-    const response = await fetch('https://api.geminigen.ai/uapi/v1/video-extend/veo', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'x-api-key': apiKey },
       body: outForm,
@@ -140,14 +147,14 @@ Deno.serve(async (req) => {
       email: userEmail,
       role: userRole,
       plan: profile?.plan || null,
-      model: data.model_name || 'veo-extend',
+      model: data.model_name || (isGrok ? 'grok-3-extend' : 'veo-extend'),
       prompt: `[EXTEND] ${sanitizedPrompt}`,
       uuid: generationUuid || null,
       status: response.ok ? 'pending' : 'failed',
       request_payload: {
         prompt: sanitizedPrompt,
         ref_history,
-        endpoint: 'video-extend/veo',
+        endpoint: isGrok ? 'video-extend/grok' : 'video-extend/veo',
       },
       response_payload: data,
       error_message: response.ok ? null : (data.error || data.message || data?.detail?.error_message || null),
