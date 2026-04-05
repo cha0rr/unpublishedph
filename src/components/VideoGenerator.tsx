@@ -77,6 +77,15 @@ export function VideoGenerator() {
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { profile, isAdmin } = useAuth();
+  const isGrokAllowed = isAdmin || profile?.plan === "pro";
+  const isGrok = model === "grok-3";
+
+  const [grokMode, setGrokMode] = useState("normal");
+  const [grokDuration, setGrokDuration] = useState("6");
+  const [grokRefImage, setGrokRefImage] = useState<File | null>(null);
+  const [grokRefPreview, setGrokRefPreview] = useState<string | null>(null);
+  const grokFileInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
 
