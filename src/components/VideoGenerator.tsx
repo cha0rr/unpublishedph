@@ -17,6 +17,27 @@ type ModeImage = "none" | "ingredient";
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
   { value: "veo-3.1-fast", label: "Veo 3.1 Fast" },
+  { value: "grok-3", label: "Grok 3", pro: true },
+];
+
+const GROK_MODE_OPTIONS = [
+  { value: "normal", label: "Normal" },
+  { value: "custom", label: "Custom" },
+  { value: "extremely-crazy", label: "Extremely Crazy" },
+  { value: "extremely-spicy-or-crazy", label: "Extremely Spicy or Crazy" },
+];
+
+const GROK_ASPECT_OPTIONS = [
+  { value: "16:9", label: "Landscape", icon: Monitor },
+  { value: "9:16", label: "Portrait", icon: Smartphone },
+  { value: "1:1", label: "Square", icon: Square },
+  { value: "2:3", label: "Vertical", icon: RectangleVertical },
+  { value: "3:2", label: "Horizontal", icon: RectangleHorizontal },
+];
+
+const GROK_DURATION_OPTIONS = [
+  { value: "6", label: "6s" },
+  { value: "10", label: "10s" },
 ];
 
 const MODE_LIMITS: Record<ModeImage, number> = {
