@@ -25,7 +25,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Validate user
     const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,7 +36,6 @@ serve(async (req) => {
       });
     }
 
-    // Check profile: must be approved + pro plan
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: profile } = await adminClient
       .from("profiles")
@@ -45,7 +43,6 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .single();
 
-    // Check if admin
     const { data: roles } = await adminClient
       .from("user_roles")
       .select("role")
@@ -78,6 +75,76 @@ serve(async (req) => {
 
     const systemPrompt = promptData?.content || "Você é um assistente especializado em criar roteiros e prompts criativos para geração de vídeos e imagens com IA.";
 
+    // Check if any message has an image attached
+    const hasImage = messages.some((m: any) => m.image);
+
+    if (hasImage) {
+      // Use Lovable AI Gateway (Gemini) for vision
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Build messages with vision content parts
+      const formattedMessages = messages.slice(-20).map((m: any) => {
+        const role = m.role === "assistant" ? "assistant" : "user";
+        const text = typeof m.content === "string" ? m.content.slice(0, 4000) : "";
+
+        if (m.image && role === "user") {
+          return {
+            role,
+            content: [
+              { type: "image_url", image_url: { url: m.image } },
+              { type: "text", text },
+            ],
+          };
+        }
+        return { role, content: text };
+      });
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...formattedMessages,
+          ],
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("Lovable AI Gateway error:", response.status, errText);
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em instantes." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "Créditos insuficientes." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ error: "Erro na API de visão" }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    // No image — use DeepSeek as before
     const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
     if (!DEEPSEEK_API_KEY) {
       return new Response(JSON.stringify({ error: "DEEPSEEK_API_KEY não configurada" }), {
@@ -86,7 +153,6 @@ serve(async (req) => {
       });
     }
 
-    // Sanitize and limit messages
     const sanitizedMessages = messages.slice(-20).map((m: any) => ({
       role: m.role === "assistant" ? "assistant" : "user",
       content: typeof m.content === "string" ? m.content.slice(0, 4000) : "",

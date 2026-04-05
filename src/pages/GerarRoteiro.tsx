@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, FileText, Trash2, Lightbulb } from "lucide-react";
+import { Loader2, Send, FileText, Trash2, Lightbulb, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 
 const EXAMPLE_PROMPTS = [
@@ -18,9 +18,19 @@ const EXAMPLE_PROMPTS = [
 interface Message {
   role: "user" | "assistant";
   content: string;
+  image?: string; // base64 data URL
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 const GerarRoteiro = () => {
   const { user, profile, isAdmin, loading: authLoading } = useAuth();
@@ -28,15 +38,16 @@ const GerarRoteiro = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPro = profile?.plan === "pro" && profile?.status === "approved";
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
+    if (!authLoading && !user) navigate("/login");
     if (!authLoading && user && !isPro && !isAdmin) {
       toast.error("Acesso restrito ao plano Pro.");
       navigate("/");
@@ -47,14 +58,42 @@ const GerarRoteiro = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error("Imagem muito grande. Máximo 5MB.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Apenas imagens são permitidas.");
+      return;
+    }
+    setAttachedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setAttachedImage(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const sendMessage = async (predefinedPrompt?: string) => {
     const trimmed = (predefinedPrompt || input).trim();
     if (!trimmed || isLoading) return;
     if (!predefinedPrompt) setInput("");
-    const userMsg: Message = { role: "user", content: trimmed };
+
+    let imageBase64: string | undefined;
+    if (attachedImage) {
+      imageBase64 = await fileToBase64(attachedImage);
+      removeImage();
+    }
+
+    const userMsg: Message = { role: "user", content: trimmed, image: imageBase64 };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
-    setIsLoading(true);
     setIsLoading(true);
 
     let assistantContent = "";
@@ -62,20 +101,26 @@ const GerarRoteiro = () => {
     try {
       const { data: { session } } = await (await import("@/integrations/supabase/client")).supabase.auth.getSession();
 
+      // Build payload — include image only for the last user message
+      const payloadMessages = newMessages.map((m) => {
+        const base: any = { role: m.role, content: m.content };
+        if (m.image) base.image = m.image;
+        return base;
+      });
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: payloadMessages }),
       });
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.error || `Erro ${resp.status}`);
       }
-
       if (!resp.body) throw new Error("Sem resposta");
 
       const reader = resp.body.getReader();
@@ -102,24 +147,15 @@ const GerarRoteiro = () => {
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);
-
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line.startsWith(":") || line.trim() === "") continue;
           if (!line.startsWith("data: ")) continue;
-
           const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") {
-            streamDone = true;
-            break;
-          }
-
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
           try {
             const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              assistantContent += delta;
-              upsertAssistant(assistantContent);
-            }
+            if (delta) { assistantContent += delta; upsertAssistant(assistantContent); }
           } catch {
             textBuffer = line + "\n" + textBuffer;
             break;
@@ -127,7 +163,6 @@ const GerarRoteiro = () => {
         }
       }
 
-      // Final flush
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -139,36 +174,24 @@ const GerarRoteiro = () => {
           try {
             const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              assistantContent += delta;
-              upsertAssistant(assistantContent);
-            }
+            if (delta) { assistantContent += delta; upsertAssistant(assistantContent); }
           } catch { /* ignore */ }
         }
       }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Erro ao gerar resposta.");
-      // Remove the user message if no assistant response was generated
-      if (!assistantContent) {
-        setMessages(messages);
-      }
+      if (!assistantContent) setMessages(messages);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  const clearChat = () => {
-    setMessages([]);
-    setInput("");
-  };
+  const clearChat = () => { setMessages([]); setInput(""); removeImage(); };
 
   if (authLoading) {
     return (
@@ -187,9 +210,7 @@ const GerarRoteiro = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-primary" />
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-              Gerador de Roteiros & Prompts
-            </h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gerador de Roteiros & Prompts</h1>
           </div>
           {messages.length > 0 && (
             <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground hover:text-destructive gap-1">
@@ -198,19 +219,16 @@ const GerarRoteiro = () => {
           )}
         </motion.div>
 
-        {/* Messages area */}
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full py-10">
               <FileText className="h-10 w-10 text-primary/30 mb-3" />
               <h2 className="text-lg font-semibold text-foreground/70 mb-1">Gerador de Roteiros & Prompts</h2>
-              <p className="text-sm text-muted-foreground mb-6">Digite seu pedido abaixo. Aqui estão alguns exemplos:</p>
+              <p className="text-sm text-muted-foreground mb-6">Digite seu pedido abaixo ou anexe uma imagem de produto. Exemplos:</p>
               <div className="flex flex-col gap-2 w-full max-w-md">
                 {EXAMPLE_PROMPTS.map((example) => (
-                  <div
-                    key={example}
-                    className="flex items-start gap-2 rounded-lg border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground"
-                  >
+                  <div key={example} className="flex items-start gap-2 rounded-lg border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground">
                     <Lightbulb className="h-4 w-4 text-primary/50 mt-0.5 shrink-0" />
                     <span>{example}</span>
                   </div>
@@ -220,19 +238,11 @@ const GerarRoteiro = () => {
           )}
 
           {messages.map((msg, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "glass-card text-foreground rounded-bl-md"
-                }`}
-              >
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "glass-card text-foreground rounded-bl-md"}`}>
+                {msg.image && (
+                  <img src={msg.image} alt="Imagem anexada" className="max-w-[200px] max-h-[200px] rounded-lg mb-2 object-cover" />
+                )}
                 {msg.content}
                 {msg.role === "assistant" && isLoading && i === messages.length - 1 && (
                   <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-1 align-middle rounded-sm" />
@@ -252,12 +262,28 @@ const GerarRoteiro = () => {
               </div>
             </motion.div>
           )}
-
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input area */}
+        {/* Image preview */}
+        {imagePreview && (
+          <div className="mb-2 flex items-center gap-2">
+            <div className="relative inline-block">
+              <img src={imagePreview} alt="Preview" className="h-16 w-16 rounded-lg object-cover border border-border" />
+              <button onClick={removeImage} className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            <span className="text-xs text-muted-foreground">{attachedImage?.name}</span>
+          </div>
+        )}
+
+        {/* Input */}
         <div className="glass-card rounded-2xl p-3 flex gap-2 items-end">
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+          <Button variant="ghost" size="sm" className="h-10 w-10 p-0 shrink-0 text-muted-foreground hover:text-primary" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+            <ImagePlus className="h-5 w-5" />
+          </Button>
           <Textarea
             ref={textareaRef}
             value={input}
@@ -267,12 +293,7 @@ const GerarRoteiro = () => {
             className="flex-1 min-h-[44px] max-h-[200px] resize-none bg-transparent border-0 focus-visible:ring-0 text-foreground placeholder:text-muted-foreground"
             rows={1}
           />
-          <Button
-            onClick={() => sendMessage()}
-            disabled={!input.trim() || isLoading}
-            size="sm"
-            className="h-10 w-10 p-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
-          >
+          <Button onClick={() => sendMessage()} disabled={!input.trim() || isLoading} size="sm" className="h-10 w-10 p-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
