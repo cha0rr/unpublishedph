@@ -144,6 +144,8 @@ Deno.serve(async (req) => {
       // Add duration and mode
       outForm.append('duration', duration || '6');
       outForm.append('mode', mode || 'normal');
+      // Grok does not use the generic 'resolution' field — remove it
+      outForm.delete('resolution');
       // Grok uses 'files' field for ref images
       if (modeImage && modeImage !== 'none') {
         const refImages = incomingForm.getAll('ref_images') as File[];
