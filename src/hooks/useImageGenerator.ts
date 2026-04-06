@@ -75,17 +75,33 @@ export function useImageGenerator(): ImageGeneratorResult {
     };
   }, [stopProgressSimulation]);
 
+  const getValidToken = useCallback(async (): Promise<string> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    let accessToken = sessionData?.session?.access_token;
+    
+    if (!accessToken) {
+      // Token ausente — tentar refresh
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData?.session?.access_token) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+      accessToken = refreshData.session.access_token;
+    }
+    
+    return accessToken;
+  }, []);
+
   const pollHistory = useCallback(async (uuid: string) => {
     const maxAttempts = 120;
     const baseInterval = 5000;
     let consecutiveNetworkErrors = 0;
+    let authRetried = false;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (cancelledRef.current) return;
 
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
+        const accessToken = await getValidToken();
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -105,8 +121,17 @@ export function useImageGenerator(): ImageGeneratorResult {
         clearTimeout(timeoutId);
 
         if (res.status === 401 || res.status === 403) {
+          if (!authRetried) {
+            // Tentar refresh uma vez antes de desistir
+            authRetried = true;
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData?.session?.access_token) {
+              continue; // Retry com novo token
+            }
+          }
           throw new Error("Sessão expirada. Faça login novamente.");
         }
+        authRetried = false;
 
         if (!res.ok) {
           consecutiveNetworkErrors++;
@@ -158,7 +183,7 @@ export function useImageGenerator(): ImageGeneratorResult {
     }
 
     throw new Error("Tempo limite excedido.");
-  }, []);
+  }, [getValidToken]);
 
   const generate = useCallback(async (params: ImageGenerateParams) => {
     cancelledRef.current = false;
@@ -169,8 +194,7 @@ export function useImageGenerator(): ImageGeneratorResult {
     setStatusText("Enviando solicitação...");
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
+      const accessToken = await getValidToken();
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geminigen-image`,
@@ -217,7 +241,7 @@ export function useImageGenerator(): ImageGeneratorResult {
       setState("error");
       setStatusText("");
     }
-  }, [pollHistory, startProgressSimulation, stopProgressSimulation]);
+  }, [pollHistory, startProgressSimulation, stopProgressSimulation, getValidToken]);
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
