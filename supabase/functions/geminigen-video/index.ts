@@ -144,6 +144,8 @@ Deno.serve(async (req) => {
       // Add duration and mode
       outForm.append('duration', duration || '6');
       outForm.append('mode', mode || 'normal');
+      // Grok does not use the generic 'resolution' field — remove it
+      outForm.delete('resolution');
       // Grok uses 'files' field for ref images
       if (modeImage && modeImage !== 'none') {
         const refImages = incomingForm.getAll('ref_images') as File[];
@@ -174,7 +176,15 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
 
+    if (!response.ok) {
+      console.error('GeminiGen API error (full body):', JSON.stringify(data));
+    }
     console.log('GeminiGen video response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
+
+    // Extract the most useful error message from various possible fields
+    const extractedError = !response.ok
+      ? (data.error || data.message || data.detail || data.msg || (Array.isArray(data.errors) ? data.errors.map((e: any) => e.msg || e.message || String(e)).join('; ') : null) || `Erro HTTP ${response.status} da API de vídeo.`)
+      : null;
 
     const generationUuid = data.uuid;
     const userEmail = user.email as string;
@@ -193,10 +203,10 @@ Deno.serve(async (req) => {
       resolution,
       request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient, ...(isGrok ? { duration, mode } : {}) },
       response_payload: data,
-      error_message: response.ok ? null : (data.error || data.message || null),
+      error_message: response.ok ? null : extractedError,
     });
 
-    return new Response(JSON.stringify({ success: response.ok, uuid: generationUuid || null, status: response.status }), {
+    return new Response(JSON.stringify({ success: response.ok, uuid: generationUuid || null, error: extractedError }), {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
