@@ -61,9 +61,10 @@ Deno.serve(async (req) => {
       .eq('user_id', userId);
 
     const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
-    const isBusiness = profile?.plan === 'business' && profile?.status === 'approved';
+    const isApproved = profile?.status === 'approved';
+    const hasImageAccess = profile?.plan === 'pro';
 
-    if (!isAdmin && !isBusiness) {
+    if (!isAdmin && (!isApproved || !hasImageAccess)) {
       return new Response(JSON.stringify({ error: 'Acesso restrito.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
