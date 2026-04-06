@@ -185,7 +185,7 @@ export function useGenerator(): GeneratorResult {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(data?.error || data?.detail || data?.message || `Erro ao gerar vídeo (HTTP ${res.status}).`);
 
       const uuid = data?.uuid;
       if (!uuid) throw new Error("UUID da geração não retornado.");
