@@ -241,7 +241,7 @@ export function useImageGenerator(): ImageGeneratorResult {
       setState("error");
       setStatusText("");
     }
-  }, [pollHistory, startProgressSimulation, stopProgressSimulation]);
+  }, [pollHistory, startProgressSimulation, stopProgressSimulation, getValidToken]);
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
