@@ -1,31 +1,28 @@
 
 
-## Plano: Adicionar upload de imagem no Gerador de Roteiros
+## Plano: Aumentar resiliência do polling de imagens em redes instáveis
 
-### Resumo
-Permitir que o usuário anexe uma imagem de produto ao chat para que a IA analise visualmente e crie roteiros UGC baseados no produto. Quando uma imagem é enviada, o backend usa um modelo com capacidade de visão (Gemini via Lovable AI Gateway) para analisar a imagem junto com o texto.
+### Problema
+O polling de status da imagem (`useImageGenerator.ts`) trata **todos** os erros como erros de rede e desiste após 5 falhas consecutivas (~25 segundos). Em redes instáveis ou com firewalls restritivos, isso causa o erro "Conexão perdida ao verificar status" antes da imagem ficar pronta.
+
+Além disso, erros HTTP legítimos (401, 403, 500) são contados como "erros de rede", quando deveriam ser tratados individualmente.
 
 ### Etapas
 
-**1. Atualizar `GerarRoteiro.tsx` — UI de upload**
-- Adicionar estado para imagem anexada (File + preview URL)
-- Adicionar botão de anexar imagem (ícone de câmera/imagem) ao lado do textarea
-- Mostrar preview da imagem anexada com botão de remover
-- Ao enviar, converter imagem para base64 e incluir no payload
-- Mostrar thumbnail da imagem na bolha de mensagem do usuário
-- Atualizar interface `Message` para suportar campo opcional `image` (base64 string)
+**1. Diferenciar erros de rede vs erros HTTP no `useImageGenerator.ts`**
+- Erros de autenticação (401/403): parar imediatamente com mensagem clara
+- Erros de servidor (500): contar como erro temporário, mas com tolerância maior
+- Erros de `fetch` puro (TypeError/network): contar como erro de rede
+- Aumentar threshold de 5 para 10 consecutivos antes de desistir
+- Adicionar timeout ao fetch (15s) para não travar em redes lentas
 
-**2. Atualizar Edge Function `deepseek-chat`**
-- Receber campo opcional `image` (base64) na última mensagem
-- Quando imagem presente: usar Lovable AI Gateway com modelo Gemini (que suporta visão) em vez do DeepSeek
-- Formatar mensagem com content parts: `[{ type: "image_url", image_url: { url: "data:image/..." } }, { type: "text", text: "..." }]`
-- Quando sem imagem: manter fluxo atual com DeepSeek
-- Manter o mesmo system prompt e streaming SSE
+**2. Adicionar retry com backoff**
+- Após erro de rede, esperar progressivamente mais (5s → 8s → 12s) antes de tentar novamente
+- Manter intervalo normal de 5s quando não há erros
 
 ### Detalhes técnicos
-- A imagem é convertida para base64 no frontend (máximo ~5MB para não sobrecarregar)
-- O modelo Gemini (`google/gemini-2.5-flash`) suporta análise de imagens nativamente via formato OpenAI-compatible
-- O `LOVABLE_API_KEY` já está configurado como secret
-- Não são necessárias alterações de banco de dados
-- O streaming SSE continua funcionando igual — apenas o provider muda quando há imagem
+- Usar `AbortController` com timeout de 15s no fetch para evitar travamento
+- Separar o `catch` em: erro de rede puro vs erro HTTP
+- Limiar de desistência: 10 erros de rede consecutivos (~90s de falha contínua)
+- Nenhuma alteração de banco de dados ou edge function necessária
 
