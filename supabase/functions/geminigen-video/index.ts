@@ -11,9 +11,24 @@ const GROK_ASPECT_MAP: Record<string, string> = {
   '16:9': 'landscape',
   '9:16': 'portrait',
   '1:1': 'square',
-  '2:3': 'vertical',
-  '3:2': 'horizontal',
+  '2:3': '2:3',
+  '3:2': '3:2',
 };
+
+function extractErrorMessage(data: any, statusCode: number): string {
+  if (typeof data?.error === 'string' && data.error) return data.error;
+  if (typeof data?.message === 'string' && data.message) return data.message;
+  if (typeof data?.detail === 'object' && data.detail !== null) {
+    if (typeof data.detail.error_message === 'string') return data.detail.error_message;
+    if (typeof data.detail.message === 'string') return data.detail.message;
+    return JSON.stringify(data.detail);
+  }
+  if (typeof data?.detail === 'string' && data.detail) return data.detail;
+  if (Array.isArray(data?.errors)) {
+    return data.errors.map((e: any) => e.msg || e.message || String(e)).join('; ');
+  }
+  return `Erro HTTP ${statusCode} da API de vídeo.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -164,9 +179,7 @@ Deno.serve(async (req) => {
     console.log('GeminiGen video response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
 
     // Extract the most useful error message from various possible fields
-    const extractedError = !response.ok
-      ? (data.error || data.message || data.detail || data.msg || (Array.isArray(data.errors) ? data.errors.map((e: any) => e.msg || e.message || String(e)).join('; ') : null) || `Erro HTTP ${response.status} da API de vídeo.`)
-      : null;
+    const extractedError = !response.ok ? extractErrorMessage(data, response.status) : null;
 
     const generationUuid = data.uuid;
     const userEmail = user.email as string;
