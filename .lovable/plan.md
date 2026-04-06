@@ -1,22 +1,26 @@
 
 
-## Plano: Melhorar mensagem de erro na geração de imagens
+## Plano: Corrigir erro HTTP 400 na geração Grok e melhorar diagnóstico
 
 ### Problema
-Quando a API GeminiGen retorna erro, a edge function envia `{ error: 'Erro na API GeminiGen.', details: responseData }` mas o cliente só lê `data.error`, perdendo os detalhes reais do erro. Isso mostra uma mensagem genérica sem ajudar o usuário a entender o que aconteceu (ex: créditos insuficientes, prompt inválido, rate limit da API externa, etc.).
+Os logs mostram que a API GeminiGen retorna `status: 400` com `uuid: undefined` para requisições Grok, mas o corpo da resposta de erro não é logado — apenas `data.error` e `data.message` (ambos `null`). Sem ver a resposta completa, é impossível saber o motivo exato da rejeição. Além disso, o cliente recebe um erro genérico "HTTP 400" sem detalhes.
 
 ### Etapas
 
-**1. Edge Function `geminigen-image/index.ts` — incluir detalhes no campo `error`**
-- Extrair a mensagem real de `responseData` (campos como `message`, `error`, `detail`) e concatenar na mensagem de erro
-- Aplicar a mesma detecção de violação de política que já existe no polling de vídeo (ex: `PUBLIC_ERROR_SEXUAL`, copyright) para retornar mensagem amigável
-- Logar o `responseData` completo no console para debug
+**1. Edge Function `geminigen-video/index.ts` — logar resposta completa e extrair erro**
+- Logar `JSON.stringify(data)` completo quando `response.ok` é `false`, para revelar o motivo real do 400
+- Extrair mensagem de erro de campos alternativos (`data.detail`, `data.msg`, `data.errors`, primeiro nível do objeto)
+- Retornar a mensagem de erro real ao cliente no campo `error`
 
-**2. Cliente `useImageGenerator.ts` — ler `details` como fallback**
-- Se `data.error` for genérico ("Erro na API GeminiGen."), verificar `data.details?.message` ou `data.details?.error` para mensagem mais específica
+**2. Edge Function — remover campo `model` do FormData para Grok**
+- A documentação da API Grok mostra que `model` é obrigatório, mas a edge function já envia `model: "grok-3"`. Verificar se o campo `resolution: "720p"` é aceito (docs mostram 480p como default mas 720p como opção válida)
+- Não enviar campos desnecessários que possam causar rejeição
+
+**3. Frontend `useGenerator.ts` — melhorar exibição do erro**
+- Quando a resposta tiver `data.error` com detalhes, exibir ao usuário em vez de "HTTP 400"
 
 ### Detalhes técnicos
-- A API GeminiGen pode retornar erros variados (rate limit, créditos, conteúdo bloqueado)
-- O `console.error` na edge function permite debugar via logs do Supabase
+- O log completo do response body vai aparecer nos Edge Function logs do Supabase, permitindo diagnóstico rápido
 - Nenhuma alteração de banco de dados necessária
+- Deploy automático da edge function após edição
 
