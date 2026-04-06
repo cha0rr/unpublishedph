@@ -183,7 +183,7 @@ export function useImageGenerator(): ImageGeneratorResult {
     }
 
     throw new Error("Tempo limite excedido.");
-  }, []);
+  }, [getValidToken]);
 
   const generate = useCallback(async (params: ImageGenerateParams) => {
     cancelledRef.current = false;
