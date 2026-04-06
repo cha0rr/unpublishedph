@@ -33,7 +33,7 @@ const plans: {
     name: "Pro",
     originalPrice: "R$ 89,90",
     price: "R$ 69,90",
-    period: "/mês",
+    period: "/1º mês",
     slug: "pro",
     description: "Para quem gerencia múltiplas contas e precisa de volume.",
     features: [
