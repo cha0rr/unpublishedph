@@ -22,7 +22,8 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 79,90",
+    originalPrice: "R$ 89,90",
+    price: "R$ 69,90",
     period: "/mês",
     slug: "pro",
     description: "Para quem gerencia múltiplas contas e precisa de volume.",
@@ -87,6 +88,9 @@ export function PricingSection() {
               <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
               <div className="mt-4 sm:mt-6 mb-4 sm:mb-6">
+                {plan.originalPrice && (
+                  <span className="text-lg text-muted-foreground line-through mr-2">{plan.originalPrice}</span>
+                )}
                 <span className="text-3xl sm:text-4xl font-bold text-foreground">{plan.price}</span>
                 {plan.period && <span className="text-sm text-muted-foreground">{plan.period}</span>}
               </div>
