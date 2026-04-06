@@ -262,7 +262,26 @@ Deno.serve(async (req) => {
     const responseData = await apiResponse.json();
 
     if (!apiResponse.ok) {
-      return new Response(JSON.stringify({ error: 'Erro na API GeminiGen.', details: responseData }), {
+      console.error('GeminiGen API error:', JSON.stringify(responseData));
+
+      // Extract real error message from API response
+      const apiMsg = responseData?.message || responseData?.error || responseData?.detail || '';
+      const errorCode = responseData?.error_code || '';
+
+      // Detect policy violations
+      const policyViolation =
+        errorCode.includes('PUBLIC_ERROR_SEXUAL') ||
+        apiMsg.toLowerCase().includes('policy') ||
+        apiMsg.toLowerCase().includes('copyright') ||
+        apiMsg.toLowerCase().includes('violat');
+
+      const friendlyError = policyViolation
+        ? 'Reescreva seu prompt, pois contém palavras impróprias ou material de terceiros.'
+        : apiMsg
+          ? `Erro na API: ${apiMsg}`
+          : `Erro na API GeminiGen (código ${apiResponse.status}). Tente novamente.`;
+
+      return new Response(JSON.stringify({ error: friendlyError, details: responseData }), {
         status: apiResponse.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
