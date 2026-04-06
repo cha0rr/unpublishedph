@@ -1,28 +1,22 @@
 
 
-## Plano: Aumentar resiliência do polling de imagens em redes instáveis
+## Plano: Melhorar mensagem de erro na geração de imagens
 
 ### Problema
-O polling de status da imagem (`useImageGenerator.ts`) trata **todos** os erros como erros de rede e desiste após 5 falhas consecutivas (~25 segundos). Em redes instáveis ou com firewalls restritivos, isso causa o erro "Conexão perdida ao verificar status" antes da imagem ficar pronta.
-
-Além disso, erros HTTP legítimos (401, 403, 500) são contados como "erros de rede", quando deveriam ser tratados individualmente.
+Quando a API GeminiGen retorna erro, a edge function envia `{ error: 'Erro na API GeminiGen.', details: responseData }` mas o cliente só lê `data.error`, perdendo os detalhes reais do erro. Isso mostra uma mensagem genérica sem ajudar o usuário a entender o que aconteceu (ex: créditos insuficientes, prompt inválido, rate limit da API externa, etc.).
 
 ### Etapas
 
-**1. Diferenciar erros de rede vs erros HTTP no `useImageGenerator.ts`**
-- Erros de autenticação (401/403): parar imediatamente com mensagem clara
-- Erros de servidor (500): contar como erro temporário, mas com tolerância maior
-- Erros de `fetch` puro (TypeError/network): contar como erro de rede
-- Aumentar threshold de 5 para 10 consecutivos antes de desistir
-- Adicionar timeout ao fetch (15s) para não travar em redes lentas
+**1. Edge Function `geminigen-image/index.ts` — incluir detalhes no campo `error`**
+- Extrair a mensagem real de `responseData` (campos como `message`, `error`, `detail`) e concatenar na mensagem de erro
+- Aplicar a mesma detecção de violação de política que já existe no polling de vídeo (ex: `PUBLIC_ERROR_SEXUAL`, copyright) para retornar mensagem amigável
+- Logar o `responseData` completo no console para debug
 
-**2. Adicionar retry com backoff**
-- Após erro de rede, esperar progressivamente mais (5s → 8s → 12s) antes de tentar novamente
-- Manter intervalo normal de 5s quando não há erros
+**2. Cliente `useImageGenerator.ts` — ler `details` como fallback**
+- Se `data.error` for genérico ("Erro na API GeminiGen."), verificar `data.details?.message` ou `data.details?.error` para mensagem mais específica
 
 ### Detalhes técnicos
-- Usar `AbortController` com timeout de 15s no fetch para evitar travamento
-- Separar o `catch` em: erro de rede puro vs erro HTTP
-- Limiar de desistência: 10 erros de rede consecutivos (~90s de falha contínua)
-- Nenhuma alteração de banco de dados ou edge function necessária
+- A API GeminiGen pode retornar erros variados (rate limit, créditos, conteúdo bloqueado)
+- O `console.error` na edge function permite debugar via logs do Supabase
+- Nenhuma alteração de banco de dados necessária
 
