@@ -185,7 +185,14 @@ export function useImageGenerator(): ImageGeneratorResult {
       );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro ao gerar imagem.");
+      if (!res.ok) {
+        const detailMsg = data.details?.message || data.details?.error || data.details?.detail || '';
+        const mainMsg = data.error || '';
+        const finalMsg = mainMsg && mainMsg !== 'Erro na API GeminiGen.'
+          ? mainMsg
+          : detailMsg || mainMsg || "Erro ao gerar imagem.";
+        throw new Error(finalMsg);
+      }
 
       const uuid = data.uuid;
       if (!uuid) throw new Error("UUID da geração não retornado.");
