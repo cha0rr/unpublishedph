@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { RegistroDialog } from "./RegistroDialog";
 
-const plans = [
+const plans: {
+  name: string;
+  originalPrice?: string;
+  price: string;
+  period: string;
+  slug: string;
+  description: string;
+  features: string[];
+  highlighted: boolean;
+}[] = [
   {
     name: "Básico",
     price: "R$ 49,90",
