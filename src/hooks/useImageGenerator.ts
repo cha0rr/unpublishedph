@@ -120,16 +120,22 @@ export function useImageGenerator(): ImageGeneratorResult {
         );
         clearTimeout(timeoutId);
 
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401) {
           if (!authRetried) {
-            // Tentar refresh uma vez antes de desistir
             authRetried = true;
             const { data: refreshData } = await supabase.auth.refreshSession();
             if (refreshData?.session?.access_token) {
-              continue; // Retry com novo token
+              continue;
             }
           }
           throw new Error("Sessão expirada. Faça login novamente.");
+        }
+
+        if (res.status === 403) {
+          const errorData = await res.json().catch(() => null);
+          throw new Error(
+            errorData?.error || errorData?.message || "Acesso negado ao consultar o status da imagem."
+          );
         }
         authRetried = false;
 
