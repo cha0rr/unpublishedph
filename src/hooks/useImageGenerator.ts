@@ -77,7 +77,7 @@ export function useImageGenerator(): ImageGeneratorResult {
 
   const pollHistory = useCallback(async (uuid: string) => {
     const maxAttempts = 120;
-    const interval = 5000;
+    const baseInterval = 5000;
     let consecutiveNetworkErrors = 0;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -86,6 +86,9 @@ export function useImageGenerator(): ImageGeneratorResult {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geminigen-image-history`,
@@ -96,12 +99,31 @@ export function useImageGenerator(): ImageGeneratorResult {
               Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({ uuid }),
+            signal: controller.signal,
           }
         );
+        clearTimeout(timeoutId);
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("Sessão expirada. Faça login novamente.");
+        }
+
+        if (!res.ok) {
+          consecutiveNetworkErrors++;
+          if (consecutiveNetworkErrors >= 10) {
+            throw new Error("Servidor indisponível. Tente novamente mais tarde.");
+          }
+          const backoff = Math.min(baseInterval + consecutiveNetworkErrors * 3000, 15000);
+          await new Promise((resolve) => setTimeout(resolve, backoff));
+          continue;
+        }
+
         const data = await res.json();
-        if (!data) throw new Error("Resposta inválida.");
+        if (!data) {
+          consecutiveNetworkErrors++;
+          await new Promise((resolve) => setTimeout(resolve, baseInterval));
+          continue;
+        }
         consecutiveNetworkErrors = 0;
 
         if (data.status === 2) {
@@ -118,13 +140,21 @@ export function useImageGenerator(): ImageGeneratorResult {
           throw new Error(data.error_message || "Falha ao gerar imagem.");
         }
       } catch (err: any) {
-        consecutiveNetworkErrors++;
-        if (consecutiveNetworkErrors >= 5) {
-          throw new Error("Conexão perdida ao verificar status.");
+        if (err.message === "Sessão expirada. Faça login novamente." ||
+            err.message === "Servidor indisponível. Tente novamente mais tarde." ||
+            err.message?.includes("Falha ao gerar")) {
+          throw err;
         }
+        consecutiveNetworkErrors++;
+        if (consecutiveNetworkErrors >= 10) {
+          throw new Error("Conexão perdida ao verificar status. Verifique sua internet.");
+        }
+        const backoff = Math.min(baseInterval + consecutiveNetworkErrors * 3000, 15000);
+        await new Promise((resolve) => setTimeout(resolve, backoff));
+        continue;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, interval));
+      await new Promise((resolve) => setTimeout(resolve, baseInterval));
     }
 
     throw new Error("Tempo limite excedido.");
