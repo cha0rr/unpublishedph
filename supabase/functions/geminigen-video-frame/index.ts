@@ -5,7 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const RATE_LIMIT_PER_HOUR = 10;
 const MAX_PROMPT_LENGTH = 4000;
 
 Deno.serve(async (req) => {
@@ -63,23 +62,6 @@ Deno.serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-
-    // --- Rate Limiting (admins exempt) ---
-    if (!isAdmin) {
-      const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-      const { count } = await adminClient
-        .from('image_generations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', oneHourAgo);
-
-      if ((count ?? 0) >= RATE_LIMIT_PER_HOUR) {
-        return new Response(JSON.stringify({ success: false, error: `Limite de ${RATE_LIMIT_PER_HOUR} gerações por hora atingido. Aguarde alguns minutos.` }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
     }
 
     // --- Business logic ---
