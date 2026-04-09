@@ -1,49 +1,62 @@
 
 
-## Plano: Avatar preview animado com bonequinho interativo
+## Plano: Preview 3D interativo com React Three Fiber
 
 ### Resumo
-Criar um componente SVG de preview de avatar (bonequinho estilizado) ao lado direito do formulário que atualiza visualmente em tempo real conforme o usuário seleciona características (cor do cabelo, cor da pele, cor dos olhos, tipo de cabelo, altura, tipo de corpo). Cada mudança terá uma transição CSS suave.
+Substituir o preview SVG atual por um modelo 3D feminino estilizado (Pixar-like) renderizado no browser com React Three Fiber. As cores de cabelo, pele e olhos mudarão em tempo real ao selecionar opções no formulário.
+
+### Limitacao importante
+O preview do sandbox Lovable **nao tem GPU** -- o canvas 3D aparecera vazio no preview. O usuario precisara testar no browser real (URL publicada) para ver o modelo 3D.
 
 ### Etapas
 
-**1. Criar componente `src/components/AvatarPreview.tsx`**
-- SVG inline de um bonequinho feminino estilizado (cabeça, cabelo, olhos, corpo, pernas)
-- Props: `selections: Record<string, string>` (as mesmas seleções do formulário)
-- Mapeamento de cores:
-  - `hairColor` → cor de preenchimento do cabelo (ex: Preto → #1a1a1a, Loiro → #f0d060, Ruivo → #c44020, etc.)
-  - `skinColor` → cor da pele do boneco (ex: Pele clara → #fde8d0, Pele negra → #6b4226, etc.)
-  - `eyeColor` → cor dos olhos (ex: Verde → #2d8a4e, Azul → #3b82f6, etc.)
-  - `hairType` → forma/path do cabelo (liso = reto, cacheado = ondas, curto = menor, etc.)
-  - `height` → escala vertical do boneco (Baixa = 0.85, Média = 1, Alta = 1.15)
-  - `bodyType` → largura/proporção do corpo (Magra = estreito, Plus size = mais largo)
-- Todas as propriedades visuais usam `transition: all 0.4s ease` para animar mudanças suavemente
+**1. Instalar dependencias**
+- `@react-three/fiber@^8.18`
+- `@react-three/drei@^9.122.0`
+- `three@^0.160`
 
-**2. Ajustar layout da página `src/pages/AvatarMaker.tsx`**
-- Mudar de coluna única (`max-w-3xl`) para layout de duas colunas em desktop:
-  - Esquerda: formulário (`AvatarMakerForm`)
-  - Direita: preview do avatar (`AvatarPreview`) fixo (sticky)
-- Em mobile: preview aparece no topo, acima do formulário
-- O `AvatarMakerForm` precisa expor `selections` para o pai, ou o estado sobe para a página
+**2. Obter modelo 3D**
+- Usar um modelo GLB feminino estilizado gratuito (CC0/royalty-free) hospedado em CDN publico
+- Opcoes: modelo do ReadyPlayerMe, Mixamo, ou um modelo estilizado do Sketchfab
+- O modelo precisa ter meshes separados para cabelo, pele e olhos (para poder colorir independentemente)
+- Alternativa: criar personagem com primitivas R3F (esferas, cilindros) estilizadas com materiais toon -- resultado menos realista mas funcional sem modelo externo
 
-**3. Elevar estado de seleções para `AvatarMaker.tsx`**
-- Mover `selections` e `setSelections` (com defaults) para a página pai
-- Passar como props para `AvatarMakerForm` e `AvatarPreview`
+**3. Criar componente `AvatarPreview3D.tsx`**
+- Canvas R3F com `OrbitControls` (drei) para rotacao
+- Iluminacao: ambient + directional + rim light
+- Carregar modelo com `useGLTF`
+- Traversar meshes do modelo e aplicar cores dinamicamente:
+  - `hairColor` → material do mesh "hair"
+  - `skinColor` → material dos meshes "body"/"face"
+  - `eyeColor` → material do mesh "eyes"
+  - `bodyType` → scale X do torso
+  - `height` → scale Y geral
+- Transicoes suaves via `useFrame` + `lerp` nas cores
 
-### Detalhes técnicos
+**4. Atualizar `AvatarPreview.tsx`**
+- Substituir o SVG pelo componente `AvatarPreview3D`
+- Manter a mesma interface de props `selections: Record<string, string>`
+- Adicionar fallback para quando WebGL nao esta disponivel (manter SVG como fallback)
 
-**SVG do bonequinho:** Composto por paths simples:
-- Círculo para cabeça
-- Paths curvos para diferentes tipos de cabelo (6-7 variantes)
-- Elipses pequenas para olhos
-- Retângulo/path arredondado para torso (largura varia com bodyType)
-- Linhas/paths para braços e pernas
-- Transform scale para altura
+### Detalhes tecnicos
 
-**Animação:** Usar `style={{ transition: 'all 0.4s ease' }}` nos elementos SVG — ao trocar fill/transform, o browser anima automaticamente. Adicionar um leve "pulse" (scale 1.02 → 1) ao mudar qualquer atributo via classe CSS temporária.
+```text
+AvatarMaker.tsx
+  ├── AvatarMakerForm (esquerda)
+  └── AvatarPreview (direita, sticky)
+        └── AvatarPreview3D
+              ├── Canvas (R3F)
+              │   ├── Lights
+              │   ├── CharacterModel (GLB)
+              │   │   ├── Hair mesh → cor dinamica
+              │   │   ├── Body mesh → cor pele
+              │   │   └── Eyes mesh → cor olhos
+              │   └── OrbitControls
+              └── Fallback (SVG se WebGL indisponivel)
+```
 
 **Arquivos:**
-- **Criar**: `src/components/AvatarPreview.tsx`
-- **Editar**: `src/pages/AvatarMaker.tsx` (layout 2 colunas + estado elevado)
-- **Editar**: `src/components/AvatarMakerForm.tsx` (receber selections/setSelections via props)
+- **Instalar**: three, @react-three/fiber, @react-three/drei
+- **Criar**: `src/components/AvatarPreview3D.tsx`
+- **Editar**: `src/components/AvatarPreview.tsx` (wrapper com fallback)
 
