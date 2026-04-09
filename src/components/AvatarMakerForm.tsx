@@ -41,7 +41,7 @@ function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
 
 export function AvatarMakerForm() {
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
-  const { cooldownRemaining, startCooldown } = useCooldown("avatar-maker", 90);
+  const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "avatar-maker", durationMs: 90000 });
 
   const [hairColor, setHairColor] = useState("Preto");
   const [hairType, setHairType] = useState("Liso");
