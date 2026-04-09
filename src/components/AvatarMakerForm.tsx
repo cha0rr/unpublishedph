@@ -17,15 +17,14 @@ const CATEGORIES: {
   label: string;
   icon: LucideIcon;
   options: string[];
-  default: string;
 }[] = [
-  { key: "hairColor", label: "Cor do Cabelo", icon: Palette, options: ["Preto", "Castanho escuro", "Castanho claro", "Loiro", "Ruivo", "Platinado", "Rosa", "Azul", "Branco"], default: "Preto" },
-  { key: "hairType", label: "Tipo de Cabelo", icon: Waves, options: ["Liso", "Ondulado", "Cacheado", "Crespo", "Curto", "Raspado", "Trançado"], default: "Liso" },
-  { key: "skinColor", label: "Cor da Pele", icon: User, options: ["Pele clara", "Pele branca", "Pele morena clara", "Pele morena", "Pele negra", "Pele asiática"], default: "Pele morena" },
-  { key: "eyeColor", label: "Cor dos Olhos", icon: Eye, options: ["Castanho", "Verde", "Azul", "Mel", "Cinza", "Preto"], default: "Castanho" },
-  { key: "skinTexture", label: "Textura da Pele", icon: Fingerprint, options: ["Lisa", "Sardas", "Manchas solares", "Sinais/pintas", "Acne leve", "Cicatrizes"], default: "Lisa" },
-  { key: "height", label: "Altura", icon: Ruler, options: ["Baixa", "Média", "Alta"], default: "Média" },
-  { key: "bodyType", label: "Corpo", icon: PersonStanding, options: ["Magra", "Atlética", "Mediana", "Curvilínea", "Plus size"], default: "Mediana" },
+  { key: "hairColor", label: "Cor do Cabelo", icon: Palette, options: ["Preto", "Castanho escuro", "Castanho claro", "Loiro", "Ruivo", "Platinado", "Rosa", "Azul", "Branco"] },
+  { key: "hairType", label: "Tipo de Cabelo", icon: Waves, options: ["Liso", "Ondulado", "Cacheado", "Crespo", "Curto", "Raspado", "Trançado"] },
+  { key: "skinColor", label: "Cor da Pele", icon: User, options: ["Pele clara", "Pele branca", "Pele morena clara", "Pele morena", "Pele negra", "Pele asiática"] },
+  { key: "eyeColor", label: "Cor dos Olhos", icon: Eye, options: ["Castanho", "Verde", "Azul", "Mel", "Cinza", "Preto"] },
+  { key: "skinTexture", label: "Textura da Pele", icon: Fingerprint, options: ["Lisa", "Sardas", "Manchas solares", "Sinais/pintas", "Acne leve", "Cicatrizes"] },
+  { key: "height", label: "Altura", icon: Ruler, options: ["Baixa", "Média", "Alta"] },
+  { key: "bodyType", label: "Corpo", icon: PersonStanding, options: ["Magra", "Atlética", "Mediana", "Curvilínea", "Plus size"] },
 ];
 
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
@@ -51,12 +50,15 @@ function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   return lines.join("\n");
 }
 
-export function AvatarMakerForm() {
+interface AvatarMakerFormProps {
+  selections: Record<string, string>;
+  onSelectionsChange: (s: Record<string, string>) => void;
+}
+
+export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerFormProps) {
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "avatar-maker", durationMs: 90000 });
 
-  const defaults = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.default]));
-  const [selections, setSelections] = useState<Record<string, string>>(defaults);
   const [environment, setEnvironment] = useState("");
   const [extra, setExtra] = useState("");
   const [refImage, setRefImage] = useState<ImageReferencePayload | null>(null);
@@ -64,7 +66,7 @@ export function AvatarMakerForm() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const select = (key: string, value: string) =>
-    setSelections((prev) => ({ ...prev, [key]: value }));
+    onSelectionsChange({ ...selections, [key]: value });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
