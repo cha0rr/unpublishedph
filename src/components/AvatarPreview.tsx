@@ -1,4 +1,18 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+const AvatarPreview3DLazy = lazy(() =>
+  import("./AvatarPreview3D").then(m => ({ default: m.AvatarPreview3D }))
+);
+
+function hasWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
 
 interface AvatarPreviewProps {
   selections: Record<string, string>;
@@ -262,6 +276,40 @@ function Hair3D({ type, colors }: { type: string; colors: { base: string; light:
 }
 
 export function AvatarPreview({ selections }: AvatarPreviewProps) {
+  const [use3D, setUse3D] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setUse3D(hasWebGL());
+  }, []);
+
+  if (use3D === null) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: 300 }}>
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <p className="text-xs text-muted-foreground">Carregando preview…</p>
+      </div>
+    );
+  }
+
+  if (use3D) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <Suspense fallback={
+          <div className="flex items-center justify-center" style={{ minHeight: 300 }}>
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        }>
+          <AvatarPreview3DLazy selections={selections} />
+        </Suspense>
+        <p className="text-xs text-muted-foreground text-center">Arraste para girar • Preview 3D</p>
+      </div>
+    );
+  }
+
+  return <AvatarPreviewSVG selections={selections} />;
+}
+
+function AvatarPreviewSVG({ selections }: AvatarPreviewProps) {
   const hair = HAIR_COLORS[selections.hairColor] || HAIR_COLORS["Preto"];
   const skin = SKIN_COLORS[selections.skinColor] || SKIN_COLORS["Pele morena clara"];
   const eye = EYE_COLORS[selections.eyeColor] || EYE_COLORS["Castanho"];
