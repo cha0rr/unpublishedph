@@ -2,19 +2,31 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useImageGenerator, ImageReferencePayload } from "@/hooks/useImageGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
-import { Loader2, Download, RefreshCw, Upload, X, Sparkles } from "lucide-react";
+import {
+  Loader2, Download, RefreshCw, Upload, X, Sparkles,
+  Palette, Waves, User, Eye, Fingerprint, Ruler, PersonStanding,
+  type LucideIcon,
+} from "lucide-react";
 
-const HAIR_COLORS = ["Preto", "Castanho escuro", "Castanho claro", "Loiro", "Ruivo", "Platinado", "Rosa", "Azul", "Branco"];
-const HAIR_TYPES = ["Liso", "Ondulado", "Cacheado", "Crespo", "Curto", "Raspado", "Trançado"];
-const SKIN_COLORS = ["Pele clara", "Pele branca", "Pele morena clara", "Pele morena", "Pele negra", "Pele asiática"];
-const EYE_COLORS = ["Castanho", "Verde", "Azul", "Mel", "Cinza", "Preto"];
-const SKIN_TEXTURES = ["Lisa", "Sardas", "Manchas solares", "Sinais/pintas", "Acne leve", "Cicatrizes"];
-const HEIGHTS = ["Baixa", "Média", "Alta"];
-const BODY_TYPES = ["Magra", "Atlética", "Mediana", "Curvilínea", "Plus size"];
+const CATEGORIES: {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  options: string[];
+  default: string;
+}[] = [
+  { key: "hairColor", label: "Cor do Cabelo", icon: Palette, options: ["Preto", "Castanho escuro", "Castanho claro", "Loiro", "Ruivo", "Platinado", "Rosa", "Azul", "Branco"], default: "Preto" },
+  { key: "hairType", label: "Tipo de Cabelo", icon: Waves, options: ["Liso", "Ondulado", "Cacheado", "Crespo", "Curto", "Raspado", "Trançado"], default: "Liso" },
+  { key: "skinColor", label: "Cor da Pele", icon: User, options: ["Pele clara", "Pele branca", "Pele morena clara", "Pele morena", "Pele negra", "Pele asiática"], default: "Pele morena" },
+  { key: "eyeColor", label: "Cor dos Olhos", icon: Eye, options: ["Castanho", "Verde", "Azul", "Mel", "Cinza", "Preto"], default: "Castanho" },
+  { key: "skinTexture", label: "Textura da Pele", icon: Fingerprint, options: ["Lisa", "Sardas", "Manchas solares", "Sinais/pintas", "Acne leve", "Cicatrizes"], default: "Lisa" },
+  { key: "height", label: "Altura", icon: Ruler, options: ["Baixa", "Média", "Alta"], default: "Média" },
+  { key: "bodyType", label: "Corpo", icon: PersonStanding, options: ["Magra", "Atlética", "Mediana", "Curvilínea", "Plus size"], default: "Mediana" },
+];
 
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   const lines = [
@@ -43,18 +55,16 @@ export function AvatarMakerForm() {
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "avatar-maker", durationMs: 90000 });
 
-  const [hairColor, setHairColor] = useState("Preto");
-  const [hairType, setHairType] = useState("Liso");
-  const [skinColor, setSkinColor] = useState("Pele morena");
-  const [eyeColor, setEyeColor] = useState("Castanho");
-  const [skinTexture, setSkinTexture] = useState("Lisa");
-  const [height, setHeight] = useState("Média");
-  const [bodyType, setBodyType] = useState("Mediana");
+  const defaults = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.default]));
+  const [selections, setSelections] = useState<Record<string, string>>(defaults);
   const [environment, setEnvironment] = useState("");
   const [extra, setExtra] = useState("");
   const [refImage, setRefImage] = useState<ImageReferencePayload | null>(null);
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const select = (key: string, value: string) =>
+    setSelections((prev) => ({ ...prev, [key]: value }));
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,14 +89,11 @@ export function AvatarMakerForm() {
   };
 
   const handleGenerate = async () => {
-    const prompt = buildPrompt(
-      { hairColor, hairType, skinColor, eyeColor, skinTexture, height, bodyType, environment, extra },
-      !!refImage
-    );
+    const prompt = buildPrompt({ ...selections, environment, extra }, !!refImage);
     await generate({
       prompt,
       model: "nano-banana-2",
-      aspect_ratio: "2:3",
+      aspect_ratio: "9:16",
       ...(refImage ? { file_base64: [refImage] } : {}),
     });
     startCooldown();
@@ -129,15 +136,35 @@ export function AvatarMakerForm() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Cor do Cabelo" value={hairColor} onChange={setHairColor} options={HAIR_COLORS} />
-        <Field label="Tipo de Cabelo" value={hairType} onChange={setHairType} options={HAIR_TYPES} />
-        <Field label="Cor da Pele" value={skinColor} onChange={setSkinColor} options={SKIN_COLORS} />
-        <Field label="Cor dos Olhos" value={eyeColor} onChange={setEyeColor} options={EYE_COLORS} />
-        <Field label="Textura da Pele" value={skinTexture} onChange={setSkinTexture} options={SKIN_TEXTURES} />
-        <Field label="Altura" value={height} onChange={setHeight} options={HEIGHTS} />
-        <Field label="Corpo" value={bodyType} onChange={setBodyType} options={BODY_TYPES} />
-      </div>
+      {CATEGORIES.map((cat) => {
+        const Icon = cat.icon;
+        const selected = selections[cat.key];
+        return (
+          <div key={cat.key} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Icon className="h-4 w-4 text-primary" />
+              <Label className="text-foreground text-sm font-medium">{cat.label}</Label>
+              <Badge variant="secondary" className="text-xs">{selected}</Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {cat.options.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => select(cat.key, opt)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    selected === opt
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
 
       <div className="space-y-2">
         <Label className="text-foreground">Ambiente</Label>
@@ -194,24 +221,6 @@ export function AvatarMakerForm() {
           <><Sparkles className="h-4 w-4 mr-2" /> Gerar Avatar</>
         )}
       </Button>
-    </div>
-  );
-}
-
-function Field({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
-  return (
-    <div className="space-y-2">
-      <Label className="text-foreground text-sm">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="bg-muted/30 border-border">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
     </div>
   );
 }
