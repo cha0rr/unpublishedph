@@ -67,112 +67,184 @@ function Hair3D({ type, colors }: { type: string; colors: { base: string; light:
 
   switch (type) {
     case "Liso":
+      // Straight, long, sleek hair flowing past shoulders
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("liso")}</defs>
-          {/* Main hair volume */}
-          <path d="M26 36 Q24 10 50 5 Q76 10 74 36 L76 70 Q74 62 72 66 L72 38 Q72 18 50 13 Q28 18 28 38 L28 66 Q26 62 24 70 Z" 
+          {/* Main volume - long straight hair */}
+          <path d="M26 30 Q24 8 50 3 Q76 8 74 30 
+                   L76 75 Q75 82 73 85 L73 40 Q73 18 50 12 Q27 18 27 40 L27 85 Q25 82 24 75 Z" 
             fill={`url(#hairGradliso)`} style={{ transition: t }} />
-          {/* Shine layer */}
-          <path d="M30 34 Q28 14 50 9 Q60 12 64 20 Q56 14 50 13 Q34 18 32 36 L32 55 Q30 50 28 55 Z"
+          {/* Shine streak - straight line down */}
+          <path d="M34 14 Q40 10 50 8 L50 12 Q42 13 36 18 L34 30 Z"
             fill={`url(#hairShineliso)`} style={{ transition: t }} />
-          {/* Strand details */}
-          <path d="M36 16 Q42 12 50 11" stroke={colors.shine} strokeWidth="0.5" fill="none" opacity="0.3" />
-          <path d="M40 14 Q46 11 52 10" stroke={colors.shine} strokeWidth="0.3" fill="none" opacity="0.2" />
-          {/* Bangs */}
-          <path d="M30 24 Q35 15 50 12 Q65 15 70 24 Q63 18 50 16 Q37 18 30 24 Z" 
+          <path d="M36 20 L35 70" stroke={colors.shine} strokeWidth="0.8" fill="none" opacity="0.15" />
+          <path d="M64 20 L65 70" stroke={colors.shine} strokeWidth="0.5" fill="none" opacity="0.1" />
+          {/* Straight bangs - side swept */}
+          <path d="M28 26 Q34 13 50 10 Q66 13 72 26 L70 22 Q64 14 50 12 Q36 14 30 22 Z" 
             fill={colors.base} style={{ transition: t }} />
-          <path d="M32 22 Q38 16 50 14 Q55 15 58 17" 
-            fill={colors.light} opacity="0.4" style={{ transition: t }} />
+          <path d="M30 24 Q38 16 50 14" stroke={colors.light} strokeWidth="0.8" fill="none" opacity="0.3" />
         </g>
       );
     case "Ondulado":
+      // Wavy hair with S-curves flowing down
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("ond")}</defs>
-          <path d="M25 36 Q23 8 50 4 Q77 8 75 36 L78 58 Q76 50 74 56 Q72 48 70 58 Q68 50 66 56 L68 36 Q68 18 50 13 Q32 18 32 36 L34 56 Q32 48 30 56 Q28 50 26 58 Q24 50 22 58 Z"
+          {/* Main wavy volume */}
+          <path d="M24 32 Q22 6 50 2 Q78 6 76 32 
+                   L78 48 Q76 55 74 50 Q72 58 70 52 Q68 60 66 54 L68 36 Q68 18 50 12 
+                   Q32 18 32 36 L34 54 Q32 60 30 52 Q28 58 26 50 Q24 55 22 48 Z"
             fill={`url(#hairGradond)`} style={{ transition: t }} />
-          <path d="M28 34 Q26 12 50 7 Q58 10 62 16 Q54 10 50 10 Q34 16 34 38 L34 48 Q32 42 30 48 Z"
-            fill={`url(#hairShineond)`} style={{ transition: t }} />
-          {/* Wave highlights */}
-          <path d="M74 42 Q76 48 75 54" stroke={colors.shine} strokeWidth="0.8" fill="none" opacity="0.25" />
-          <path d="M26 44 Q24 50 25 56" stroke={colors.shine} strokeWidth="0.8" fill="none" opacity="0.25" />
-          {/* Bangs */}
-          <path d="M30 24 Q35 14 50 11 Q65 14 70 24 Q62 17 50 15 Q38 17 30 24 Z" 
+          {/* Left wave strands going lower */}
+          <path d="M26 50 Q24 58 26 64 Q28 70 26 76 Q24 82 26 86" 
+            stroke={colors.base} strokeWidth="5" fill="none" strokeLinecap="round" style={{ transition: t }} />
+          <path d="M30 52 Q28 60 30 66 Q32 72 30 78 Q28 84 30 88" 
+            stroke={colors.base} strokeWidth="4" fill="none" strokeLinecap="round" style={{ transition: t }} />
+          {/* Right wave strands */}
+          <path d="M74 50 Q76 58 74 64 Q72 70 74 76 Q76 82 74 86" 
+            stroke={colors.base} strokeWidth="5" fill="none" strokeLinecap="round" style={{ transition: t }} />
+          <path d="M70 52 Q72 60 70 66 Q68 72 70 78 Q72 84 70 88" 
+            stroke={colors.base} strokeWidth="4" fill="none" strokeLinecap="round" style={{ transition: t }} />
+          {/* Wave shine */}
+          <path d="M28 52 Q26 60 28 66" stroke={colors.shine} strokeWidth="1" fill="none" opacity="0.2" />
+          <path d="M72 52 Q74 60 72 66" stroke={colors.shine} strokeWidth="1" fill="none" opacity="0.2" />
+          {/* Wavy bangs */}
+          <path d="M30 24 Q36 13 50 10 Q64 13 70 24 Q66 16 58 14 Q50 16 42 14 Q34 16 30 24 Z" 
             fill={colors.base} style={{ transition: t }} />
         </g>
       );
     case "Cacheado":
+      // Curly hair - bouncy defined curls, big volume
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("cach")}</defs>
-          <path d="M23 38 Q20 5 50 2 Q80 5 77 38 L80 52 Q78 44 80 54 Q76 48 78 58 Q74 50 72 60 L72 36 Q72 16 50 11 Q28 16 28 36 L28 60 Q26 50 22 58 Q24 48 20 54 Q22 44 18 52 Z"
+          {/* Big curly volume outline */}
+          <path d="M18 35 Q14 2 50 -2 Q86 2 82 35 L84 50 Q82 55 80 48 Q78 56 76 50 Q74 58 72 52 
+                   L72 34 Q72 16 50 10 Q28 16 28 34 
+                   L28 52 Q26 58 24 50 Q22 56 20 48 Q18 55 16 50 Z"
             fill={`url(#hairGradcach)`} style={{ transition: t }} />
-          {/* Curl volumes */}
-          <ellipse cx="22" cy="52" rx="5" ry="6" fill={colors.base} style={{ transition: t }} />
-          <ellipse cx="78" cy="52" rx="5" ry="6" fill={colors.base} style={{ transition: t }} />
-          <ellipse cx="20" cy="42" rx="4" ry="5" fill={colors.dark} opacity="0.5" style={{ transition: t }} />
-          <ellipse cx="80" cy="42" rx="4" ry="5" fill={colors.dark} opacity="0.5" style={{ transition: t }} />
-          {/* Curl shine */}
-          <ellipse cx="24" cy="48" rx="2" ry="3" fill={colors.shine} opacity="0.2" style={{ transition: t }} />
-          <ellipse cx="76" cy="48" rx="2" ry="3" fill={colors.shine} opacity="0.2" style={{ transition: t }} />
-          <path d="M28 26 Q34 14 50 10 Q66 14 72 26 Q64 16 50 14 Q36 16 28 26 Z" 
+          {/* Individual curl clusters - left side */}
+          <circle cx="18" cy="48" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="16" cy="58" r="4.5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="20" cy="66" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="18" cy="74" r="4" fill={colors.dark} style={{ transition: t }} />
+          <circle cx="22" cy="38" r="4" fill={colors.dark} opacity="0.6" style={{ transition: t }} />
+          {/* Right side curls */}
+          <circle cx="82" cy="48" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="84" cy="58" r="4.5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="80" cy="66" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="82" cy="74" r="4" fill={colors.dark} style={{ transition: t }} />
+          <circle cx="78" cy="38" r="4" fill={colors.dark} opacity="0.6" style={{ transition: t }} />
+          {/* Curl highlights */}
+          <circle cx="19" cy="46" r="2" fill={colors.shine} opacity="0.2" style={{ transition: t }} />
+          <circle cx="81" cy="46" r="2" fill={colors.shine} opacity="0.2" style={{ transition: t }} />
+          <circle cx="17" cy="56" r="1.5" fill={colors.shine} opacity="0.15" style={{ transition: t }} />
+          <circle cx="83" cy="56" r="1.5" fill={colors.shine} opacity="0.15" style={{ transition: t }} />
+          {/* Curly bangs */}
+          <path d="M26 28 Q32 12 50 8 Q68 12 74 28 Q68 16 56 14 Q50 18 44 14 Q32 16 26 28 Z" 
             fill={colors.base} style={{ transition: t }} />
+          <path d="M34 22 Q40 18 46 20" stroke={colors.light} strokeWidth="0.8" fill="none" opacity="0.25" />
         </g>
       );
     case "Crespo":
+      // Afro / kinky coily - very large rounded volume
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("cres")}</defs>
-          <path d="M20 40 Q16 0 50 -2 Q84 0 80 40 L82 50 Q84 42 82 56 Q80 48 82 58 Q78 50 76 60 Q74 50 72 58 L72 34 Q72 14 50 9 Q28 14 28 34 L28 58 Q26 50 24 58 Q22 48 18 56 Q20 42 16 50 Q18 38 16 46 Z"
-            fill={`url(#hairGradcres)`} style={{ transition: t }} />
-          <ellipse cx="18" cy="44" rx="5" ry="7" fill={colors.base} style={{ transition: t }} />
-          <ellipse cx="82" cy="44" rx="5" ry="7" fill={colors.base} style={{ transition: t }} />
-          <circle cx="20" cy="34" r="5" fill={colors.base} style={{ transition: t }} />
-          <circle cx="80" cy="34" r="5" fill={colors.base} style={{ transition: t }} />
-          <circle cx="16" cy="38" r="3" fill={colors.light} opacity="0.2" style={{ transition: t }} />
-          <circle cx="84" cy="38" r="3" fill={colors.light} opacity="0.2" style={{ transition: t }} />
-          <path d="M26 28 Q32 12 50 8 Q68 12 74 28 Q66 14 50 12 Q34 14 26 28 Z" 
-            fill={colors.base} style={{ transition: t }} />
+          {/* Big afro volume - much larger than head */}
+          <ellipse cx="50" cy="28" rx="32" ry="28" fill={`url(#hairGradcres)`} style={{ transition: t }} />
+          {/* Texture bumps around the perimeter */}
+          <circle cx="20" cy="24" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="80" cy="24" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="16" cy="34" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="84" cy="34" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="18" cy="44" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="82" cy="44" r="5" fill={colors.base} style={{ transition: t }} />
+          <circle cx="22" cy="52" r="4" fill={colors.base} style={{ transition: t }} />
+          <circle cx="78" cy="52" r="4" fill={colors.base} style={{ transition: t }} />
+          <circle cx="26" cy="4" r="4" fill={colors.base} style={{ transition: t }} />
+          <circle cx="74" cy="4" r="4" fill={colors.base} style={{ transition: t }} />
+          <circle cx="38" cy="-2" r="4" fill={colors.base} style={{ transition: t }} />
+          <circle cx="62" cy="-2" r="4" fill={colors.base} style={{ transition: t }} />
+          <circle cx="50" cy="-4" r="4" fill={colors.base} style={{ transition: t }} />
+          {/* Inner texture */}
+          <circle cx="30" cy="14" r="3" fill={colors.dark} opacity="0.15" style={{ transition: t }} />
+          <circle cx="70" cy="14" r="3" fill={colors.dark} opacity="0.15" style={{ transition: t }} />
+          <circle cx="40" cy="8" r="2.5" fill={colors.dark} opacity="0.1" style={{ transition: t }} />
+          <circle cx="60" cy="8" r="2.5" fill={colors.dark} opacity="0.1" style={{ transition: t }} />
+          {/* Highlight */}
+          <ellipse cx="42" cy="12" rx="6" ry="5" fill={colors.shine} opacity="0.08" style={{ transition: t }} />
         </g>
       );
     case "Curto":
+      // Short hair - pixie cut, close to head, feminine
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("cur")}</defs>
-          <path d="M28 32 Q26 10 50 6 Q74 10 72 32 L74 40 Q72 36 72 34 Q72 18 50 13 Q28 18 28 34 Q28 36 26 40 Z"
+          {/* Short hair cap close to head */}
+          <path d="M28 34 Q26 12 50 7 Q74 12 72 34 L74 38 Q73 36 72 34 Q72 18 50 13 Q28 18 28 34 Q27 36 26 38 Z"
             fill={`url(#hairGradcur)`} style={{ transition: t }} />
-          <path d="M30 30 Q28 14 50 9 Q56 11 60 15 Q52 10 50 10 Q32 16 32 34 L30 38 Z"
-            fill={`url(#hairShinecur)`} style={{ transition: t }} />
-          <path d="M30 22 Q36 14 50 11 Q64 14 70 22 Q62 16 50 14 Q38 16 30 22 Z" 
+          {/* Side volume - just slightly past ears */}
+          <path d="M26 38 Q25 42 27 44 Q28 40 28 36 Z" fill={colors.base} style={{ transition: t }} />
+          <path d="M74 38 Q75 42 73 44 Q72 40 72 36 Z" fill={colors.base} style={{ transition: t }} />
+          {/* Shine on top */}
+          <path d="M34 16 Q42 10 50 9 Q54 10 58 12" stroke={colors.shine} strokeWidth="1" fill="none" opacity="0.25" />
+          {/* Short side-swept bangs */}
+          <path d="M30 24 Q36 14 50 11 Q64 14 70 24 Q66 18 58 16 Q50 18 42 16 Q34 18 30 24 Z" 
             fill={colors.base} style={{ transition: t }} />
+          {/* Texture lines */}
+          <path d="M36 18 L34 28" stroke={colors.light} strokeWidth="0.5" opacity="0.2" fill="none" />
+          <path d="M64 18 L66 28" stroke={colors.light} strokeWidth="0.5" opacity="0.2" fill="none" />
         </g>
       );
     case "Raspado":
+      // Buzzed/shaved - very thin layer on top of head
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("ras")}</defs>
-          <path d="M30 30 Q28 14 50 10 Q72 14 70 30 L70 32 Q70 20 50 16 Q30 20 30 32 Z"
+          {/* Very thin buzz layer */}
+          <path d="M30 30 Q28 15 50 10 Q72 15 70 30 L70 32 Q70 20 50 16 Q30 20 30 32 Z"
             fill={`url(#hairGradras)`} style={{ transition: t }} />
+          {/* Stubble texture dots */}
+          <circle cx="38" cy="20" r="0.5" fill={colors.dark} opacity="0.3" />
+          <circle cx="42" cy="18" r="0.5" fill={colors.dark} opacity="0.3" />
+          <circle cx="50" cy="16" r="0.5" fill={colors.dark} opacity="0.3" />
+          <circle cx="58" cy="18" r="0.5" fill={colors.dark} opacity="0.3" />
+          <circle cx="62" cy="20" r="0.5" fill={colors.dark} opacity="0.3" />
+          <circle cx="46" cy="17" r="0.4" fill={colors.dark} opacity="0.2" />
+          <circle cx="54" cy="17" r="0.4" fill={colors.dark} opacity="0.2" />
+          <circle cx="35" cy="24" r="0.4" fill={colors.dark} opacity="0.2" />
+          <circle cx="65" cy="24" r="0.4" fill={colors.dark} opacity="0.2" />
         </g>
       );
     case "Trançado":
+      // Braided hair - visible braid pattern, two long braids
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("tran")}</defs>
-          <path d="M26 34 Q24 8 50 5 Q76 8 74 34 L74 38 Q74 18 50 13 Q26 18 26 38 Z"
+          {/* Hair top pulled back */}
+          <path d="M26 32 Q24 8 50 4 Q76 8 74 32 L74 36 Q74 18 50 12 Q26 18 26 36 Z"
             fill={`url(#hairGradtran)`} style={{ transition: t }} />
-          {/* Left braid with 3D effect */}
-          <path d="M24 38 Q22 46 23 54 Q24 58 25 62 Q26 66 25 70 Q24 74 25 78 Q24 82 25 86"
-            stroke={colors.base} strokeWidth="6" fill="none" strokeLinecap="round" style={{ transition: t }} />
-          <path d="M24 38 Q22 46 23 54 Q24 58 25 62"
-            stroke={colors.light} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" style={{ transition: t }} />
+          {/* Left braid - zigzag pattern for 3D braid look */}
+          <path d="M28 36 L26 42 L30 46 L26 50 L30 54 L26 58 L30 62 L26 66 L30 70 L26 74 L30 78 L26 82 L28 86"
+            stroke={colors.base} strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ transition: t }} />
+          <path d="M28 36 L30 42 L26 46 L30 50 L26 54 L30 58 L26 62 L30 66 L26 70 L30 74 L26 78 L30 82 L28 86"
+            stroke={colors.dark} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" style={{ transition: t }} />
+          {/* Braid highlight */}
+          <path d="M27 38 L29 44 L27 48 L29 52" stroke={colors.shine} strokeWidth="0.8" fill="none" opacity="0.25" strokeLinecap="round" />
           {/* Right braid */}
-          <path d="M76 38 Q78 46 77 54 Q76 58 75 62 Q74 66 75 70 Q76 74 75 78 Q76 82 75 86"
-            stroke={colors.base} strokeWidth="6" fill="none" strokeLinecap="round" style={{ transition: t }} />
-          <path d="M76 38 Q78 46 77 54 Q76 58 75 62"
-            stroke={colors.light} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5" style={{ transition: t }} />
-          <path d="M28 24 Q34 14 50 11 Q66 14 72 24 Q64 16 50 14 Q36 16 28 24 Z" 
+          <path d="M72 36 L74 42 L70 46 L74 50 L70 54 L74 58 L70 62 L74 66 L70 70 L74 74 L70 78 L74 82 L72 86"
+            stroke={colors.base} strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ transition: t }} />
+          <path d="M72 36 L70 42 L74 46 L70 50 L74 54 L70 58 L74 62 L70 66 L74 70 L70 74 L74 78 L70 82 L72 86"
+            stroke={colors.dark} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" style={{ transition: t }} />
+          {/* Braid tips */}
+          <circle cx="28" cy="88" r="2" fill={colors.base} style={{ transition: t }} />
+          <circle cx="72" cy="88" r="2" fill={colors.base} style={{ transition: t }} />
+          {/* Center part line */}
+          <line x1="50" y1="6" x2="50" y2="16" stroke={colors.dark} strokeWidth="0.6" opacity="0.3" />
+          {/* Slicked back bangs */}
+          <path d="M28 28 Q34 14 50 10 Q66 14 72 28 Q66 18 50 14 Q34 18 28 28 Z" 
             fill={colors.base} style={{ transition: t }} />
         </g>
       );
@@ -180,9 +252,9 @@ function Hair3D({ type, colors }: { type: string; colors: { base: string; light:
       return (
         <g style={{ transition: t }}>
           <defs>{commonDefs("def")}</defs>
-          <path d="M26 36 Q24 10 50 5 Q76 10 74 36 L76 70 Q74 62 72 66 L72 38 Q72 18 50 13 Q28 18 28 38 L28 66 Q26 62 24 70 Z"
+          <path d="M26 30 Q24 8 50 3 Q76 8 74 30 L76 75 Q75 82 73 85 L73 40 Q73 18 50 12 Q27 18 27 40 L27 85 Q25 82 24 75 Z"
             fill={`url(#hairGraddef)`} style={{ transition: t }} />
-          <path d="M30 24 Q35 15 50 12 Q65 15 70 24 Q63 18 50 16 Q37 18 30 24 Z"
+          <path d="M28 26 Q34 13 50 10 Q66 13 72 26 L70 22 Q64 14 50 12 Q36 14 30 22 Z"
             fill={colors.base} style={{ transition: t }} />
         </g>
       );
