@@ -95,6 +95,9 @@ export function Navbar() {
                   <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/business/studio-images")}>
                     Studio Imagens
                   </Button>
+                  <Button size="sm" variant="outline" className={currentPath === "/avatar-maker" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/avatar-maker")}>
+                    Avatar Maker
+                  </Button>
                   <Button size="sm" variant="outline" className={currentPath === "/gerar-roteiro" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/gerar-roteiro")}>
                     Roteiros
                   </Button>
@@ -159,10 +162,13 @@ export function Navbar() {
                       </Button>
                     </>
                   )}
-                  {(isPro || isAdmin) && (
+                   {(isPro || isAdmin) && (
                     <>
                       <Button size="sm" variant="outline" className={currentPath === "/business/studio-images" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/business/studio-images"); }}>
                         Studio Imagens
+                      </Button>
+                      <Button size="sm" variant="outline" className={currentPath === "/avatar-maker" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/avatar-maker"); }}>
+                        Avatar Maker
                       </Button>
                       <Button size="sm" variant="outline" className={currentPath === "/gerar-roteiro" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-roteiro"); }}>
                         Roteiros
