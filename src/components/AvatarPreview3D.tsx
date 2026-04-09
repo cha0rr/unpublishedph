@@ -87,7 +87,7 @@ function Hair({ type, colorHex }: { type: string; colorHex: string }) {
           {/* Long straight strands - back */}
           <mesh position={[0, 1.1, -0.15]}>
             <boxGeometry args={[0.85, 1.2, 0.15]} />
-            <meshStandardMaterial ref={useRef(null)} color={colorHex} roughness={0.5} />
+            <meshStandardMaterial color={colorHex} roughness={0.5} />
           </mesh>
           {/* Side left */}
           <mesh position={[-0.38, 1.2, 0.05]}>
