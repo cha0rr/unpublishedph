@@ -1,4 +1,18 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+const AvatarPreview3DLazy = lazy(() =>
+  import("./AvatarPreview3D").then(m => ({ default: m.AvatarPreview3D }))
+);
+
+function hasWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
 
 interface AvatarPreviewProps {
   selections: Record<string, string>;
