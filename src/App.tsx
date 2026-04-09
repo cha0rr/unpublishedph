@@ -17,6 +17,7 @@ import AdminFinanceiro from "./pages/AdminFinanceiro.tsx";
 import AdminRoteiros from "./pages/AdminRoteiros.tsx";
 import GerarRoteiro from "./pages/GerarRoteiro.tsx";
 import MeuHistorico from "./pages/MeuHistorico.tsx";
+import AvatarMaker from "./pages/AvatarMaker.tsx";
 
 import NotFound from "./pages/NotFound.tsx";
 
@@ -42,7 +43,8 @@ const App = () => (
           <Route path="/admin/financeiro" element={<AdminFinanceiro />} />
           <Route path="/admin/roteiros" element={<AdminRoteiros />} />
           <Route path="/gerar-roteiro" element={<GerarRoteiro />} />
-          <Route path="/meu-historico" element={<MeuHistorico />} />
+           <Route path="/meu-historico" element={<MeuHistorico />} />
+           <Route path="/avatar-maker" element={<AvatarMaker />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
