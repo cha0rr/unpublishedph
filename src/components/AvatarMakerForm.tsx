@@ -93,7 +93,7 @@ export function AvatarMakerForm() {
   };
 
   const isGenerating = state === "generating" || state === "polling";
-  const canGenerate = !isGenerating && cooldownRemaining <= 0;
+  const canGenerate = !isGenerating && !isCooling;
 
   if (state === "success" && resultUrl) {
     return (
@@ -188,8 +188,8 @@ export function AvatarMakerForm() {
       >
         {isGenerating ? (
           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</>
-        ) : cooldownRemaining > 0 ? (
-          `Aguarde ${cooldownRemaining}s`
+        ) : isCooling ? (
+          `Aguarde ${remainingSeconds}s`
         ) : (
           <><Sparkles className="h-4 w-4 mr-2" /> Gerar Avatar</>
         )}
