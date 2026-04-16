@@ -26,7 +26,12 @@ export function AvatarResultPanel({
   if (resultUrl) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <img src={resultUrl} alt="Avatar gerado" className="w-full rounded-xl border border-border/50 shadow-lg" />
+        <img
+          src={resultUrl}
+          alt="Avatar gerado"
+          crossOrigin="anonymous"
+          className="w-full rounded-xl border border-border/50 shadow-lg"
+        />
         <div className="flex gap-3 w-full">
           <a href={resultUrl} download target="_blank" rel="noopener noreferrer" className="flex-1">
             <Button variant="outline" className="w-full border-primary/50 text-primary hover:bg-primary/10">
