@@ -90,6 +90,7 @@ export function VideoGenerator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile, isAdmin } = useAuth();
   const isGrokAllowed = isAdmin || profile?.plan === "pro";
+  const canAccessFrame = isAdmin || profile?.plan === "pro";
   const isGrok = model === "grok-3";
 
   const [grokMode, setGrokMode] = useState("normal");
