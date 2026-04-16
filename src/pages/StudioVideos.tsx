@@ -90,11 +90,9 @@ const StudioVideos = () => {
           >
             {!canAccessFrame && <Lock className="h-3.5 w-3.5" />}
             Frame Mode
-            {!canAccessFrame && (
-              <Badge className="ml-1 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
-                Pro
-              </Badge>
-            )}
+            <Badge className="ml-1 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
+              Pro
+            </Badge>
           </button>
         </div>
 
