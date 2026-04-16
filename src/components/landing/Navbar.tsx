@@ -52,17 +52,19 @@ export function Navbar() {
           <img src={logo} alt="PH Studio" className="h-9 w-auto rounded-lg" />
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex shrink-0">
-          {navLinks.map((link) => (
-            <button
-              key={link.label}
-              onClick={() => scrollTo(link.href)}
-              className="relative text-sm text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all hover:after:w-full"
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
+        {!user && (
+          <div className="hidden items-center gap-6 md:flex shrink-0">
+            {navLinks.map((link) => (
+              <button
+                key={link.label}
+                onClick={() => scrollTo(link.href)}
+                className="relative text-sm text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all hover:after:w-full"
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
@@ -128,7 +130,7 @@ export function Navbar() {
           className="border-t border-white/[0.06] bg-background/95 backdrop-blur-xl md:hidden"
         >
           <div className="flex flex-col gap-4 px-6 py-6">
-            {navLinks.map((link) => (
+            {!user && navLinks.map((link) => (
               <button key={link.label} onClick={() => scrollTo(link.href)} className="text-left text-sm text-muted-foreground hover:text-foreground">
                 {link.label}
               </button>
