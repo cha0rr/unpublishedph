@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, Loader2, RotateCcw, Upload, X, Cpu } from "lucide-react";
+import { useDailyGenerationCount } from "@/hooks/useDailyGenerationCount";
 
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
@@ -27,6 +28,7 @@ export function FrameVideoGenerator() {
   const { state, resultUrl, error, progress, statusText, generate, reset } = useGenerator();
 
   const isLoading = state === "generating" || state === "polling";
+  const { count: dailyCount, limit: dailyLimit, isLimitReached, isAdmin } = useDailyGenerationCount("video");
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -109,9 +111,16 @@ export function FrameVideoGenerator() {
           maxLength={4000}
           className="min-h-[80px] resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
         />
-        <p className={`text-xs text-right ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
-          {prompt.length}/4000
-        </p>
+        <div className="flex items-center justify-between">
+          <p className={`text-xs ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
+            {prompt.length}/4000
+          </p>
+          {!isAdmin && (
+            <p className={`text-xs font-medium ${isLimitReached ? "text-destructive" : "text-muted-foreground"}`}>
+              {dailyCount}/{dailyLimit} gerações hoje
+            </p>
+          )}
+        </div>
 
         {/* Model selector */}
         <div className="space-y-1">
@@ -157,7 +166,7 @@ export function FrameVideoGenerator() {
             )}
             <Button
               onClick={handleGenerate}
-              disabled={isLoading || !prompt.trim() || !firstFrame || !lastFrame}
+              disabled={isLoading || !prompt.trim() || !firstFrame || !lastFrame || isLimitReached}
               className="h-9 rounded-lg bg-gradient-to-r from-primary/80 to-primary px-5 text-primary-foreground hover:from-primary hover:to-primary/90 shadow-[0_0_15px_hsl(196_89%_61%/0.3)]"
             >
               {isLoading ? (
