@@ -10,10 +10,11 @@ import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap } from "lucide-react";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap, Frame } from "lucide-react";
 import { mergeVideoSegments } from "@/lib/mergeVideoSegments";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-type ModeImage = "none" | "ingredient";
+type ModeImage = "none" | "ingredient" | "frame";
 
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
@@ -44,6 +45,7 @@ const GROK_DURATION_OPTIONS = [
 const MODE_LIMITS: Record<ModeImage, number> = {
   none: 0,
   ingredient: 3,
+  frame: 2,
 };
 
 const STORAGE_KEY = "ph_video_last_result";
@@ -88,6 +90,7 @@ export function VideoGenerator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile, isAdmin } = useAuth();
   const isGrokAllowed = isAdmin || profile?.plan === "pro";
+  const canAccessFrame = isAdmin || profile?.plan === "pro";
   const isGrok = model === "grok-3";
 
   const [grokMode, setGrokMode] = useState("normal");
@@ -156,6 +159,10 @@ export function VideoGenerator() {
 
   const handleModeChange = (val: string) => {
     if (!val) return;
+    if (val === "frame" && !canAccessFrame) {
+      toast.error("Disponível apenas no plano Pro");
+      return;
+    }
     setModeImage(val as ModeImage);
     clearAllFiles();
   };
@@ -340,11 +347,23 @@ export function VideoGenerator() {
                   <ImageIcon className="h-3.5 w-3.5 mr-1" />
                   Ingredient Images
                 </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="frame"
+                  disabled={!canAccessFrame}
+                  className={`text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40 ${!canAccessFrame ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {!canAccessFrame && <Lock className="h-3 w-3 mr-1" />}
+                  <Frame className="h-3.5 w-3.5 mr-1" />
+                  Frame Mode
+                  <Badge className="ml-1 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
+                    Pro
+                  </Badge>
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
-            {/* Reference Images upload */}
-            {modeImage !== "none" && (
+            {/* Ingredient Images upload */}
+            {modeImage === "ingredient" && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground mb-1">
                   Ingredient Images — <span className="text-muted-foreground/70">Envie até 3 imagens de referência como ingredientes</span>
@@ -372,6 +391,70 @@ export function VideoGenerator() {
                       <span className="text-[10px]">Upload</span>
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Frame Mode uploads */}
+            {modeImage === "frame" && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground mb-1">
+                  Frame Mode — <span className="text-muted-foreground/70">Envie o frame inicial e final do vídeo</span>
+                </p>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-medium">Frame Inicial</span>
+                    {refPreviews[0] ? (
+                      <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-card/40">
+                        <img src={refPreviews[0]} alt="Frame inicial" className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeFile(0)}
+                          className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-5 w-5 text-foreground" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isLoading}
+                        className="flex flex-col items-center justify-center gap-2 w-full aspect-video rounded-xl border border-dashed border-border/50 bg-card/30 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors disabled:opacity-50"
+                      >
+                        <Upload className="h-5 w-5" />
+                        <span className="text-[10px]">Upload</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-medium">Frame Final</span>
+                    {refPreviews[1] ? (
+                      <div className="relative group rounded-xl overflow-hidden border border-border/50 aspect-video bg-card/40">
+                        <img src={refPreviews[1]} alt="Frame final" className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeFile(1)}
+                          className="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-5 w-5 text-foreground" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (refImages.length < 1) {
+                            toast.error("Envie o frame inicial primeiro");
+                            return;
+                          }
+                          fileInputRef.current?.click();
+                        }}
+                        disabled={isLoading || refImages.length < 1}
+                        className="flex flex-col items-center justify-center gap-2 w-full aspect-video rounded-xl border border-dashed border-border/50 bg-card/30 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors disabled:opacity-50"
+                      >
+                        <Upload className="h-5 w-5" />
+                        <span className="text-[10px]">Upload</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
