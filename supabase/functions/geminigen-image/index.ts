@@ -285,13 +285,17 @@ Deno.serve(async (req) => {
       for (let i = 0; i < file_urls.length; i++) {
         const url = file_urls[i];
         if (url && typeof url === 'string' && url.trim()) {
+          const trimmedUrl = url.trim();
           try {
-            const trimmedUrl = url.trim();
             const fileRes = await fetch(trimmedUrl);
             if (fileRes.ok) {
               const arrayBuffer = await fileRes.arrayBuffer();
               const bytes = new Uint8Array(arrayBuffer);
-              const detectedMimeType = inferMimeTypeFromUrl(trimmedUrl) ?? inferMimeTypeFromBytes(bytes);
+              const contentType = fileRes.headers.get('content-type')?.toLowerCase();
+              const detectedMimeType =
+                (contentType && ALLOWED_IMAGE_MIME_TYPES.has(contentType) ? contentType : undefined) ??
+                inferMimeTypeFromUrl(trimmedUrl) ??
+                inferMimeTypeFromBytes(bytes);
               const fileName = buildReferenceFileName(
                 i,
                 detectedMimeType,
