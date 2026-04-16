@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,11 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { useImageGenerator, ImageReferencePayload } from "@/hooks/useImageGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
 import { AvatarResultPanel } from "@/components/AvatarResultPanel";
+import { SavedCharacterMode, SavedCharacter } from "@/components/SavedCharacterMode";
+import { toast } from "sonner";
 import {
   Loader2, Upload, X, Sparkles, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 type OptionDef = { label: string; emoji: string };
+
+const SAVED_CHARACTER_KEY = "avatar-maker-saved-character";
 
 const CATEGORIES: {
   key: string;
@@ -173,6 +177,23 @@ function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   return lines.join("\n");
 }
 
+async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Falha ao baixar imagem");
+  const blob = await res.blob();
+  const mimeType = blob.type || "image/png";
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(",")[1];
+      resolve({ base64, mimeType });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 interface AvatarMakerFormProps {
   selections: Record<string, string>;
   onSelectionsChange: (s: Record<string, string>) => void;
@@ -187,6 +208,22 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
   const [refImage, setRefImage] = useState<ImageReferencePayload | null>(null);
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [savedCharacter, setSavedCharacter] = useState<SavedCharacter | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load saved character from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_CHARACTER_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as SavedCharacter;
+        if (parsed?.base64 && parsed?.imageUrl) setSavedCharacter(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const select = (key: string, value: string) => {
     onSelectionsChange({ ...selections, [key]: value });
@@ -230,10 +267,49 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
     startCooldown();
   };
 
+  const handleSaveCharacter = async () => {
+    if (!resultUrl) return;
+    setIsSaving(true);
+    try {
+      const { base64, mimeType } = await urlToBase64(resultUrl);
+      const character: SavedCharacter = {
+        imageUrl: resultUrl,
+        base64,
+        mimeType,
+        fileName: "personagem.png",
+      };
+      localStorage.setItem(SAVED_CHARACTER_KEY, JSON.stringify(character));
+      setSavedCharacter(character);
+      toast.success("Personagem salva! Use-a nas próximas gerações.");
+      reset();
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível salvar a personagem. Tente novamente.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveCharacter = () => {
+    localStorage.removeItem(SAVED_CHARACTER_KEY);
+    setSavedCharacter(null);
+    toast("Personagem removida. Você pode criar uma nova.");
+  };
+
   const isGenerating = state === "generating" || state === "polling";
   const canGenerate = !isGenerating && !isCooling;
   const isFinalStep = step === CATEGORIES.length;
   const progressValue = ((step + 1) / TOTAL_STEPS) * 100;
+
+  // If there's a saved character, render the saved character mode instead of the wizard
+  if (savedCharacter) {
+    return (
+      <SavedCharacterMode
+        character={savedCharacter}
+        onRemoveCharacter={handleRemoveCharacter}
+      />
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
@@ -362,6 +438,9 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
           progress={progress}
           statusText={statusText}
           onReset={reset}
+          onSaveCharacter={handleSaveCharacter}
+          canSave={!!resultUrl && !savedCharacter}
+          isSaving={isSaving}
         />
       </div>
     </div>
