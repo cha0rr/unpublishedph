@@ -8,6 +8,7 @@ import { Loader2, UserRound } from "lucide-react";
 
 const CATEGORY_DEFAULTS: Record<string, string> = {
   age: "23–27 anos",
+  gender: "Feminino",
   hairColor: "Preto",
   hairType: "Liso",
   skinColor: "Pele morena",

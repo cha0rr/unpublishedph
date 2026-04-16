@@ -29,6 +29,13 @@ const CATEGORIES: {
     ],
   },
   {
+    key: "gender", label: "Gênero",
+    options: [
+      { label: "Feminino", emoji: "👩" },
+      { label: "Masculino", emoji: "👨" },
+    ],
+  },
+  {
     key: "hairColor", label: "Cor do Cabelo",
     options: [
       { label: "Preto", emoji: "⚫" },
@@ -137,8 +144,10 @@ const TOTAL_STEPS = CATEGORIES.length + 1;
 const DEFAULT_ENVIRONMENT = "estúdio fotográfico totalmente branco, fundo infinito branco";
 
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
+  const isFemale = fields.gender === "Feminino";
+  const genderLabel = isFemale ? "influencer digital feminina" : "influencer digital masculino";
   const lines = [
-    "Gere uma foto ultra-realista de uma influencer digital feminina com as seguintes características:",
+    `Gere uma foto ultra-realista de um(a) ${genderLabel} com as seguintes características:`,
     `- Idade aparente: ${fields.age}`,
     `- Cabelo: ${fields.hairColor}, ${fields.hairType}`,
     `- Pele: ${fields.skinColor}, textura ${fields.skinTexture?.toLowerCase() || "lisa"}, realista e detalhada`,
