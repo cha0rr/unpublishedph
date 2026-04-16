@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Download, RefreshCw, ImageIcon } from "lucide-react";
+import { Download, RefreshCw, ImageIcon, UserPlus, Loader2 } from "lucide-react";
 
 interface AvatarResultPanelProps {
   resultUrl: string | null;
@@ -8,12 +8,24 @@ interface AvatarResultPanelProps {
   progress: number;
   statusText: string;
   onReset: () => void;
+  onSaveCharacter?: () => void;
+  canSave?: boolean;
+  isSaving?: boolean;
 }
 
-export function AvatarResultPanel({ resultUrl, isGenerating, progress, statusText, onReset }: AvatarResultPanelProps) {
+export function AvatarResultPanel({
+  resultUrl,
+  isGenerating,
+  progress,
+  statusText,
+  onReset,
+  onSaveCharacter,
+  canSave,
+  isSaving,
+}: AvatarResultPanelProps) {
   if (resultUrl) {
     return (
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-3">
         <img src={resultUrl} alt="Avatar gerado" className="w-full rounded-xl border border-border/50 shadow-lg" />
         <div className="flex gap-3 w-full">
           <a href={resultUrl} download target="_blank" rel="noopener noreferrer" className="flex-1">
@@ -25,6 +37,19 @@ export function AvatarResultPanel({ resultUrl, isGenerating, progress, statusTex
             <RefreshCw className="h-4 w-4 mr-2" /> Nova
           </Button>
         </div>
+        {canSave && onSaveCharacter && (
+          <Button
+            onClick={onSaveCharacter}
+            disabled={isSaving}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isSaving ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+            ) : (
+              <><UserPlus className="h-4 w-4 mr-2" /> Salvar este personagem</>
+            )}
+          </Button>
+        )}
       </div>
     );
   }
