@@ -29,7 +29,6 @@ export function AvatarResultPanel({
         <img
           src={resultUrl}
           alt="Avatar gerado"
-          crossOrigin="anonymous"
           className="w-full rounded-xl border border-border/50 shadow-lg"
         />
         <div className="flex gap-3 w-full">
