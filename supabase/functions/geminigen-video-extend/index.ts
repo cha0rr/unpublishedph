@@ -75,6 +75,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- Daily limit check (30 video generations/day for non-admins) ---
+    if (!isAdmin) {
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+      const { count } = await adminClient
+        .from('image_generations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', today.toISOString())
+        .in('model', ['veo-3-fast', 'veo-3.1-fast', 'grok-3', 'grok-3-extend', 'veo-extend']);
+      if ((count ?? 0) >= 30) {
+        return new Response(JSON.stringify({ success: false, error: 'Limite diário de 30 gerações de vídeo atingido.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const { prompt, ref_history, model } = await req.json();
 
     if (!prompt || !ref_history) {
