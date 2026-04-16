@@ -10,10 +10,11 @@ import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap } from "lucide-react";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap, Frame } from "lucide-react";
 import { mergeVideoSegments } from "@/lib/mergeVideoSegments";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-type ModeImage = "none" | "ingredient";
+type ModeImage = "none" | "ingredient" | "frame";
 
 const MODEL_OPTIONS = [
   { value: "veo-3-fast", label: "Veo 3 Fast" },
