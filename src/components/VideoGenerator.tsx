@@ -159,6 +159,10 @@ export function VideoGenerator() {
 
   const handleModeChange = (val: string) => {
     if (!val) return;
+    if (val === "frame" && !canAccessFrame) {
+      toast.error("Disponível apenas no plano Pro");
+      return;
+    }
     setModeImage(val as ModeImage);
     clearAllFiles();
   };
