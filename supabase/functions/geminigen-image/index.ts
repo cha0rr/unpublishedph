@@ -282,17 +282,28 @@ Deno.serve(async (req) => {
 
     // Fallback: Download file_urls and attach as multipart 'files'
     if (file_urls && Array.isArray(file_urls)) {
-      for (const url of file_urls) {
+      for (let i = 0; i < file_urls.length; i++) {
+        const url = file_urls[i];
         if (url && typeof url === 'string' && url.trim()) {
           try {
-            const fileRes = await fetch(url.trim());
+            const trimmedUrl = url.trim();
+            const fileRes = await fetch(trimmedUrl);
             if (fileRes.ok) {
-              const blob = await fileRes.blob();
-              const fileName = url.trim().split('/').pop() || 'reference.png';
+              const arrayBuffer = await fileRes.arrayBuffer();
+              const bytes = new Uint8Array(arrayBuffer);
+              const detectedMimeType = inferMimeTypeFromUrl(trimmedUrl) ?? inferMimeTypeFromBytes(bytes);
+              const fileName = buildReferenceFileName(
+                i,
+                detectedMimeType,
+                trimmedUrl.split('/').pop() || `reference_${i + 1}`,
+              );
+              const blob = new Blob([bytes], { type: detectedMimeType });
               formData.append('files', blob, fileName);
+            } else {
+              console.error('Failed to download reference URL:', fileRes.status, trimmedUrl);
             }
-          } catch {
-            // skip failed downloads
+          } catch (error) {
+            console.error('Error downloading reference URL:', trimmedUrl, error);
           }
         }
       }
