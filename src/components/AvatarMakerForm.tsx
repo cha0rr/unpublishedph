@@ -177,8 +177,8 @@ function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   return lines.join("\n");
 }
 
-async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
-  const res = await fetch(url);
+async function urlToBase64ViaFetch(url: string): Promise<{ base64: string; mimeType: string }> {
+  const res = await fetch(url, { mode: "cors" });
   if (!res.ok) throw new Error("Falha ao baixar imagem");
   const blob = await res.blob();
   const mimeType = blob.type || "image/png";
@@ -192,6 +192,39 @@ async function urlToBase64(url: string): Promise<{ base64: string; mimeType: str
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+async function urlToBase64ViaCanvas(url: string): Promise<{ base64: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas indisponível"));
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+        const base64 = dataUrl.split(",")[1];
+        resolve({ base64, mimeType: "image/jpeg" });
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error("Falha ao carregar imagem no canvas"));
+    img.src = url;
+  });
+}
+
+async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
+  try {
+    return await urlToBase64ViaFetch(url);
+  } catch (err) {
+    console.warn("[avatar-maker] fetch falhou, tentando canvas fallback", err);
+    return await urlToBase64ViaCanvas(url);
+  }
 }
 
 interface AvatarMakerFormProps {
