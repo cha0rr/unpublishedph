@@ -2,29 +2,97 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useImageGenerator, ImageReferencePayload } from "@/hooks/useImageGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
+import { AvatarResultPanel } from "@/components/AvatarResultPanel";
 import {
-  Loader2, Download, RefreshCw, Upload, X, Sparkles,
-  Palette, Waves, User, Eye, Fingerprint, Ruler, PersonStanding,
-  type LucideIcon,
+  Loader2, Upload, X, Sparkles,
 } from "lucide-react";
+
+type OptionDef = { label: string; emoji: string };
 
 const CATEGORIES: {
   key: string;
   label: string;
-  icon: LucideIcon;
-  options: string[];
+  options: OptionDef[];
 }[] = [
-  { key: "hairColor", label: "Cor do Cabelo", icon: Palette, options: ["Preto", "Castanho escuro", "Castanho claro", "Loiro", "Ruivo", "Platinado", "Rosa", "Azul", "Branco"] },
-  { key: "hairType", label: "Tipo de Cabelo", icon: Waves, options: ["Liso", "Ondulado", "Cacheado", "Crespo", "Curto", "Raspado", "Trançado"] },
-  { key: "skinColor", label: "Cor da Pele", icon: User, options: ["Pele clara", "Pele branca", "Pele morena clara", "Pele morena", "Pele negra", "Pele asiática"] },
-  { key: "eyeColor", label: "Cor dos Olhos", icon: Eye, options: ["Castanho", "Verde", "Azul", "Mel", "Cinza", "Preto"] },
-  { key: "skinTexture", label: "Textura da Pele", icon: Fingerprint, options: ["Lisa", "Sardas", "Manchas solares", "Sinais/pintas", "Acne leve", "Cicatrizes"] },
-  { key: "height", label: "Altura", icon: Ruler, options: ["Baixa", "Média", "Alta"] },
-  { key: "bodyType", label: "Corpo", icon: PersonStanding, options: ["Magra", "Atlética", "Mediana", "Curvilínea", "Plus size"] },
+  {
+    key: "hairColor", label: "Cor do Cabelo",
+    options: [
+      { label: "Preto", emoji: "⚫" },
+      { label: "Castanho escuro", emoji: "🟤" },
+      { label: "Castanho claro", emoji: "🍂" },
+      { label: "Loiro", emoji: "🟡" },
+      { label: "Ruivo", emoji: "🔴" },
+      { label: "Platinado", emoji: "⚪" },
+      { label: "Rosa", emoji: "🩷" },
+      { label: "Azul", emoji: "🔵" },
+      { label: "Branco", emoji: "🤍" },
+    ],
+  },
+  {
+    key: "hairType", label: "Tipo de Cabelo",
+    options: [
+      { label: "Liso", emoji: "📏" },
+      { label: "Ondulado", emoji: "〰️" },
+      { label: "Cacheado", emoji: "🌀" },
+      { label: "Crespo", emoji: "☁️" },
+      { label: "Curto", emoji: "✂️" },
+      { label: "Raspado", emoji: "🪒" },
+      { label: "Trançado", emoji: "🪢" },
+    ],
+  },
+  {
+    key: "skinColor", label: "Cor da Pele",
+    options: [
+      { label: "Pele clara", emoji: "👋🏻" },
+      { label: "Pele branca", emoji: "👋🏼" },
+      { label: "Pele morena clara", emoji: "👋🏽" },
+      { label: "Pele morena", emoji: "👋🏾" },
+      { label: "Pele negra", emoji: "👋🏿" },
+      { label: "Pele asiática", emoji: "👋" },
+    ],
+  },
+  {
+    key: "eyeColor", label: "Cor dos Olhos",
+    options: [
+      { label: "Castanho", emoji: "🟤" },
+      { label: "Verde", emoji: "🟢" },
+      { label: "Azul", emoji: "🔵" },
+      { label: "Mel", emoji: "🟡" },
+      { label: "Cinza", emoji: "⚪" },
+      { label: "Preto", emoji: "⚫" },
+    ],
+  },
+  {
+    key: "skinTexture", label: "Textura da Pele",
+    options: [
+      { label: "Lisa", emoji: "✨" },
+      { label: "Sardas", emoji: "🔹" },
+      { label: "Manchas solares", emoji: "☀️" },
+      { label: "Sinais/pintas", emoji: "🔘" },
+      { label: "Acne leve", emoji: "💧" },
+      { label: "Cicatrizes", emoji: "⚡" },
+    ],
+  },
+  {
+    key: "height", label: "Altura",
+    options: [
+      { label: "Baixa", emoji: "📐" },
+      { label: "Média", emoji: "📏" },
+      { label: "Alta", emoji: "📐" },
+    ],
+  },
+  {
+    key: "bodyType", label: "Corpo",
+    options: [
+      { label: "Magra", emoji: "🧍‍♀️" },
+      { label: "Atlética", emoji: "💪" },
+      { label: "Mediana", emoji: "🙆‍♀️" },
+      { label: "Curvilínea", emoji: "💃" },
+      { label: "Plus size", emoji: "🤗" },
+    ],
+  },
 ];
 
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
@@ -104,125 +172,112 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
   const isGenerating = state === "generating" || state === "polling";
   const canGenerate = !isGenerating && !isCooling;
 
-  if (state === "success" && resultUrl) {
-    return (
-      <div className="flex flex-col items-center gap-6">
-        <img src={resultUrl} alt="Avatar gerado" className="w-full max-w-md rounded-xl border border-border/50 shadow-lg" />
-        <div className="flex gap-3">
-          <a href={resultUrl} download target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10">
-              <Download className="h-4 w-4 mr-2" /> Baixar
-            </Button>
-          </a>
-          <Button onClick={reset} variant="outline" className="border-border text-foreground">
-            <RefreshCw className="h-4 w-4 mr-2" /> Nova geração
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {isGenerating && (
-        <div className="space-y-3">
-          <Progress value={progress} className="h-2" />
-          <p className="text-sm text-center text-muted-foreground">{statusText}</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-sm text-destructive">
-          {error}
-          <Button size="sm" variant="ghost" className="ml-2" onClick={reset}>Tentar novamente</Button>
-        </div>
-      )}
-
-      {CATEGORIES.map((cat) => {
-        const Icon = cat.icon;
-        const selected = selections[cat.key];
-        return (
-          <div key={cat.key} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Icon className="h-4 w-4 text-primary" />
-              <Label className="text-foreground text-sm font-medium">{cat.label}</Label>
-              <Badge variant="secondary" className="text-xs">{selected}</Badge>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {cat.options.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => select(cat.key, opt)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                    selected === opt
-                      ? "bg-primary/20 border-primary text-primary"
-                      : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+      {/* Left: Form */}
+      <div className="space-y-6">
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-sm text-destructive">
+            {error}
+            <Button size="sm" variant="ghost" className="ml-2" onClick={reset}>Tentar novamente</Button>
           </div>
-        );
-      })}
-
-      <div className="space-y-2">
-        <Label className="text-foreground">Ambiente</Label>
-        <Textarea
-          placeholder="Ex: praia ao pôr do sol, estúdio fotográfico, cidade à noite..."
-          value={environment}
-          onChange={(e) => setEnvironment(e.target.value)}
-          maxLength={300}
-          className="bg-muted/30 border-border"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-foreground">Descrição extra (opcional)</Label>
-        <Textarea
-          placeholder="Detalhes adicionais: roupas, pose, expressão, acessórios..."
-          value={extra}
-          onChange={(e) => setExtra(e.target.value)}
-          maxLength={500}
-          className="bg-muted/30 border-border"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-foreground">Foto de referência (opcional)</Label>
-        <div className="flex items-center gap-3">
-          <Button type="button" variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => fileRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" /> Upload
-          </Button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          {refPreview && (
-            <div className="relative">
-              <img src={refPreview} alt="Referência" className="h-16 w-16 rounded-lg object-cover border border-border" />
-              <button onClick={removeRef} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">Máximo 5MB. A IA usará como base para a aparência.</p>
-      </div>
-
-      <Button
-        onClick={handleGenerate}
-        disabled={!canGenerate}
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-        size="lg"
-      >
-        {isGenerating ? (
-          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</>
-        ) : isCooling ? (
-          `Aguarde ${remainingSeconds}s`
-        ) : (
-          <><Sparkles className="h-4 w-4 mr-2" /> Gerar Avatar</>
         )}
-      </Button>
+
+        {CATEGORIES.map((cat) => {
+          const selected = selections[cat.key];
+          return (
+            <div key={cat.key} className="space-y-2">
+              <Label className="text-foreground text-sm font-semibold">{cat.label}</Label>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+                {cat.options.map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => select(cat.key, opt.label)}
+                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all aspect-square text-center ${
+                      selected === opt.label
+                        ? "border-primary bg-primary/15 shadow-md shadow-primary/10"
+                        : "border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border"
+                    }`}
+                  >
+                    <span className="text-2xl leading-none">{opt.emoji}</span>
+                    <span className="text-[10px] leading-tight font-medium text-muted-foreground line-clamp-2">
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="space-y-2">
+          <Label className="text-foreground text-sm font-semibold">Ambiente</Label>
+          <Textarea
+            placeholder="Ex: praia ao pôr do sol, estúdio fotográfico, cidade à noite..."
+            value={environment}
+            onChange={(e) => setEnvironment(e.target.value)}
+            maxLength={300}
+            className="bg-muted/30 border-border"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-foreground text-sm font-semibold">Descrição extra (opcional)</Label>
+          <Textarea
+            placeholder="Detalhes adicionais: roupas, pose, expressão, acessórios..."
+            value={extra}
+            onChange={(e) => setExtra(e.target.value)}
+            maxLength={500}
+            className="bg-muted/30 border-border"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-foreground text-sm font-semibold">Foto de referência (opcional)</Label>
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" /> Upload
+            </Button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            {refPreview && (
+              <div className="relative">
+                <img src={refPreview} alt="Referência" className="h-16 w-16 rounded-lg object-cover border border-border" />
+                <button onClick={removeRef} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">Máximo 5MB. A IA usará como base para a aparência.</p>
+        </div>
+
+        <Button
+          onClick={handleGenerate}
+          disabled={!canGenerate}
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          size="lg"
+        >
+          {isGenerating ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</>
+          ) : isCooling ? (
+            `Aguarde ${remainingSeconds}s`
+          ) : (
+            <><Sparkles className="h-4 w-4 mr-2" /> Gerar Avatar</>
+          )}
+        </Button>
+      </div>
+
+      {/* Right: Result */}
+      <div className="lg:sticky lg:top-24 lg:self-start order-first lg:order-last">
+        <AvatarResultPanel
+          resultUrl={resultUrl}
+          isGenerating={isGenerating}
+          progress={progress}
+          statusText={statusText}
+          onReset={reset}
+        />
+      </div>
     </div>
   );
 }
