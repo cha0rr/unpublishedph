@@ -19,7 +19,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Check, X, Loader2, Shield, CalendarIcon, AlertTriangle, Trash2 } from "lucide-react";
+import { Check, X, Loader2, Shield, CalendarIcon, AlertTriangle, Trash2, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
