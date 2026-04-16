@@ -1,37 +1,41 @@
 
 
-## Plano: Preview SVG estilo Pixar/Disney (instantâneo, sem IA)
+## Plano: Redesign do Avatar Maker com botoes quadrados e layout lado a lado
 
 ### Resumo
-Redesenhar o SVG atual do `AvatarPreview.tsx` para ter estética de **animação 3D Pixar/Disney** — olhos grandes e expressivos, sombreamento suave com gradientes, proporções estilizadas, bochechas coradas, brilhos nos olhos e cabelo. Continua sendo SVG puro que muda **instantaneamente** ao clicar nas opções.
+Redesenhar o formulario do Avatar Maker para usar **botoes quadrados com icone/emoji central** (similar a imagem de referencia) e colocar a **imagem gerada ao lado direito** em layout de duas colunas.
 
-### O que muda visualmente
-- **Rosto**: Formato mais oval/suave, queixo delicado, bochechas coradas com gradiente
-- **Olhos**: Significativamente maiores, com íris detalhada (gradiente radial + brilho branco), cílios curvos e grossos
-- **Nariz**: Pequeno e arredondado (estilo Pixar)
-- **Boca**: Lábios com volume e gradiente, sorriso sutil
-- **Pele**: Mais camadas de gradiente para efeito de profundidade 3D (sombra embaixo do queixo, luz no nariz/testa)
-- **Cabelo**: Mais volume e mechas com gradientes sobrepostos para simular profundidade
-- **Corpo**: Ombros suaves, pescoço estilizado
+### Mudancas visuais
+
+**Botoes de selecao (cada opcao)**
+- Formato quadrado (~80x80px) com borda arredondada
+- Icone ou emoji centralizado no topo, label embaixo
+- Quando selecionado: borda primary, fundo primary/20
+- Grid de botoes por categoria (auto-fill)
+
+**Cada opcao precisa de um emoji/icone representativo**, ex:
+- Cor do cabelo: circulos coloridos (⚫🟤🟡🔴⚪🩷🔵)
+- Tipo de cabelo: emojis descritivos ou icones Lucide
+- Cor da pele: emojis de tons de pele (👋🏻👋🏼👋🏽👋🏾👋🏿)
+- Cor dos olhos: circulos coloridos (🟤🟢🔵🟡⚪⚫)
+- Textura da pele, altura, corpo: icones Lucide relevantes
+
+**Layout da pagina (AvatarMaker.tsx)**
+- Duas colunas em desktop: esquerda = formulario, direita = resultado (sticky)
+- Direita mostra placeholder escuro quando nao ha imagem, e a imagem gerada quando pronta
+- Mobile: coluna unica, resultado aparece acima do formulario
 
 ### Etapas
 
-**1. Redesenhar o SVG base no `AvatarPreview.tsx`**
-- Reescrever a função principal de renderização do rosto/corpo com geometria Pixar
-- Adicionar mais `<defs>` com gradientes radiais para simular iluminação 3D
-- Olhos com 4+ camadas: esclera, íris (gradiente), pupila, brilho
-- Cílios como paths curvos
+**1. Atualizar CATEGORIES no AvatarMakerForm** para incluir emoji/icone por opcao (nao so por categoria)
 
-**2. Atualizar os estilos de cabelo**
-- Cada tipo (Liso, Ondulado, Cacheado, etc.) continua com geometria própria
-- Adicionar mais camadas de gradiente e mechas para aspecto volumétrico Pixar
+**2. Redesenhar os botoes de selecao** como quadrados com icone central + label pequena
 
-**3. Remover dependências 3D não utilizadas**
-- Deletar `AvatarPreview3D.tsx`
-- Remover `three`, `@react-three/fiber`, `@react-three/drei` do `package.json`
+**3. Separar resultado em componente proprio** que recebe `resultUrl`, `isGenerating`, `progress` etc.
+
+**4. Atualizar AvatarMaker.tsx** para layout de 2 colunas com resultado sticky a direita
 
 ### Arquivos
-- **Reescrever**: `src/components/AvatarPreview.tsx` — SVG completo estilo Pixar
-- **Deletar**: `src/components/AvatarPreview3D.tsx`
-- **Editar**: `package.json` — remover dependências 3D
+- **Reescrever**: `src/components/AvatarMakerForm.tsx` — botoes quadrados com emojis, extrair resultado
+- **Editar**: `src/pages/AvatarMaker.tsx` — layout 2 colunas com painel de resultado a direita
 
