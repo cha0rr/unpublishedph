@@ -347,6 +347,18 @@ export function VideoGenerator() {
                   <ImageIcon className="h-3.5 w-3.5 mr-1" />
                   Ingredient Images
                 </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="frame"
+                  disabled={!canAccessFrame}
+                  className={`text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40 ${!canAccessFrame ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {!canAccessFrame && <Lock className="h-3 w-3 mr-1" />}
+                  <Frame className="h-3.5 w-3.5 mr-1" />
+                  Frame Mode
+                  <Badge className="ml-1 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
+                    Pro
+                  </Badge>
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
