@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useGenerator } from "@/hooks/useGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
 import { useAuth } from "@/hooks/useAuth";
+import { useDailyGenerationCount } from "@/hooks/useDailyGenerationCount";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -126,6 +127,7 @@ export function VideoGenerator() {
     }
   }, [state, resultUrl, resultUuid, videoSegments, aspectRatio, resolution, model, prompt]);
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_video_cooldown", durationMs: 90000 });
+  const { count: dailyCount, limit: dailyLimit, isLimitReached } = useDailyGenerationCount("video");
 
   const isLoading = state === "generating" || state === "polling";
   const maxImages = MODE_LIMITS[modeImage];
@@ -201,7 +203,7 @@ export function VideoGenerator() {
     }
   };
 
-  const canGenerate = prompt.trim().length > 0 && !isLoading && !isCooling;
+  const canGenerate = prompt.trim().length > 0 && !isLoading && !isCooling && !isLimitReached;
 
   const formatCooldown = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -250,9 +252,16 @@ export function VideoGenerator() {
           maxLength={4000}
           className="min-h-[80px] resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
         />
-        <p className={`text-xs text-right ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
-          {prompt.length}/4000
-        </p>
+        <div className="flex items-center justify-between">
+          <p className={`text-xs ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
+            {prompt.length}/4000
+          </p>
+          {!isAdmin && (
+            <p className={`text-xs font-medium ${isLimitReached ? "text-destructive" : "text-muted-foreground"}`}>
+              {dailyCount}/{dailyLimit} gerações hoje
+            </p>
+          )}
+        </div>
 
         {/* Model selector */}
         <div className="space-y-1">
