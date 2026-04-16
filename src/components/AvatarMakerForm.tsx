@@ -93,16 +93,48 @@ const CATEGORIES: {
       { label: "Plus size", emoji: "🤗" },
     ],
   },
+  {
+    key: "cameraAngle", label: "Ângulo de Câmera",
+    options: [
+      { label: "Close-up frontal", emoji: "📸" },
+      { label: "Plano médio", emoji: "🎬" },
+      { label: "Plano americano", emoji: "🎥" },
+      { label: "Low angle", emoji: "⬆️" },
+      { label: "High angle", emoji: "⬇️" },
+      { label: "3/4 perfil", emoji: "🎭" },
+      { label: "Over the shoulder", emoji: "👤" },
+      { label: "Dutch angle", emoji: "🔄" },
+    ],
+  },
+  {
+    key: "lighting", label: "Iluminação",
+    options: [
+      { label: "Rembrandt", emoji: "🎨" },
+      { label: "Butterfly", emoji: "🦋" },
+      { label: "Split lighting", emoji: "🌗" },
+      { label: "Golden hour", emoji: "🌅" },
+      { label: "Rim light", emoji: "🌟" },
+      { label: "Luz natural difusa", emoji: "☁️" },
+      { label: "Neon/RGB", emoji: "💜" },
+      { label: "Luz dura", emoji: "☀️" },
+    ],
+  },
 ];
 
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   const lines = [
     "Gere uma foto ultra-realista de uma influencer digital feminina com as seguintes características:",
     `- Cabelo: ${fields.hairColor}, ${fields.hairType}`,
-    `- Pele: ${fields.skinColor}, textura ${fields.skinTexture.toLowerCase()}, realista e detalhada`,
+    `- Pele: ${fields.skinColor}, textura ${fields.skinTexture?.toLowerCase() || "lisa"}, realista e detalhada`,
     `- Olhos: ${fields.eyeColor}`,
-    `- Corpo: ${fields.bodyType}, altura ${fields.height.toLowerCase()}`,
+    `- Corpo: ${fields.bodyType}, altura ${fields.height?.toLowerCase() || "média"}`,
   ];
+  if (fields.cameraAngle) {
+    lines.push(`- Ângulo de câmera: ${fields.cameraAngle}`);
+  }
+  if (fields.lighting) {
+    lines.push(`- Iluminação: ${fields.lighting}`);
+  }
   if (fields.environment?.trim()) {
     lines.push(`- Ambiente: ${fields.environment.trim()}`);
   }
@@ -113,7 +145,7 @@ function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
     lines.push("\nUse [Imagem 1] como referência visual para construir a aparência da influencer, mantendo semelhança facial e corporal.");
   }
   lines.push(
-    "\nA imagem deve ter qualidade fotográfica profissional, com pele realista mostrando poros, texturas naturais e iluminação adequada ao ambiente."
+    "\nA imagem deve ter iluminação cinematográfica profissional, qualidade de fotografia editorial, com pele realista mostrando poros, texturas naturais e composição de câmera intencional."
   );
   return lines.join("\n");
 }
@@ -162,7 +194,7 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
     const prompt = buildPrompt({ ...selections, environment, extra }, !!refImage);
     await generate({
       prompt,
-      model: "nano-banana-2",
+      model: "nano-banana-pro",
       aspect_ratio: "9:16",
       ...(refImage ? { file_base64: [refImage] } : {}),
     });
