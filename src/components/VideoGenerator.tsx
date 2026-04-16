@@ -47,8 +47,10 @@ const MODE_LIMITS: Record<ModeImage, number> = {
 
 const STORAGE_KEY = "ph_video_last_result";
 
+const VIDEO_STATE_TTL_MS = 60 * 1000; // 1 minute
+
 function saveVideoState(data: { url: string; uuid: string; segments: string[]; aspectRatio: string; resolution: string; model: string; prompt: string }) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, _savedAt: Date.now() })); } catch {}
 }
 
 function clearVideoState() {
@@ -58,7 +60,13 @@ function clearVideoState() {
 function loadVideoState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed._savedAt && Date.now() - parsed._savedAt > VIDEO_STATE_TTL_MS) {
+      clearVideoState();
+      return null;
+    }
+    return parsed;
   } catch { return null; }
 }
 
