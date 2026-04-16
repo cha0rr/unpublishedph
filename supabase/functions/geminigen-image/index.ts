@@ -33,6 +33,55 @@ function inferMimeTypeFromBase64(base64: string): string {
   return 'image/png';
 }
 
+function inferMimeTypeFromBytes(bytes: Uint8Array): string {
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  ) {
+    return 'image/png';
+  }
+
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'image/jpeg';
+  }
+
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return 'image/webp';
+  }
+
+  return 'image/png';
+}
+
+function inferMimeTypeFromUrl(url: string): string | undefined {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    if (pathname.endsWith('.png')) return 'image/png';
+    if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) return 'image/jpeg';
+    if (pathname.endsWith('.webp')) return 'image/webp';
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
 function sanitizeMimeType(mimeType: string | undefined, fallbackBase64: string): string {
   const normalized = mimeType?.trim().toLowerCase();
   if (normalized && ALLOWED_IMAGE_MIME_TYPES.has(normalized)) {
@@ -43,7 +92,8 @@ function sanitizeMimeType(mimeType: string | undefined, fallbackBase64: string):
 }
 
 function buildReferenceFileName(index: number, mimeType: string, fileName?: string): string {
-  const safeName = fileName?.trim().replace(/[^a-zA-Z0-9._-]/g, '_');
+  const cleanedName = fileName?.trim().split('?')[0].split('#')[0];
+  const safeName = cleanedName?.replace(/[^a-zA-Z0-9._-]/g, '_');
 
   if (safeName && safeName.includes('.')) {
     return safeName;
@@ -232,17 +282,32 @@ Deno.serve(async (req) => {
 
     // Fallback: Download file_urls and attach as multipart 'files'
     if (file_urls && Array.isArray(file_urls)) {
-      for (const url of file_urls) {
+      for (let i = 0; i < file_urls.length; i++) {
+        const url = file_urls[i];
         if (url && typeof url === 'string' && url.trim()) {
+          const trimmedUrl = url.trim();
           try {
-            const fileRes = await fetch(url.trim());
+            const fileRes = await fetch(trimmedUrl);
             if (fileRes.ok) {
-              const blob = await fileRes.blob();
-              const fileName = url.trim().split('/').pop() || 'reference.png';
+              const arrayBuffer = await fileRes.arrayBuffer();
+              const bytes = new Uint8Array(arrayBuffer);
+              const contentType = fileRes.headers.get('content-type')?.toLowerCase();
+              const detectedMimeType =
+                (contentType && ALLOWED_IMAGE_MIME_TYPES.has(contentType) ? contentType : undefined) ??
+                inferMimeTypeFromUrl(trimmedUrl) ??
+                inferMimeTypeFromBytes(bytes);
+              const fileName = buildReferenceFileName(
+                i,
+                detectedMimeType,
+                trimmedUrl.split('/').pop() || `reference_${i + 1}`,
+              );
+              const blob = new Blob([bytes], { type: detectedMimeType });
               formData.append('files', blob, fileName);
+            } else {
+              console.error('Failed to download reference URL:', fileRes.status, trimmedUrl);
             }
-          } catch {
-            // skip failed downloads
+          } catch (error) {
+            console.error('Error downloading reference URL:', trimmedUrl, error);
           }
         }
       }
