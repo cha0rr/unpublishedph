@@ -194,37 +194,8 @@ async function urlToBase64ViaFetch(url: string): Promise<{ base64: string; mimeT
   });
 }
 
-async function urlToBase64ViaCanvas(url: string): Promise<{ base64: string; mimeType: string }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("Canvas indisponível"));
-        ctx.drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-        const base64 = dataUrl.split(",")[1];
-        resolve({ base64, mimeType: "image/jpeg" });
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = () => reject(new Error("Falha ao carregar imagem no canvas"));
-    img.src = url;
-  });
-}
-
 async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
-  try {
-    return await urlToBase64ViaFetch(url);
-  } catch (err) {
-    console.warn("[avatar-maker] fetch falhou, tentando canvas fallback", err);
-    return await urlToBase64ViaCanvas(url);
-  }
+  return await urlToBase64ViaFetch(url);
 }
 
 interface AvatarMakerFormProps {
@@ -251,7 +222,7 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
       const raw = localStorage.getItem(SAVED_CHARACTER_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as SavedCharacter;
-        if (parsed?.base64 && parsed?.imageUrl) setSavedCharacter(parsed);
+        if (parsed?.imageUrl) setSavedCharacter(parsed);
       }
     } catch {
       /* ignore */
@@ -304,20 +275,27 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
     if (!resultUrl) return;
     setIsSaving(true);
     try {
-      const { base64, mimeType } = await urlToBase64(resultUrl);
-      const character: SavedCharacter = {
-        imageUrl: resultUrl,
-        base64,
-        mimeType,
-        fileName: "personagem.png",
-      };
+      let character: SavedCharacter;
+      try {
+        const { base64, mimeType } = await urlToBase64(resultUrl);
+        character = {
+          imageUrl: resultUrl,
+          base64,
+          mimeType,
+          fileName: "personagem.png",
+        };
+      } catch (err) {
+        console.warn("[avatar-maker] fetch/base64 falhou; salvando referência por URL", err);
+        character = {
+          imageUrl: resultUrl,
+          fileName: "personagem.png",
+        };
+      }
+
       localStorage.setItem(SAVED_CHARACTER_KEY, JSON.stringify(character));
       setSavedCharacter(character);
       toast.success("Personagem salva! Use-a nas próximas gerações.");
       reset();
-    } catch (err) {
-      console.error(err);
-      toast.error("Não foi possível salvar a personagem. Tente novamente.");
     } finally {
       setIsSaving(false);
     }

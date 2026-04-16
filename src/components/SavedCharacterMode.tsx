@@ -10,8 +10,8 @@ import { toast } from "sonner";
 
 export interface SavedCharacter {
   imageUrl: string;
-  base64: string;
-  mimeType: string;
+  base64?: string;
+  mimeType?: string;
   fileName?: string;
 }
 
@@ -67,18 +67,30 @@ export function SavedCharacterMode({ character, onRemoveCharacter }: SavedCharac
       "\nA imagem deve ter iluminação cinematográfica profissional, qualidade de fotografia editorial, com pele realista mostrando poros e texturas naturais."
     );
 
-    const characterRef: ImageReferencePayload = {
-      data: character.base64,
-      mimeType: character.mimeType,
-      fileName: character.fileName || "character.png",
-    };
-    const refs = objectImage ? [characterRef, objectImage] : [characterRef];
+    const hasCharacterBase64 = !!character.base64;
+    const objectDataUrl = objectPreview || undefined;
+
+    const fileBase64 = hasCharacterBase64
+      ? [
+          {
+            data: character.base64!,
+            mimeType: character.mimeType,
+            fileName: character.fileName || "character.png",
+          } satisfies ImageReferencePayload,
+          ...(objectImage ? [objectImage] : []),
+        ]
+      : undefined;
+
+    const fileUrls = !hasCharacterBase64
+      ? [character.imageUrl, ...(objectDataUrl ? [objectDataUrl] : [])]
+      : undefined;
 
     await generate({
       prompt: lines.join("\n"),
       model: "nano-banana-pro",
       aspect_ratio: "9:16",
-      file_base64: refs,
+      ...(fileBase64 ? { file_base64: fileBase64 } : {}),
+      ...(fileUrls ? { file_urls: fileUrls } : {}),
     });
     startCooldown();
   };
