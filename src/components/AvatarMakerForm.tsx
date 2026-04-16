@@ -122,7 +122,8 @@ const CATEGORIES: {
   },
 ];
 
-const TOTAL_STEPS = CATEGORIES.length + 1; // categories + final step
+const TOTAL_STEPS = CATEGORIES.length + 1;
+const DEFAULT_ENVIRONMENT = "estúdio fotográfico totalmente branco, fundo infinito branco";
 
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   const lines = [
@@ -138,9 +139,7 @@ function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   if (fields.lighting) {
     lines.push(`- Iluminação: ${fields.lighting}`);
   }
-  if (fields.environment?.trim()) {
-    lines.push(`- Ambiente: ${fields.environment.trim()}`);
-  }
+  lines.push(`- Ambiente: ${DEFAULT_ENVIRONMENT}`);
   if (fields.extra?.trim()) {
     lines.push(`\nDetalhes adicionais: ${fields.extra.trim()}`);
   }
@@ -163,7 +162,6 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "avatar-maker", durationMs: 90000 });
 
   const [step, setStep] = useState(0);
-  const [environment, setEnvironment] = useState("");
   const [extra, setExtra] = useState("");
   const [refImage, setRefImage] = useState<ImageReferencePayload | null>(null);
   const [refPreview, setRefPreview] = useState<string | null>(null);
@@ -201,7 +199,7 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
   };
 
   const handleGenerate = async () => {
-    const prompt = buildPrompt({ ...selections, environment, extra }, !!refImage);
+    const prompt = buildPrompt({ ...selections, extra }, !!refImage);
     await generate({
       prompt,
       model: "nano-banana-pro",
@@ -265,16 +263,6 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
         {/* Final step */}
         {isFinalStep && (
           <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300" key="final">
-            <div className="space-y-2">
-              <Label className="text-foreground text-sm font-semibold">Ambiente</Label>
-              <Textarea
-                placeholder="Ex: praia ao pôr do sol, estúdio fotográfico, cidade à noite..."
-                value={environment}
-                onChange={(e) => setEnvironment(e.target.value)}
-                maxLength={300}
-                className="bg-muted/30 border-border"
-              />
-            </div>
 
             <div className="space-y-2">
               <Label className="text-foreground text-sm font-semibold">Descrição extra (opcional)</Label>
