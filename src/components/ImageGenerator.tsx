@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useImageGenerator } from "@/hooks/useImageGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
+import { useDailyGenerationCount } from "@/hooks/useDailyGenerationCount";
+import { useAuth } from "@/hooks/useAuth";
 
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -51,6 +53,7 @@ export function ImageGenerator() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "ph_image_cooldown", durationMs: 90000 });
+  const { count: dailyCount, limit: dailyLimit, isLimitReached, isAdmin } = useDailyGenerationCount("image");
 
   const handleFileSelect = (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
@@ -130,9 +133,16 @@ export function ImageGenerator() {
           maxLength={4000}
           className="min-h-[120px] bg-card/50 border-border/50 backdrop-blur-sm resize-none focus:border-primary/50"
         />
-        <p className={`text-xs text-right ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
-          {prompt.length}/4000
-        </p>
+        <div className="flex items-center justify-between">
+          <p className={`text-xs ${prompt.length > 3600 ? "text-destructive" : "text-muted-foreground"}`}>
+            {prompt.length}/4000
+          </p>
+          {!isAdmin && (
+            <p className={`text-xs font-medium ${isLimitReached ? "text-destructive" : "text-muted-foreground"}`}>
+              {dailyCount}/{dailyLimit} gerações hoje
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Model Selector */}
@@ -207,7 +217,7 @@ export function ImageGenerator() {
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
-        disabled={isProcessing || uploading || !prompt.trim() || isCooling}
+        disabled={isProcessing || uploading || !prompt.trim() || isCooling || isLimitReached}
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base font-semibold"
       >
         {uploading ? (
