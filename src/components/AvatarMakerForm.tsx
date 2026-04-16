@@ -2,11 +2,12 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { useImageGenerator, ImageReferencePayload } from "@/hooks/useImageGenerator";
 import { useCooldown } from "@/hooks/useCooldown";
 import { AvatarResultPanel } from "@/components/AvatarResultPanel";
 import {
-  Loader2, Upload, X, Sparkles,
+  Loader2, Upload, X, Sparkles, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 type OptionDef = { label: string; emoji: string };
@@ -121,6 +122,8 @@ const CATEGORIES: {
   },
 ];
 
+const TOTAL_STEPS = CATEGORIES.length + 1; // categories + final step
+
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   const lines = [
     "Gere uma foto ultra-realista de uma influencer digital feminina com as seguintes características:",
@@ -159,14 +162,21 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
   const { state, resultUrl, error, progress, statusText, generate, reset } = useImageGenerator();
   const { isCooling, remainingSeconds, startCooldown } = useCooldown({ key: "avatar-maker", durationMs: 90000 });
 
+  const [step, setStep] = useState(0);
   const [environment, setEnvironment] = useState("");
   const [extra, setExtra] = useState("");
   const [refImage, setRefImage] = useState<ImageReferencePayload | null>(null);
   const [refPreview, setRefPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const select = (key: string, value: string) =>
+  const select = (key: string, value: string) => {
     onSelectionsChange({ ...selections, [key]: value });
+    if (step < CATEGORIES.length - 1) {
+      setTimeout(() => setStep((s) => Math.min(s + 1, CATEGORIES.length)), 300);
+    } else if (step === CATEGORIES.length - 1) {
+      setTimeout(() => setStep(CATEGORIES.length), 300);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -203,10 +213,12 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
 
   const isGenerating = state === "generating" || state === "polling";
   const canGenerate = !isGenerating && !isCooling;
+  const isFinalStep = step === CATEGORIES.length;
+  const progressValue = ((step + 1) / TOTAL_STEPS) * 100;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
-      {/* Left: Form */}
+      {/* Left: Wizard */}
       <div className="space-y-6">
         {error && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 text-sm text-destructive">
@@ -215,89 +227,122 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
           </div>
         )}
 
-        {CATEGORIES.map((cat) => {
-          const selected = selections[cat.key];
-          return (
-            <div key={cat.key} className="space-y-2">
-              <Label className="text-foreground text-sm font-semibold">{cat.label}</Label>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
-                {cat.options.map((opt) => (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    onClick={() => select(cat.key, opt.label)}
-                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all aspect-square text-center ${
-                      selected === opt.label
-                        ? "border-primary bg-primary/15 shadow-md shadow-primary/10"
-                        : "border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border"
-                    }`}
-                  >
-                    <span className="text-2xl leading-none">{opt.emoji}</span>
-                    <span className="text-[10px] leading-tight font-medium text-muted-foreground line-clamp-2">
-                      {opt.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-
+        {/* Progress */}
         <div className="space-y-2">
-          <Label className="text-foreground text-sm font-semibold">Ambiente</Label>
-          <Textarea
-            placeholder="Ex: praia ao pôr do sol, estúdio fotográfico, cidade à noite..."
-            value={environment}
-            onChange={(e) => setEnvironment(e.target.value)}
-            maxLength={300}
-            className="bg-muted/30 border-border"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-foreground text-sm font-semibold">Descrição extra (opcional)</Label>
-          <Textarea
-            placeholder="Detalhes adicionais: roupas, pose, expressão, acessórios..."
-            value={extra}
-            onChange={(e) => setExtra(e.target.value)}
-            maxLength={500}
-            className="bg-muted/30 border-border"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-foreground text-sm font-semibold">Foto de referência (opcional)</Label>
-          <div className="flex items-center gap-3">
-            <Button type="button" variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => fileRef.current?.click()}>
-              <Upload className="h-4 w-4 mr-2" /> Upload
-            </Button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            {refPreview && (
-              <div className="relative">
-                <img src={refPreview} alt="Referência" className="h-16 w-16 rounded-lg object-cover border border-border" />
-                <button onClick={removeRef} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Passo {step + 1} de {TOTAL_STEPS}</span>
+            <span>{isFinalStep ? "Detalhes finais" : CATEGORIES[step]?.label}</span>
           </div>
-          <p className="text-xs text-muted-foreground">Máximo 5MB. A IA usará como base para a aparência.</p>
+          <Progress value={progressValue} className="h-2" />
         </div>
 
-        <Button
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          size="lg"
-        >
-          {isGenerating ? (
-            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</>
-          ) : isCooling ? (
-            `Aguarde ${remainingSeconds}s`
-          ) : (
-            <><Sparkles className="h-4 w-4 mr-2" /> Gerar Avatar</>
+        {/* Category step */}
+        {!isFinalStep && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300" key={step}>
+            <Label className="text-foreground text-lg font-semibold">{CATEGORIES[step].label}</Label>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+              {CATEGORIES[step].options.map((opt) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => select(CATEGORIES[step].key, opt.label)}
+                  className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all aspect-square text-center ${
+                    selections[CATEGORIES[step].key] === opt.label
+                      ? "border-primary bg-primary/15 shadow-md shadow-primary/10"
+                      : "border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border"
+                  }`}
+                >
+                  <span className="text-2xl leading-none">{opt.emoji}</span>
+                  <span className="text-[10px] leading-tight font-medium text-muted-foreground line-clamp-2">
+                    {opt.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Final step */}
+        {isFinalStep && (
+          <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300" key="final">
+            <div className="space-y-2">
+              <Label className="text-foreground text-sm font-semibold">Ambiente</Label>
+              <Textarea
+                placeholder="Ex: praia ao pôr do sol, estúdio fotográfico, cidade à noite..."
+                value={environment}
+                onChange={(e) => setEnvironment(e.target.value)}
+                maxLength={300}
+                className="bg-muted/30 border-border"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground text-sm font-semibold">Descrição extra (opcional)</Label>
+              <Textarea
+                placeholder="Detalhes adicionais: roupas, pose, expressão, acessórios..."
+                value={extra}
+                onChange={(e) => setExtra(e.target.value)}
+                maxLength={500}
+                className="bg-muted/30 border-border"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground text-sm font-semibold">Foto de referência (opcional)</Label>
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => fileRef.current?.click()}>
+                  <Upload className="h-4 w-4 mr-2" /> Upload
+                </Button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                {refPreview && (
+                  <div className="relative">
+                    <img src={refPreview} alt="Referência" className="h-16 w-16 rounded-lg object-cover border border-border" />
+                    <button onClick={removeRef} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Máximo 5MB. A IA usará como base para a aparência.</p>
+            </div>
+
+            <Button
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              size="lg"
+            >
+              {isGenerating ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</>
+              ) : isCooling ? (
+                `Aguarde ${remainingSeconds}s`
+              ) : (
+                <><Sparkles className="h-4 w-4 mr-2" /> Gerar Avatar</>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={step === 0}
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
+          {!isFinalStep && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep((s) => Math.min(CATEGORIES.length, s + 1))}
+            >
+              Pular <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
           )}
-        </Button>
+        </div>
       </div>
 
       {/* Right: Result */}
