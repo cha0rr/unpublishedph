@@ -7,6 +7,7 @@ import { AvatarMakerForm } from "@/components/AvatarMakerForm";
 import { Loader2, UserRound } from "lucide-react";
 
 const CATEGORY_DEFAULTS: Record<string, string> = {
+  age: "23–27 anos",
   hairColor: "Preto",
   hairType: "Liso",
   skinColor: "Pele morena",

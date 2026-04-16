@@ -18,6 +18,17 @@ const CATEGORIES: {
   options: OptionDef[];
 }[] = [
   {
+    key: "age", label: "Idade Aproximada",
+    options: [
+      { label: "18–22 anos", emoji: "🌸" },
+      { label: "23–27 anos", emoji: "💫" },
+      { label: "28–32 anos", emoji: "✨" },
+      { label: "33–37 anos", emoji: "💎" },
+      { label: "38–45 anos", emoji: "🌟" },
+      { label: "46–55 anos", emoji: "👑" },
+    ],
+  },
+  {
     key: "hairColor", label: "Cor do Cabelo",
     options: [
       { label: "Preto", emoji: "⚫" },
@@ -128,6 +139,7 @@ const DEFAULT_ENVIRONMENT = "estúdio fotográfico totalmente branco, fundo infi
 function buildPrompt(fields: Record<string, string>, hasRef: boolean): string {
   const lines = [
     "Gere uma foto ultra-realista de uma influencer digital feminina com as seguintes características:",
+    `- Idade aparente: ${fields.age}`,
     `- Cabelo: ${fields.hairColor}, ${fields.hairType}`,
     `- Pele: ${fields.skinColor}, textura ${fields.skinTexture?.toLowerCase() || "lisa"}, realista e detalhada`,
     `- Olhos: ${fields.eyeColor}`,
