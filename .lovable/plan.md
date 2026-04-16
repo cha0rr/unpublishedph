@@ -1,27 +1,42 @@
 
 
-## Plano: Adicionar seleção de idade ao Avatar Maker
+## Plano: Studio Videos — abas Gerar Vídeo e Frame Mode na mesma página
 
 ### Resumo
-Adicionar uma nova categoria "Idade Aproximada" ao wizard do Avatar Maker, com faixas etárias realistas, e incluí-la no prompt de geração.
+Unificar as duas páginas de vídeo (`/gerar-video` e `/gerar-video-frame`) em uma única página **Studio Videos** com duas abas lado a lado. A aba "Frame Mode" aparece bloqueada com cadeado + badge "Pro" para usuários do plano básico.
 
-### Nova categoria
+### Alterações
 
-**Idade Aproximada** (`age`) — inserida como primeiro step do wizard (antes de Cor do Cabelo):
-- 18–22 anos 🌸
-- 23–27 anos 💫
-- 28–32 anos ✨
-- 33–37 anos 💎
-- 38–45 anos 🌟
-- 46–55 anos 👑
+**1. Criar `src/pages/StudioVideos.tsx`** (nova página unificada)
+- Layout igual ao atual `GerarVideo.tsx` (TechBackground, Navbar, Footer, auth guard)
+- Título: "Studio **Videos**"
+- Duas abas no topo usando botões lado a lado (não o componente Tabs — apenas dois botões estilizados):
+  - **"Gerar Vídeo"** — ativo por padrão, renderiza `<VideoGenerator />`
+  - **"Frame Mode"** — renderiza `<FrameVideoGenerator />`
+- Para usuários básicos (`profile?.plan !== "pro"` e não admin), a aba Frame Mode mostra ícone `Lock` + badge "Pro" e ao clicar exibe toast "Disponível apenas no plano Pro"
+- `max-w-2xl` expandido para `max-w-3xl` para acomodar melhor
 
-### Alterações em `src/components/AvatarMakerForm.tsx`
+**2. Atualizar `src/App.tsx`**
+- Remover rotas `/gerar-video` e `/gerar-video-frame`
+- Adicionar rota `/studio-videos` apontando para `StudioVideos`
+- Manter redirect ou alias de `/gerar-video` → `/studio-videos` (opcional)
 
-1. Adicionar a categoria `age` no início do array `CATEGORIES`
-2. No `buildPrompt`, incluir `- Idade aparente: ${fields.age}` logo após a linha de introdução
-3. Adicionar `age: "23–27 anos"` como valor default em `CATEGORY_DEFAULTS` no `AvatarMaker.tsx`
+**3. Atualizar `src/components/landing/Navbar.tsx`**
+- Trocar links de "Gerar Vídeo" para `/studio-videos`
+
+**4. Atualizar `src/components/landing/ModesSection.tsx`**
+- Trocar link do botão "Gerar Vídeo" para `/studio-videos`
+
+**5. Remover** `src/pages/GerarVideo.tsx` e `src/pages/GerarVideoFrame.tsx` (código migrado)
+
+### UI das abas
+- Dois botões lado a lado num container com `bg-card/40 rounded-xl p-1`
+- Aba ativa: `bg-primary/20 text-primary border-primary/30`
+- Aba Frame Mode bloqueada: `opacity-60` com `Lock` icon e badge "Pro" em ciano
 
 ### Arquivos
-- **Editar**: `src/components/AvatarMakerForm.tsx` — nova categoria + prompt
-- **Editar**: `src/pages/AvatarMaker.tsx` — default para age
+- **Criar**: `src/pages/StudioVideos.tsx`
+- **Editar**: `src/App.tsx` — trocar rotas
+- **Editar**: `src/components/landing/Navbar.tsx` — atualizar link
+- **Editar**: `src/components/landing/ModesSection.tsx` — atualizar link
 
