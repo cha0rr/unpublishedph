@@ -258,7 +258,26 @@ Deno.serve(async (req) => {
       body: formData,
     });
 
-    const responseData = await apiResponse.json();
+    const rawResponseText = await apiResponse.text();
+    let responseData: any;
+    try {
+      responseData = rawResponseText ? JSON.parse(rawResponseText) : {};
+    } catch {
+      console.error('GeminiGen non-JSON response:', apiResponse.status, rawResponseText.substring(0, 500));
+      const snippet = rawResponseText.substring(0, 200).replace(/<[^>]+>/g, '').trim();
+      return new Response(
+        JSON.stringify({
+          error: apiResponse.status >= 500
+            ? 'A API de geração de imagens está temporariamente indisponível. Tente novamente em alguns instantes.'
+            : `Resposta inválida da API (status ${apiResponse.status}).`,
+          details: { raw: snippet, status: apiResponse.status },
+        }),
+        {
+          status: apiResponse.status >= 500 ? 502 : apiResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
 
     if (!apiResponse.ok) {
       console.error('GeminiGen API error:', JSON.stringify(responseData));
