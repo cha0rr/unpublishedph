@@ -87,7 +87,7 @@ export function SavedCharacterMode({ character, onRemoveCharacter }: SavedCharac
 
     await generate({
       prompt: lines.join("\n"),
-      model: "nano-banana-pro",
+      model: "nano-banana-2",
       aspect_ratio: "9:16",
       ...(fileBase64 ? { file_base64: fileBase64 } : {}),
       ...(fileUrls ? { file_urls: fileUrls } : {}),

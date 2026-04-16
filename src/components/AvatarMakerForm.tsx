@@ -264,7 +264,7 @@ export function AvatarMakerForm({ selections, onSelectionsChange }: AvatarMakerF
     const prompt = buildPrompt({ ...selections, extra }, !!refImage);
     await generate({
       prompt,
-      model: "nano-banana-pro",
+      model: "nano-banana-2",
       aspect_ratio: "9:16",
       ...(refImage ? { file_base64: [refImage] } : {}),
     });
