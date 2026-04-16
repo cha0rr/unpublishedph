@@ -45,6 +45,7 @@ const GROK_DURATION_OPTIONS = [
 const MODE_LIMITS: Record<ModeImage, number> = {
   none: 0,
   ingredient: 3,
+  frame: 2,
 };
 
 const STORAGE_KEY = "ph_video_last_result";
