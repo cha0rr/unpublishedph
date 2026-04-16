@@ -395,24 +395,46 @@ const Admin = () => {
           ) : (
             <div className="space-y-8">
               {/* Tab Violations */}
-              {violations.length > 0 && (
-                <div>
-                  <h2 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                    Tentativas de Múltiplas Abas ({violations.length})
-                  </h2>
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
-                    {violations.map((v) => (
-                      <div key={v.id} className="flex items-center justify-between text-sm py-2 border-b border-border/20 last:border-0">
-                        <span className="text-foreground font-medium">{v.email}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(v.created_at).toLocaleString("pt-BR")}
-                        </span>
+              {violations.length > 0 && (() => {
+                const grouped = violations.reduce<Record<string, number>>((acc, v) => {
+                  acc[v.email] = (acc[v.email] || 0) + 1;
+                  return acc;
+                }, {});
+                return (
+                  <Collapsible>
+                    <CollapsibleTrigger className="w-full text-left">
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            Tentativas de Múltiplas Abas ({violations.length})
+                          </h2>
+                          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {Object.entries(grouped).map(([email, count]) => (
+                            <span key={email} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 border border-destructive/20 px-2.5 py-1 text-xs text-foreground">
+                              {email} <span className="font-semibold text-destructive">({count})</span>
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="rounded-b-xl border border-t-0 border-destructive/30 bg-destructive/5 p-4 space-y-2">
+                        {violations.map((v) => (
+                          <div key={v.id} className="flex items-center justify-between text-sm py-2 border-b border-border/20 last:border-0">
+                            <span className="text-foreground font-medium">{v.email}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(v.created_at).toLocaleString("pt-BR")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })()}
 
               {/* Pending */}
               <div>
