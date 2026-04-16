@@ -1,34 +1,27 @@
 
 
-## Plano: Wizard step-by-step para seleção de características
+## Plano: Adicionar seleção de idade ao Avatar Maker
 
 ### Resumo
-Transformar o formulário do Avatar Maker em um **wizard passo a passo** — cada categoria (Cor do Cabelo, Tipo de Cabelo, etc.) aparece sozinha na tela. Ao clicar em uma opção, avança automaticamente para o próximo passo. Botões de voltar/avançar para navegação manual.
+Adicionar uma nova categoria "Idade Aproximada" ao wizard do Avatar Maker, com faixas etárias realistas, e incluí-la no prompt de geração.
 
-### Fluxo
-1. **Steps 0–8**: Uma categoria por vez (9 categorias do CATEGORIES)
-2. **Step 9 (final)**: Campos de texto (Ambiente, Descrição extra, Foto de referência) + botão "Gerar Avatar"
-3. Ao **selecionar uma opção**, auto-avança para o próximo step após ~300ms
-4. **Barra de progresso** no topo mostrando step atual / total
-5. Botões **Voltar** e **Avançar** (ou Pular) na parte inferior de cada step
+### Nova categoria
 
-### Layout
-- Mantém o grid de 2 colunas (`lg:grid-cols-[1fr_320px]`)
-- Coluna esquerda: apenas a categoria do step atual (título + grid de botões)
-- Coluna direita: `AvatarResultPanel` (sticky, igual ao atual)
-- Indicador de progresso acima do formulário (ex: `3 de 10`)
+**Idade Aproximada** (`age`) — inserida como primeiro step do wizard (antes de Cor do Cabelo):
+- 18–22 anos 🌸
+- 23–27 anos 💫
+- 28–32 anos ✨
+- 33–37 anos 💎
+- 38–45 anos 🌟
+- 46–55 anos 👑
 
-### Detalhes técnicos
+### Alterações em `src/components/AvatarMakerForm.tsx`
 
-**`src/components/AvatarMakerForm.tsx`**
-- Novo state `step` (0 a `CATEGORIES.length`)
-- Na função `select`, após atualizar a seleção, `setTimeout(() => setStep(s => s+1), 300)`
-- Renderizar apenas `CATEGORIES[step]` quando `step < CATEGORIES.length`
-- No último step (`step === CATEGORIES.length`): mostrar os campos de texto + upload + botão gerar
-- Barra de progresso com `Progress` component
-- Botões "Voltar" (desabilitado no step 0) e "Pular" em cada step
-- Transição suave com `animate-in` do Tailwind
+1. Adicionar a categoria `age` no início do array `CATEGORIES`
+2. No `buildPrompt`, incluir `- Idade aparente: ${fields.age}` logo após a linha de introdução
+3. Adicionar `age: "23–27 anos"` como valor default em `CATEGORY_DEFAULTS` no `AvatarMaker.tsx`
 
 ### Arquivos
-- **Editar**: `src/components/AvatarMakerForm.tsx` — adicionar lógica de wizard
+- **Editar**: `src/components/AvatarMakerForm.tsx` — nova categoria + prompt
+- **Editar**: `src/pages/AvatarMaker.tsx` — default para age
 
