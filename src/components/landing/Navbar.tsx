@@ -79,11 +79,8 @@ export function Navbar() {
               )}
               {(isApproved || isAdmin) && (
                 <>
-                  <Button size="sm" variant={currentPath === "/gerar-video" ? "default" : "outline"} className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/gerar-video")}>
-                    Gerar Vídeo
-                  </Button>
-                  <Button size="sm" variant="outline" className={currentPath === "/gerar-video-frame" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/gerar-video-frame")}>
-                    Frame Mode
+                  <Button size="sm" variant={currentPath === "/studio-videos" ? "default" : "outline"} className={currentPath === "/studio-videos" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/studio-videos")}>
+                    Studio Videos
                   </Button>
                   <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/meu-historico")}>
                     Histórico
@@ -151,11 +148,8 @@ export function Navbar() {
                   )}
                   {(isApproved || isAdmin) && (
                     <>
-                      <Button size="sm" variant={currentPath === "/gerar-video" ? "default" : "outline"} className={currentPath === "/gerar-video" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-video"); }}>
-                        Gerar Vídeo
-                      </Button>
-                      <Button size="sm" variant="outline" className={currentPath === "/gerar-video-frame" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/gerar-video-frame"); }}>
-                        Frame Mode
+                      <Button size="sm" variant={currentPath === "/studio-videos" ? "default" : "outline"} className={currentPath === "/studio-videos" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/studio-videos"); }}>
+                        Studio Videos
                       </Button>
                       <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/meu-historico"); }}>
                         Histórico

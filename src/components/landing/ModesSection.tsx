@@ -37,7 +37,7 @@ export function ModesSection() {
               Transforme prompts em vídeos profissionais com Veo 3.1. Até 4K, uso comercial liberado.
             </p>
             <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Link to="/gerar-video">Gerar Vídeo</Link>
+              <Link to="/studio-videos">Gerar Vídeo</Link>
             </Button>
           </div>
           <div className="border-t border-white/[0.06] bg-white/[0.01] p-6">
