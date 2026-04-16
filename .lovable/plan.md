@@ -1,25 +1,14 @@
 
 
-## Plano: Seção de violações de abas retrátil com contagem por usuário
+## Plano: Exibir tag "Pro" no Frame Mode sempre
 
-### Resumo
-Transformar a seção "Tentativas de Múltiplas Abas" em um componente retrátil (collapsible). Quando retraída, exibe apenas o título com a contagem de tentativas agrupada por usuário. Ao expandir, mostra os detalhes completos.
+### Problema
+A badge "Pro" e o ícone de cadeado só aparecem quando `canAccessFrame` é `false` (usuário sem plano Pro). Como o usuário atual tem acesso, a tag não aparece.
 
-### Alterações em `src/pages/Admin.tsx`
+### Solução
+Manter a badge "Pro" sempre visível no botão "Frame Mode", independentemente do plano. O ícone de cadeado (`Lock`) continua condicional — só aparece para quem não tem acesso.
 
-1. Importar `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` de `@/components/ui/collapsible` e `ChevronDown` de `lucide-react`
-2. Substituir o bloco de violações (linhas 397–414) por um `Collapsible` que:
-   - **Quando fechado**: mostra o header com `AlertTriangle`, título, total de violações, e um resumo por email (ex: `usuario@email.com (5)`) em badges compactos
-   - **Quando aberto**: mostra a lista completa atual com datas
-3. Agrupar `violations` por email com contagem (`Object.entries(grouped)`) para exibir no resumo retraído
-4. Ícone `ChevronDown` com rotação animada para indicar estado aberto/fechado
-
-### Visual retraído
-```
-⚠ Tentativas de Múltiplas Abas (12)  ▼
-  [user1@email.com (5)] [user2@email.com (7)]
-```
-
-### Arquivos
-- **Editar**: `src/pages/Admin.tsx`
+### Alteração em `src/pages/StudioVideos.tsx`
+- Mover a `<Badge>Pro</Badge>` para fora do condicional `!canAccessFrame`, exibindo-a sempre
+- Manter o `<Lock>` apenas quando `!canAccessFrame`
 
