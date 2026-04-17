@@ -187,9 +187,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
-    console.error("deepseek-chat error:", e);
+    console.error("deepseek-chat internal error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Erro interno" }),
+      JSON.stringify({ error: "Erro interno ao processar requisição." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
