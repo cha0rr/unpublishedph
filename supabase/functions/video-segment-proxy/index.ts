@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
       headers,
     });
   } catch (error) {
-    return jsonResponse({ error: error.message || 'Erro ao baixar o segmento.' }, 500);
+    console.error('video-segment-proxy internal error:', error);
+    return jsonResponse({ error: 'Erro ao baixar o segmento.' }, 500);
   }
 });

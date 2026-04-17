@@ -260,8 +260,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Webhook error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('geminigen-webhook internal error:', error);
+    return new Response(JSON.stringify({ error: 'Erro interno ao processar webhook.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

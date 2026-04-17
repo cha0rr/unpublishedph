@@ -163,8 +163,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error:', error);
-    return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno ao gerar vídeo.' }), {
+    console.error('geminigen-video-frame internal error:', error);
+    return new Response(JSON.stringify({ success: false, error: 'Erro interno ao gerar vídeo.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
