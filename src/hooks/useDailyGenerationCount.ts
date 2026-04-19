@@ -7,11 +7,12 @@ const IMAGE_MODELS = ["nano-banana-2", "nano-banana-pro"];
 
 export function useDailyGenerationCount(type: "video" | "image") {
   const [count, setCount] = useState<number>(0);
+  const [limit, setLimit] = useState<number>(30);
+  const [enabled, setEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const { user, isAdmin } = useAuth();
 
   const models = type === "video" ? VIDEO_MODELS : IMAGE_MODELS;
-  const DAILY_LIMIT = 30;
 
   useEffect(() => {
     if (!user || isAdmin) {
@@ -20,28 +21,52 @@ export function useDailyGenerationCount(type: "video" | "image") {
       return;
     }
 
-    const fetchCount = async () => {
+    const fetchAll = async () => {
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
 
-      const { count: total } = await supabase
-        .from("image_generations")
-        .select("*", { count: "exact", head: true })
+      // Get user plan
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan")
         .eq("user_id", user.id)
-        .gte("created_at", today.toISOString())
-        .in("model", models);
+        .maybeSingle();
+
+      const plan = profile?.plan === "pro" ? "pro" : "basico";
+      const key = `${type}_${plan}`;
+
+      const [{ count: total }, { data: limitRow }] = await Promise.all([
+        supabase
+          .from("image_generations")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gte("created_at", today.toISOString())
+          .in("model", models),
+        supabase
+          .from("daily_limits")
+          .select("limit_value, enabled")
+          .eq("key", key)
+          .maybeSingle(),
+      ]);
 
       setCount(total ?? 0);
+      if (limitRow) {
+        setLimit(limitRow.limit_value);
+        setEnabled(limitRow.enabled);
+      } else {
+        setLimit(30);
+        setEnabled(true);
+      }
       setLoading(false);
     };
 
-    fetchCount();
-  }, [user, isAdmin]);
+    fetchAll();
+  }, [user, isAdmin, type]);
 
   return {
     count,
-    limit: DAILY_LIMIT,
-    isLimitReached: !isAdmin && count >= DAILY_LIMIT,
+    limit,
+    isLimitReached: !isAdmin && enabled && count >= limit,
     loading,
     isAdmin,
   };
