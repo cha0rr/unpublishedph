@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_limits: {
+        Row: {
+          enabled: boolean
+          id: string
+          key: string
+          limit_value: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          key: string
+          limit_value?: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          key?: string
+          limit_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       image_generations: {
         Row: {
           ai_credit: number | null
