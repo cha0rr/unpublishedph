@@ -113,6 +113,9 @@ Deno.serve(async (req) => {
     const modelFromClient = (incomingForm.get('model') as string) || 'veo-3.1-fast';
     const duration = (incomingForm.get('duration') as string) || '';
     const mode = (incomingForm.get('mode') as string) || '';
+    const variantsRaw = parseInt((incomingForm.get('variants') as string) || '1', 10);
+    const isVeoModel = modelFromClient === 'veo-3-fast' || modelFromClient === 'veo-3.1-fast';
+    const variants = isVeoModel && variantsRaw === 2 ? 2 : 1;
 
     if (!prompt) {
       return new Response(JSON.stringify({ success: false, error: 'prompt é obrigatório.' }), {
