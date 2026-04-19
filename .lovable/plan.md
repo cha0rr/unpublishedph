@@ -1,68 +1,82 @@
 
 
 ## Objetivo
-Quando o usuário gerar um vídeo com **veo-3-fast** ou **veo-3.1-fast**, o sistema deve produzir **2 versões** do vídeo em paralelo a partir do mesmo prompt e referências.
+Permitir que o admin gerencie os limites diários de gerações (vídeo e imagem) via painel `/admin`, sem precisar editar código.
 
-## Escopo
-Aplica-se apenas ao gerador principal de vídeo (`VideoGenerator.tsx` + `useGenerator.ts`). Não afeta:
-- Grok 3 (1 versão apenas)
-- Storyboard, Frame-to-video, Extend (mantêm 1 versão)
-- Avatar Maker (imagens)
+## Estado atual
+- Limite hoje é **hardcoded = 30/dia** em 3 lugares:
+  - `supabase/functions/geminigen-video/index.ts` (linha ~95)
+  - `supabase/functions/geminigen-image/index.ts` (similar)
+  - `src/hooks/useDailyGenerationCount.ts` (`DAILY_LIMIT = 30`)
+- Aplica-se igualmente a todos os usuários não-admin, sem distinção de plano.
 
-## Abordagem
+## Proposta
 
-### 1. Backend (`supabase/functions/geminigen-video/index.ts`)
-- Aceitar novo parâmetro opcional `variants` (1 ou 2; default 1).
-- Quando `variants === 2` e modelo é `veo-3-fast`/`veo-3.1-fast`, disparar **2 chamadas em paralelo** (`Promise.all`) ao endpoint VEO usando o mesmo `formData` (recriado para cada chamada já que FormData é consumido).
-- Inserir 2 linhas em `image_generations` (uma por UUID retornado).
-- Retornar `{ success, uuids: [uuid1, uuid2], error }` quando variants=2; manter retrocompatibilidade com `uuid` único para variants=1.
-- Limite diário: contar como 2 gerações (já incrementa naturalmente via 2 inserts).
+### 1. Nova tabela `daily_limits`
+| coluna | tipo | descrição |
+|---|---|---|
+| `id` | uuid PK | |
+| `key` | text UNIQUE | `'video_basico'`, `'video_pro'`, `'image_basico'`, `'image_pro'` |
+| `limit_value` | int | quantidade/dia (0 = ilimitado) |
+| `enabled` | boolean | se `false`, sem limite |
+| `updated_at` | timestamptz | |
 
-### 2. Hook (`src/hooks/useGenerator.ts`)
-- Estender `GenerateParams` com `variants?: 1 | 2`.
-- Estender estado: adicionar `resultUrls: string[]` e `resultUuids: string[]` (manter `resultUrl`/`resultUuid` apontando para o primeiro, para retrocompatibilidade).
-- Quando `variants === 2`: ler `data.uuids`, fazer `pollHistory` em paralelo para ambos via `Promise.all`. Barra de progresso única (compartilhada).
-- Sucesso quando **ambos** terminam; se um falhar, ainda retornar o que deu certo + aviso.
+RLS:
+- SELECT: qualquer `authenticated` (precisa ler para mostrar contador)
+- INSERT/UPDATE/DELETE: somente admin (`has_role`)
 
-### 3. UI (`src/components/VideoGenerator.tsx` e `VideoResultPanel`)
-- Adicionar toggle "Gerar 2 versões" (Switch) — visível somente quando modelo selecionado é veo-3 ou veo-3.1.
-- Aviso visual: "Consome 2 gerações do limite diário".
-- No painel de resultado: quando há 2 vídeos, exibir lado a lado (grid 2 colunas em desktop, empilhado em mobile) com botões de download independentes. Cada vídeo mantém auto-loop conforme `mem://ui/video-playback-interaction`.
-- Persistência localStorage: salvar array de URLs/UUIDs.
+Seed inicial: 4 linhas com `limit_value=30, enabled=true`.
 
-### 4. Memória
-Atualizar `mem://features/video-generation` para registrar a opção de 2 variantes em VEO.
+### 2. Nova aba no painel admin
+**Arquivo novo**: `src/pages/AdminLimites.tsx`  
+**Rota**: `/admin/limites` + link no menu admin existente.
 
-## Diagrama do fluxo
+UI (tabela editável):
+- Lista as 4 chaves (Vídeo Básico, Vídeo Pro, Imagem Básico, Imagem Pro)
+- Campos: Input numérico (limite), Switch (ativo/inativo), botão Salvar
+- Botão "Adicionar novo limite" (chave customizada — opcional, escopo futuro)
 
-```text
-User → [Switch: 2 versões ON] → useGenerator.generate({variants:2})
-         │
-         ▼
-geminigen-video (edge)
-         │
-   ┌─────┴─────┐
-   ▼           ▼
-VEO call 1   VEO call 2     (Promise.all)
-   │           │
-   ▼           ▼
- uuid1       uuid2 → insert 2 rows → return {uuids:[uuid1,uuid2]}
-         │
-         ▼
-useGenerator → pollHistory(uuid1) ∥ pollHistory(uuid2)
-         │
-         ▼
-VideoResultPanel: [vídeo 1] [vídeo 2]
+### 3. Backend — ler limite dinamicamente
+Em `geminigen-video/index.ts` e `geminigen-image/index.ts`:
+```ts
+const planKey = profile?.plan === 'pro' ? 'video_pro' : 'video_basico';
+const { data: limitRow } = await adminClient
+  .from('daily_limits').select('limit_value, enabled').eq('key', planKey).single();
+if (limitRow?.enabled && (count ?? 0) >= limitRow.limit_value) { /* 429 */ }
 ```
 
-## Arquivos alterados
-- `supabase/functions/geminigen-video/index.ts`
-- `src/hooks/useGenerator.ts`
-- `src/components/VideoGenerator.tsx` (toggle + render painel duplo)
-- `mem://features/video-generation` (atualização)
+### 4. Frontend — contador dinâmico
+`useDailyGenerationCount.ts`:
+- Buscar `limit_value` da tabela `daily_limits` baseado em `type` + `plan` do usuário.
+- Retornar `limit` dinâmico em vez do hardcoded 30.
+
+### 5. Memória
+Atualizar `mem://business/pricing-plans` e criar `mem://tech/admin-daily-limits` documentando:
+- Limites configuráveis via painel
+- Chaves: `video_basico|video_pro|image_basico|image_pro`
+- `enabled=false` → sem limite
+
+## Diagrama
+```text
+Admin /admin/limites
+   │ UPDATE daily_limits
+   ▼
+[ daily_limits table ]
+   ▲                    ▲
+   │ SELECT             │ SELECT (server-side)
+   │                    │
+useDailyGenerationCount  geminigen-video / geminigen-image
+   (UI contador)         (enforcement 429)
+```
+
+## Arquivos
+- **Migration**: criar tabela + RLS + seed
+- **Novo**: `src/pages/AdminLimites.tsx`
+- **Editar**: `src/App.tsx` (rota), `src/pages/Admin.tsx` (link de menu), `src/hooks/useDailyGenerationCount.ts`, `supabase/functions/geminigen-video/index.ts`, `supabase/functions/geminigen-image/index.ts`
+- **Memória**: criar `mem://tech/admin-daily-limits`, atualizar `mem://index.md`
 
 ## Pontos de atenção
-- A API GeminiGen não tem parâmetro nativo de "variations"; por isso fazemos 2 requisições independentes (resultados serão ligeiramente diferentes por causa do seed aleatório do modelo).
-- Cooldown de 90s permanece igual (1 cooldown por clique, mesmo gerando 2).
-- Custo: dobra o consumo de créditos GeminiGen — usuário é avisado na UI.
+- Admin sempre ignora limite (já é a regra).
+- Plano `pro` e `basico` agora podem ter limites diferentes — vantagem comercial.
+- `enabled=false` = ilimitado (útil para promoções).
 
