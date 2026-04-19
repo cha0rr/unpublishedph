@@ -100,7 +100,7 @@ export function VideoGenerator() {
   const [grokRefPreview, setGrokRefPreview] = useState<string | null>(null);
   const grokFileInputRef = useRef<HTMLInputElement>(null);
 
-  const { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
+  const { state, resultUrl, resultUuid, resultUrls, resultUuids, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
 
   // Restore last video on mount
   useEffect(() => {
