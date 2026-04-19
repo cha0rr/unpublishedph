@@ -188,17 +188,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Daily limit check (30 image generations/day for non-admins) ---
+    // --- Daily limit check (admin-configurable via daily_limits table) ---
     if (!isAdmin) {
       const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-      const { count } = await adminClient
-        .from('image_generations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', today.toISOString())
-        .in('model', ['nano-banana-2', 'nano-banana-pro']);
-      if ((count ?? 0) >= 30) {
-        return new Response(JSON.stringify({ error: 'Limite diário de 30 gerações de imagem atingido.' }), {
+      const planKey = profile?.plan === 'pro' ? 'image_pro' : 'image_basico';
+      const [{ count }, { data: limitRow }] = await Promise.all([
+        adminClient
+          .from('image_generations')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .gte('created_at', today.toISOString())
+          .in('model', ['nano-banana-2', 'nano-banana-pro']),
+        adminClient
+          .from('daily_limits')
+          .select('limit_value, enabled')
+          .eq('key', planKey)
+          .maybeSingle(),
+      ]);
+      const effectiveLimit = limitRow?.enabled ? limitRow.limit_value : null;
+      if (effectiveLimit !== null && (count ?? 0) >= effectiveLimit) {
+        return new Response(JSON.stringify({ error: `Limite diário de ${effectiveLimit} gerações de imagem atingido.` }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
