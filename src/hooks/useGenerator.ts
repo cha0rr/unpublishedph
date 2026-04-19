@@ -252,6 +252,8 @@ export function useGenerator(): GeneratorResult {
     setState("idle");
     setResultUrl(null);
     setResultUuid(null);
+    setResultUrls([]);
+    setResultUuids([]);
     setError(null);
     setProgress(0);
     setStatusText("");
@@ -263,10 +265,12 @@ export function useGenerator(): GeneratorResult {
     setState("success");
     setResultUrl(url);
     if (uuid) setResultUuid(uuid);
+    setResultUrls([url]);
+    setResultUuids(uuid ? [uuid] : []);
     setError(null);
     setProgress(100);
     setStatusText("Vídeo pronto!");
   }, [stopProgressSimulation]);
 
-  return { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
+  return { state, resultUrl, resultUuid, resultUrls, resultUuids, error, progress, statusText, generate, reset, setResultUrl, setSuccessState };
 }
