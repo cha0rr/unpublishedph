@@ -150,11 +150,13 @@ export function useGenerator(): GeneratorResult {
   }, []);
 
   const generate = useCallback(async (params: GenerateParams) => {
-    const { prompt, aspectRatio, resolution = "720p", model = "veo-3.1-fast", modeImage = "none", refImages = [], duration, mode } = params;
+    const { prompt, aspectRatio, resolution = "720p", model = "veo-3.1-fast", modeImage = "none", refImages = [], duration, mode, variants = 1 } = params;
     cancelledRef.current = false;
     setState("generating");
     setResultUrl(null);
     setResultUuid(null);
+    setResultUrls([]);
+    setResultUuids([]);
     setError(null);
     setProgress(0);
     setStatusText("Enviando solicitação...");
@@ -169,6 +171,7 @@ export function useGenerator(): GeneratorResult {
       formData.append("resolution", resolution);
       formData.append("aspect_ratio", aspectRatio);
       formData.append("model", model);
+      formData.append("variants", String(variants));
 
       if (duration) formData.append("duration", duration);
       if (mode) formData.append("mode", mode);
@@ -199,31 +202,49 @@ export function useGenerator(): GeneratorResult {
         throw new Error(msg);
       }
 
-      const uuid = data?.uuid;
-      if (!uuid) throw new Error("UUID da geração não retornado.");
+      const uuids: string[] = Array.isArray(data?.uuids) && data.uuids.length > 0
+        ? data.uuids
+        : (data?.uuid ? [data.uuid] : []);
+      if (uuids.length === 0) throw new Error("UUID da geração não retornado.");
 
       setState("polling");
       startProgressSimulation();
-      const finalUrl = await pollHistory(uuid);
+
+      const pollResults = await Promise.allSettled(uuids.map((u) => pollHistory(u)));
       stopProgressSimulation();
 
-      if (finalUrl) {
-        setProgress(100);
-        setResultUrl(finalUrl);
-        setResultUuid(uuid);
-        setState("success");
-        setStatusText("Vídeo pronto!");
-        playSound();
-      } else {
-        throw new Error("URL do resultado não encontrada.");
+      const successPairs: { url: string; uuid: string }[] = [];
+      const failedReasons: string[] = [];
+      pollResults.forEach((r, i) => {
+        if (r.status === "fulfilled" && r.value) {
+          successPairs.push({ url: r.value, uuid: uuids[i] });
+        } else if (r.status === "rejected") {
+          failedReasons.push(r.reason?.message || "Falha em uma variação.");
+        }
+      });
+
+      if (successPairs.length === 0) {
+        throw new Error(failedReasons[0] || "URL do resultado não encontrada.");
       }
+
+      setProgress(100);
+      setResultUrls(successPairs.map((p) => p.url));
+      setResultUuids(successPairs.map((p) => p.uuid));
+      setResultUrl(successPairs[0].url);
+      setResultUuid(successPairs[0].uuid);
+      setState("success");
+      setStatusText(successPairs.length > 1 ? `${successPairs.length} vídeos prontos!` : "Vídeo pronto!");
+      if (failedReasons.length > 0) {
+        setError(`Aviso: ${failedReasons.length} variação(ões) falharam.`);
+      }
+      playSound();
     } catch (err: any) {
       stopProgressSimulation();
       setError(err.message || "Erro inesperado.");
       setState("error");
       setStatusText("");
     }
-  }, [pollHistory, startProgressSimulation, stopProgressSimulation]);
+  }, [pollHistory, startProgressSimulation, stopProgressSimulation, playSound]);
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
