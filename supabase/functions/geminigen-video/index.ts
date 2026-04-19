@@ -145,84 +145,100 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Build outgoing FormData ---
-    const outForm = new FormData();
-    outForm.append('prompt', sanitizedPrompt);
-    outForm.append('resolution', resolution);
-    outForm.append('model', modelFromClient);
+    // --- Build outgoing FormData (factory so it can be re-used per variant) ---
+    const refImagesAll = (modeImage && modeImage !== 'none') ? incomingForm.getAll('ref_images') as File[] : [];
+    const grokFilesAll = isGrok && modeImage && modeImage !== 'none' ? incomingForm.getAll('ref_images') as File[] : [];
 
-    let endpoint: string;
-
-    if (isGrok) {
-      endpoint = 'https://api.geminigen.ai/uapi/v1/video-gen/grok';
-      // Convert aspect ratio to Grok keywords
-      const grokAspect = GROK_ASPECT_MAP[aspectRatio] || 'landscape';
-      outForm.append('aspect_ratio', grokAspect);
-      // Add duration and mode
-      outForm.append('duration', duration || '6');
-      outForm.append('mode', mode || 'normal');
-      // Grok does not use the generic 'resolution' field — remove it
-      outForm.delete('resolution');
-      // Grok uses 'files' field for ref images
-      if (modeImage && modeImage !== 'none') {
-        const refImages = incomingForm.getAll('ref_images') as File[];
-        for (const f of refImages) {
-          outForm.append('files', f, f.name || 'reference.png');
+    const buildOutForm = (): FormData => {
+      const f = new FormData();
+      f.append('prompt', sanitizedPrompt);
+      f.append('model', modelFromClient);
+      if (isGrok) {
+        const grokAspect = GROK_ASPECT_MAP[aspectRatio] || 'landscape';
+        f.append('aspect_ratio', grokAspect);
+        f.append('duration', duration || '6');
+        f.append('mode', mode || 'normal');
+        for (const file of grokFilesAll) {
+          f.append('files', file, file.name || 'reference.png');
+        }
+      } else {
+        f.append('resolution', resolution);
+        f.append('aspect_ratio', aspectRatio);
+        f.append('watermark', 'false');
+        if (modeImage === 'ingredient' || modeImage === 'frame') {
+          f.append('mode_image', modeImage);
+          for (const file of refImagesAll) {
+            f.append('ref_images', file, file.name || 'reference.png');
+          }
         }
       }
-    } else {
-      endpoint = 'https://api.geminigen.ai/uapi/v1/video-gen/veo';
-      outForm.append('aspect_ratio', aspectRatio);
-      outForm.append('watermark', 'false');
-      if (modeImage === 'ingredient' || modeImage === 'frame') {
-        outForm.append('mode_image', modeImage);
-        const refImages = incomingForm.getAll('ref_images') as File[];
-        for (const f of refImages) {
-          outForm.append('ref_images', f, f.name || 'reference.png');
-        }
-      }
-    }
+      return f;
+    };
 
-    console.log('GeminiGen request:', { prompt: sanitizedPrompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution, endpoint, duration, mode });
+    const endpoint = isGrok
+      ? 'https://api.geminigen.ai/uapi/v1/video-gen/grok'
+      : 'https://api.geminigen.ai/uapi/v1/video-gen/veo';
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'x-api-key': apiKey },
-      body: outForm,
-    });
+    console.log('GeminiGen request:', { prompt: sanitizedPrompt.substring(0, 50), model: modelFromClient, modeImage, aspectRatio, resolution, endpoint, duration, mode, variants });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('GeminiGen API error (full body):', JSON.stringify(data));
-    }
-    console.log('GeminiGen video response:', { uuid: data.uuid, status: response.status, error: data.error || data.message || null });
-
-    // Extract the most useful error message from various possible fields
-    const extractedError = !response.ok ? extractErrorMessage(data, response.status) : null;
-
-    const generationUuid = data.uuid;
     const userEmail = user.email as string;
     const userRole = isAdmin ? 'admin' : 'user';
 
-    await adminClient.from('image_generations').insert({
-      user_id: userId,
-      email: userEmail,
-      role: userRole,
-      plan: profile?.plan || null,
-      model: modelFromClient,
-      prompt: sanitizedPrompt,
-      uuid: generationUuid || null,
-      status: response.ok ? 'pending' : 'failed',
-      aspect_ratio: aspectRatio,
-      resolution,
-      request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient, ...(isGrok ? { duration, mode } : {}) },
-      response_payload: data,
-      error_message: response.ok ? null : extractedError,
-    });
+    // Run N parallel requests to GeminiGen
+    const callOnce = async () => {
+      const r = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey },
+        body: buildOutForm(),
+      });
+      const d = await r.json().catch(() => ({}));
+      return { response: r, data: d };
+    };
 
-    return new Response(JSON.stringify({ success: response.ok, uuid: generationUuid || null, error: extractedError }), {
-      status: response.status,
+    const results = await Promise.all(Array.from({ length: variants }, () => callOnce()));
+
+    const uuids: string[] = [];
+    const errors: string[] = [];
+    let lastStatus = 200;
+
+    for (const { response, data } of results) {
+      if (!response.ok) {
+        console.error('GeminiGen API error (full body):', JSON.stringify(data));
+        lastStatus = response.status;
+      }
+      const extractedError = !response.ok ? extractErrorMessage(data, response.status) : null;
+      const generationUuid = data?.uuid || null;
+      if (generationUuid) uuids.push(generationUuid);
+      if (extractedError) errors.push(extractedError);
+
+      await adminClient.from('image_generations').insert({
+        user_id: userId,
+        email: userEmail,
+        role: userRole,
+        plan: profile?.plan || null,
+        model: modelFromClient,
+        prompt: sanitizedPrompt,
+        uuid: generationUuid,
+        status: response.ok ? 'pending' : 'failed',
+        aspect_ratio: aspectRatio,
+        resolution,
+        request_payload: { prompt: sanitizedPrompt, resolution, aspect_ratio: aspectRatio, mode_image: modeImage || 'none', model: modelFromClient, ...(isGrok ? { duration, mode } : {}), variants },
+        response_payload: data,
+        error_message: response.ok ? null : extractedError,
+      });
+    }
+
+    const success = uuids.length > 0;
+    const responseBody: any = { success, error: errors.length > 0 ? errors[0] : null };
+    if (variants === 2) {
+      responseBody.uuids = uuids;
+      responseBody.uuid = uuids[0] || null;
+    } else {
+      responseBody.uuid = uuids[0] || null;
+    }
+
+    return new Response(JSON.stringify(responseBody), {
+      status: success ? 200 : lastStatus,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
