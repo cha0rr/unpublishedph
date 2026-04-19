@@ -181,10 +181,17 @@ Deno.serve(async (req) => {
       body: outForm,
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data: any = {};
+    try {
+      data = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      // API retornou texto puro (ex: "Internal Server Error")
+      data = { error: rawText?.substring(0, 500) || `HTTP ${response.status}` };
+    }
 
     if (!response.ok) {
-      console.error('GeminiGen storyboard error:', JSON.stringify(data));
+      console.error('GeminiGen storyboard error:', response.status, rawText?.substring(0, 500));
     }
     console.log('Storyboard response:', { uuid: data.uuid, status: response.status });
 
