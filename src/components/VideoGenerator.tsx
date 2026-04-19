@@ -84,6 +84,7 @@ export function VideoGenerator() {
   const [isMerging, setIsMerging] = useState(false);
   const [mergeStatus, setMergeStatus] = useState("");
   const [videoSegments, setVideoSegments] = useState<string[]>([]);
+  const [variants, setVariants] = useState<1 | 2>(1);
 
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
@@ -99,7 +100,7 @@ export function VideoGenerator() {
   const [grokRefPreview, setGrokRefPreview] = useState<string | null>(null);
   const grokFileInputRef = useRef<HTMLInputElement>(null);
 
-  const { state, resultUrl, resultUuid, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
+  const { state, resultUrl, resultUuid, resultUrls, resultUuids, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
 
   // Restore last video on mount
   useEffect(() => {
@@ -206,6 +207,7 @@ export function VideoGenerator() {
         model,
         modeImage: refImages.length > 0 ? modeImage : "none",
         refImages,
+        variants,
       });
     }
   };
@@ -318,6 +320,30 @@ export function VideoGenerator() {
             </ToggleGroup>
           </TooltipProvider>
         </div>
+
+        {/* 2 versions toggle (VEO only) */}
+        {!isGrok && (
+          <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/10 px-3 py-2">
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-foreground flex items-center gap-1">
+                <Layers className="h-3 w-3" /> Gerar 2 versões
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {variants === 2 ? "Consome 2 gerações do limite diário" : "Receba duas variações da mesma geração"}
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={variants === 2}
+              disabled={isLoading}
+              onClick={() => setVariants((v) => (v === 2 ? 1 : 2))}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-border/50 transition-colors ${variants === 2 ? "bg-primary" : "bg-muted"} disabled:opacity-50`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${variants === 2 ? "translate-x-4" : "translate-x-0.5"} mt-[1px]`} />
+            </button>
+          </div>
+        )}
 
         {/* Veo-specific controls */}
         {!isGrok && (
@@ -631,8 +657,51 @@ export function VideoGenerator() {
         </div>
       )}
 
-      {/* Result */}
-      {state === "success" && resultUrl && (
+      {/* Result — multi-variant (2 versions) */}
+      {state === "success" && resultUrls.length > 1 && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-primary">{statusText}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {resultUrls.map((url, idx) => (
+              <div key={url + idx} className="space-y-2 rounded-xl border border-border/40 bg-card/40 p-2">
+                <div className="text-xs text-muted-foreground font-medium">Versão {idx + 1}</div>
+                <video
+                  src={url}
+                  controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full rounded-lg"
+                  style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
+                />
+                <Button
+                  size="sm"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => {
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `video-versao-${idx + 1}.mp4`;
+                    a.target = "_blank";
+                    a.rel = "noopener noreferrer";
+                    a.click();
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" /> Download Versão {idx + 1}
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <Button variant="outline" className="border-border/50" onClick={() => { reset(); setVideoSegments([]); clearVideoState(); }}>
+              <RotateCcw className="h-4 w-4 mr-2" /> Novo Vídeo
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Result — single video */}
+      {state === "success" && resultUrl && resultUrls.length <= 1 && (
         <div className="space-y-3">
           <p className="text-sm font-medium text-primary">{statusText}</p>
           <SequentialVideoPlayer
