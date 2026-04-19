@@ -218,8 +218,12 @@ Deno.serve(async (req) => {
       estimated_credit: data?.estimated_credit || 0,
     });
 
-    return new Response(JSON.stringify({ success: response.ok, uuid: generationUuid || null, error: extractedError }), {
-      status: response.status,
+    return new Response(JSON.stringify({
+      success: response.ok,
+      uuid: generationUuid || null,
+      error: extractedError ? `API GeminiGen indisponível: ${extractedError}. Tente novamente em alguns minutos.` : null,
+    }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
