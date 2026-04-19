@@ -46,6 +46,8 @@ export function useGenerator(): GeneratorResult {
   const [state, setState] = useState<GeneratorState>("idle");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultUuid, setResultUuid] = useState<string | null>(null);
+  const [resultUrls, setResultUrls] = useState<string[]>([]);
+  const [resultUuids, setResultUuids] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
