@@ -23,12 +23,15 @@ export interface GenerateParams {
   refImages?: File[];
   duration?: string;
   mode?: string;
+  variants?: 1 | 2;
 }
 
 interface GeneratorResult {
   state: GeneratorState;
   resultUrl: string | null;
   resultUuid: string | null;
+  resultUrls: string[];
+  resultUuids: string[];
   error: string | null;
   progress: number;
   statusText: string;
