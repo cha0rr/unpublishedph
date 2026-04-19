@@ -207,6 +207,7 @@ export function VideoGenerator() {
         model,
         modeImage: refImages.length > 0 ? modeImage : "none",
         refImages,
+        variants,
       });
     }
   };
