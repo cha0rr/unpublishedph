@@ -136,11 +136,13 @@ export function useStoryboardGenerator() {
       });
 
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || data?.success === false) {
         throw new Error(data?.error || `Erro HTTP ${res.status}`);
       }
       const uuid = data?.uuid;
-      if (!uuid) throw new Error("UUID não retornado.");
+      if (!uuid) {
+        throw new Error(data?.error || "Provedor não retornou identificador da geração. Tente novamente.");
+      }
 
       setState("polling");
       startTimer(totalDuration);
