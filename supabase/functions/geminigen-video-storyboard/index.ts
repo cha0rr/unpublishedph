@@ -167,27 +167,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    const jsonPayload = {
-      scenes: sanitizedScenes.map((s, i) => ({
+    const scenesJsonString = JSON.stringify(
+      sanitizedScenes.map((s) => ({
         prompt: s.prompt,
         duration: s.duration,
-        mode: s.mode,
-        scene_index: i,
-      })),
+        mode: 'custom',
+      }))
+    );
+
+    const outForm = new FormData();
+    outForm.append('scenes', scenesJsonString);
+    outForm.append('aspect_ratio', aspect_ratio);
+    outForm.append('resolution', resolution);
+    outForm.append('model', 'grok-video');
+
+    console.log('Storyboard request:', {
+      scenes_count: sanitizedScenes.length,
+      totalDuration,
       aspect_ratio,
       resolution,
-      model: 'grok-video',
-    };
-
-    console.log('Storyboard request:', { scenes: sanitizedScenes.length, totalDuration, aspect_ratio, resolution, format: 'json/scenes[]' });
+      format: 'multipart/scenes-json-string',
+    });
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-storyboard/grok', {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(jsonPayload),
+      body: outForm,
     });
 
     const rawText = await response.text();
@@ -203,11 +210,12 @@ Deno.serve(async (req) => {
       console.error('GeminiGen storyboard error:', response.status, rawText?.substring(0, 500));
     }
     console.log('Storyboard response:', {
-      uuid: data.uuid,
+      uuid: data?.uuid,
       status: response.status,
       input_text: typeof data?.input_text === 'string' ? data.input_text.substring(0, 300) : null,
-      has_story_board_config: Array.isArray(data?.story_board_config),
-      story_board_config_len: Array.isArray(data?.story_board_config) ? data.story_board_config.length : 0,
+      estimated_credit: data?.estimated_credit,
+      error_code: data?.error_code || data?.detail?.error_code,
+      error_message: data?.error_message || data?.detail?.error_message,
     });
 
     const generationUuid = data?.uuid || null;
