@@ -2,54 +2,62 @@
 
 ## Diagnóstico
 
-O storyboard "repete a mesma cena com falas aleatórias" porque a API GeminiGen está recebendo o array de cenas no formato errado e tratando tudo como **um único prompt concatenado**.
-
-Evidência (response_payload do registro mais recente):
+Log da edge function:
 ```
-input_text: "Cena1... | Cena2... | Cena3... | Cena4... | Cena5..."
-status_percentage: 18  (modelo gerou tratando como 1 prompt longo)
+GeminiGen storyboard error: 400
+{"detail":{"error_code":"INVALID_INPUT","error_message":"Invalid input field: ('body','scenes'), Field required"}}
 ```
 
-Apesar disso, o campo `story_board_config` da resposta lista cada cena com `scene_index` correto — ou seja, a API **suporta** cenas independentes, mas espera o payload em outro formato. Hoje enviamos:
+A API espera o campo chamado **`scenes`** no **body JSON** (não `story_board_config`, não multipart/form-data). A tentativa anterior de usar `story_board_config[i][campo]` em `FormData` foi rejeitada porque:
+1. o nome correto é `scenes`;
+2. o endpoint espera `Content-Type: application/json` com array nativo, não chaves indexadas em multipart.
 
-```ts
-outForm.append('scenes', JSON.stringify(sanitizedScenes)); // ❌ string única
-```
-
-A API precisa receber o array como `story_board_config` (nome do campo que aparece no próprio response) e/ou em formato indexado.
-
-## O que vou corrigir
+## Correção
 
 ### `supabase/functions/geminigen-video-storyboard/index.ts`
 
-1. **Renomear o campo** de `scenes` para `story_board_config` (alinhado ao retorno da API).
-2. **Testar dois formatos** em ordem de prioridade até a API aceitar corretamente:
-   - **Formato A (preferido)**: indexado por cena
-     ```
-     story_board_config[0][prompt]=...
-     story_board_config[0][duration]=6
-     story_board_config[0][mode]=custom
-     story_board_config[1][prompt]=...
-     ```
-   - **Formato B (fallback)**: múltiplos appends do mesmo nome com JSON por cena
-     ```
-     story_board_config=<json cena 1>
-     story_board_config=<json cena 2>
-     ```
-3. **Logar o `input_text` retornado** após enviar — se vier com `|` concatenado de novo, sabemos que ainda está errado e tentamos o outro formato.
-4. Manter o restante (validações, RLS, daily_limit, persistência em `image_generations`) intacto.
+Trocar o envio multipart por JSON puro:
 
-### Validação após o deploy
-- Gerar storyboard de 3 cenas curtas e claramente distintas (ex: "praia ensolarada" / "floresta escura" / "deserto vermelho").
-- Conferir no `response_payload` da tabela `image_generations`:
-  - `input_text` deve listar cada cena separada (ou estar vazio com `story_board_config` populado corretamente)
-  - vídeo final deve mostrar as 3 cenas distintas concatenadas
+```ts
+const payload = {
+  scenes: sanitizedScenes.map((s, i) => ({
+    prompt: s.prompt,
+    duration: s.duration,
+    mode: s.mode,
+    scene_index: i,
+  })),
+  aspect_ratio,
+  resolution,
+  model: 'grok-video',
+};
+
+const response = await fetch('https://api.geminigen.ai/uapi/v1/video-storyboard/grok', {
+  method: 'POST',
+  headers: {
+    'x-api-key': apiKey,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(payload),
+});
+```
+
+Manter:
+- todas as validações (30s, 6/10s, 2-10 cenas, aspect/resolution);
+- logs do `input_text` e `story_board_config` retornados para confirmar que cada cena é interpretada individualmente;
+- gravação em `image_generations` com `request_payload` refletindo o novo formato JSON.
+
+## Validação após o deploy
+
+1. Storyboard com 3 cenas distintas (praia / floresta / deserto), 18s total → deve gerar com cenas visuais separadas.
+2. Conferir nos logs: `input_text` deve listar prompts separados, **sem** `|` concatenando tudo.
+3. Conferir `story_board_config` no `response_payload` da tabela `image_generations`.
 
 ## Arquivos a alterar
-- `supabase/functions/geminigen-video-storyboard/index.ts` (apenas a montagem do `FormData`)
+
+- `supabase/functions/geminigen-video-storyboard/index.ts` (somente o bloco de montagem do request: trocar `FormData` por JSON e usar campo `scenes`).
 
 ## Pontos de atenção
-- Não muda nada na UI nem nos limites (já estão corretos a 30s).
-- Não altera o hook frontend — o problema é 100% no payload enviado ao GeminiGen.
-- Se a API ainda concatenar com `|` mesmo após a correção, a próxima tentativa será enviar como JSON puro no body (`Content-Type: application/json`) em vez de `multipart/form-data`.
+
+- Se ainda der 400 reclamando de outro campo, o log da função vai indicar exatamente qual — ajustamos pontualmente.
+- UI e hook continuam intactos; o problema é 100% no formato do request enviado à GeminiGen.
 
