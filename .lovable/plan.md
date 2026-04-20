@@ -1,82 +1,82 @@
 
-
 ## Objetivo
-Permitir que o admin gerencie os limites diários de gerações (vídeo e imagem) via painel `/admin`, sem precisar editar código.
+Corrigir o erro “UUID não retornado” no Storyboard para que:
+1. o usuário receba a mensagem real do problema;
+2. o frontend bloqueie combinações que a API não aceita;
+3. o backend não exponha falso “sucesso” quando a GeminiGen rejeitar a geração.
 
-## Estado atual
-- Limite hoje é **hardcoded = 30/dia** em 3 lugares:
-  - `supabase/functions/geminigen-video/index.ts` (linha ~95)
-  - `supabase/functions/geminigen-image/index.ts` (similar)
-  - `src/hooks/useDailyGenerationCount.ts` (`DAILY_LIMIT = 30`)
-- Aplica-se igualmente a todos os usuários não-admin, sem distinção de plano.
-
-## Proposta
-
-### 1. Nova tabela `daily_limits`
-| coluna | tipo | descrição |
-|---|---|---|
-| `id` | uuid PK | |
-| `key` | text UNIQUE | `'video_basico'`, `'video_pro'`, `'image_basico'`, `'image_pro'` |
-| `limit_value` | int | quantidade/dia (0 = ilimitado) |
-| `enabled` | boolean | se `false`, sem limite |
-| `updated_at` | timestamptz | |
-
-RLS:
-- SELECT: qualquer `authenticated` (precisa ler para mostrar contador)
-- INSERT/UPDATE/DELETE: somente admin (`has_role`)
-
-Seed inicial: 4 linhas com `limit_value=30, enabled=true`.
-
-### 2. Nova aba no painel admin
-**Arquivo novo**: `src/pages/AdminLimites.tsx`  
-**Rota**: `/admin/limites` + link no menu admin existente.
-
-UI (tabela editável):
-- Lista as 4 chaves (Vídeo Básico, Vídeo Pro, Imagem Básico, Imagem Pro)
-- Campos: Input numérico (limite), Switch (ativo/inativo), botão Salvar
-- Botão "Adicionar novo limite" (chave customizada — opcional, escopo futuro)
-
-### 3. Backend — ler limite dinamicamente
-Em `geminigen-video/index.ts` e `geminigen-image/index.ts`:
-```ts
-const planKey = profile?.plan === 'pro' ? 'video_pro' : 'video_basico';
-const { data: limitRow } = await adminClient
-  .from('daily_limits').select('limit_value, enabled').eq('key', planKey).single();
-if (limitRow?.enabled && (count ?? 0) >= limitRow.limit_value) { /* 429 */ }
-```
-
-### 4. Frontend — contador dinâmico
-`useDailyGenerationCount.ts`:
-- Buscar `limit_value` da tabela `daily_limits` baseado em `type` + `plan` do usuário.
-- Retornar `limit` dinâmico em vez do hardcoded 30.
-
-### 5. Memória
-Atualizar `mem://business/pricing-plans` e criar `mem://tech/admin-daily-limits` documentando:
-- Limites configuráveis via painel
-- Chaves: `video_basico|video_pro|image_basico|image_pro`
-- `enabled=false` → sem limite
-
-## Diagrama
+## Diagnóstico
+Pelos logs, a causa real não é ausência aleatória de UUID. A API externa está recusando a solicitação:
 ```text
-Admin /admin/limites
-   │ UPDATE daily_limits
-   ▼
-[ daily_limits table ]
-   ▲                    ▲
-   │ SELECT             │ SELECT (server-side)
-   │                    │
-useDailyGenerationCount  geminigen-video / geminigen-image
-   (UI contador)         (enforcement 429)
+TOTAL_DURATION_EXCEEDED
+Total duration 42s exceeds the maximum 30s allowed for Grok storyboard.
 ```
 
-## Arquivos
-- **Migration**: criar tabela + RLS + seed
-- **Novo**: `src/pages/AdminLimites.tsx`
-- **Editar**: `src/App.tsx` (rota), `src/pages/Admin.tsx` (link de menu), `src/hooks/useDailyGenerationCount.ts`, `supabase/functions/geminigen-video/index.ts`, `supabase/functions/geminigen-image/index.ts`
-- **Memória**: criar `mem://tech/admin-daily-limits`, atualizar `mem://index.md`
+Hoje existe um desalinhamento:
+- UI permite até 45s (`StoryboardGenerator.tsx`)
+- Edge function valida até 45s (`geminigen-video-storyboard/index.ts`)
+- API GeminiGen aceita só 30s para storyboard Grok
 
-## Pontos de atenção
-- Admin sempre ignora limite (já é a regra).
-- Plano `pro` e `basico` agora podem ter limites diferentes — vantagem comercial.
-- `enabled=false` = ilimitado (útil para promoções).
+Além disso, o frontend trata qualquer `HTTP 200` como sucesso inicial e só depois tenta ler `uuid`, então quando o backend devolve:
+```json
+{ "success": false, "uuid": null, "error": "..." }
+```
+o usuário vê “UUID não retornado” em vez do erro real.
 
+## O que vou corrigir
+
+### 1. Alinhar o limite real do storyboard para 30s
+Atualizar para 30s em todos os pontos:
+- `src/components/StoryboardGenerator.tsx`
+- `supabase/functions/geminigen-video-storyboard/index.ts`
+- mensagem visual de limite total
+
+Também ajustar textos de erro para deixar claro:
+- máximo total = 30s
+- cenas continuam 6s ou 10s
+- máximo prático de cenas continua compatível com esse teto
+
+### 2. Corrigir o tratamento de resposta no frontend
+Em `src/hooks/useStoryboardGenerator.ts`:
+- após `res.json()`, validar `data.success`
+- se `success === false`, lançar `data.error`
+- se `success === true` mas `uuid` vier vazio, mostrar erro amigável do provedor, não “UUID não retornado” genérico
+- manter polling só quando houver UUID válido
+
+Resultado esperado:
+- erro real aparece para o usuário
+- não entra em fluxo de polling inválido
+
+### 3. Tornar a edge function mais explícita quando a API rejeitar
+Em `supabase/functions/geminigen-video-storyboard/index.ts`:
+- considerar falha quando `response.ok` vier sem `uuid`
+- retornar `success: false` com mensagem específica
+- registrar melhor o motivo nos logs e no `image_generations`
+- manter resposta JSON consistente
+
+### 4. Revisar a UX para evitar novas tentativas inválidas
+No `StoryboardGenerator.tsx`:
+- barra/contador de duração limitada a 30s
+- botão de adicionar cena e troca 6s/10s respeitando 30s
+- mensagens do toast e do card de erro refletindo a regra real
+
+## Arquivos a alterar
+- `src/components/StoryboardGenerator.tsx`
+- `src/hooks/useStoryboardGenerator.ts`
+- `supabase/functions/geminigen-video-storyboard/index.ts`
+
+## Validação
+Vou validar estes cenários:
+1. storyboard com 24s/30s → deve gerar normalmente
+2. storyboard com 36s/42s → deve ser bloqueado na UI antes do envio
+3. resposta da API com `success:false` e `uuid:null` → deve exibir a mensagem real
+4. resposta `200` sem UUID → deve virar erro amigável, nunca polling
+
+## Detalhes técnicos
+```text
+UI (30s máx) -> Hook valida success/error -> Edge envia para GeminiGen
+                                           -> se falhar: success:false + error real
+                                           -> se sucesso: uuid válido -> polling
+```
+
+A correção principal não é “inventar UUID”; é impedir requests inválidos e parar de mascarar o erro real da API com a mensagem “UUID não retornado”.
