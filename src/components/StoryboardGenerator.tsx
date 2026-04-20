@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Sparkles, Loader2, Plus, Trash2, RotateCcw, Download, Monitor, Smartphone, Square, Clock, Film } from "lucide-react";
 import { toast } from "sonner";
 
-const MAX_TOTAL = 45;
+const MAX_TOTAL = 30;
 const MAX_SCENES = 10;
 const MIN_SCENES = 2;
 

@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const MAX_PROMPT_LENGTH = 4000;
-const MAX_TOTAL_DURATION = 45;
+const MAX_TOTAL_DURATION = 30;
 const ALLOWED_DURATIONS = [6, 10];
 const ALLOWED_ASPECTS = ['landscape', 'portrait', 'square'];
 const ALLOWED_RESOLUTIONS = ['480p', '720p'];
@@ -195,8 +195,9 @@ Deno.serve(async (req) => {
     }
     console.log('Storyboard response:', { uuid: data.uuid, status: response.status });
 
-    const extractedError = !response.ok ? extractErrorMessage(data, response.status) : null;
-    const generationUuid = data.uuid;
+    const generationUuid = data?.uuid || null;
+    const apiFailed = !response.ok || !generationUuid;
+    const extractedError = apiFailed ? extractErrorMessage(data, response.status) : null;
     const userEmail = user.email as string;
     const userRole = isAdmin ? 'admin' : 'user';
     const combinedPrompt = sanitizedScenes.map((s, i) => `[Cena ${i + 1} - ${s.duration}s] ${s.prompt}`).join('\n\n');
@@ -209,19 +210,19 @@ Deno.serve(async (req) => {
       model: 'grok-storyboard',
       prompt: combinedPrompt.substring(0, MAX_PROMPT_LENGTH),
       uuid: generationUuid || null,
-      status: response.ok ? 'pending' : 'failed',
+      status: apiFailed ? 'failed' : 'pending',
       aspect_ratio,
       resolution,
       request_payload: { scenes: sanitizedScenes, aspect_ratio, resolution, model: 'grok-video', total_duration: totalDuration },
       response_payload: data,
-      error_message: response.ok ? null : extractedError,
+      error_message: extractedError,
       estimated_credit: data?.estimated_credit || 0,
     });
 
     return new Response(JSON.stringify({
-      success: response.ok,
+      success: !apiFailed,
       uuid: generationUuid || null,
-      error: extractedError ? `API GeminiGen indisponível: ${extractedError}. Tente novamente em alguns minutos.` : null,
+      error: extractedError ? `API GeminiGen: ${extractedError}` : null,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
