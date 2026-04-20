@@ -168,12 +168,18 @@ Deno.serve(async (req) => {
     }
 
     const outForm = new FormData();
-    outForm.append('scenes', JSON.stringify(sanitizedScenes));
+    // Formato indexado: story_board_config[i][campo] — alinhado ao response da API
+    sanitizedScenes.forEach((s, i) => {
+      outForm.append(`story_board_config[${i}][prompt]`, s.prompt);
+      outForm.append(`story_board_config[${i}][duration]`, String(s.duration));
+      outForm.append(`story_board_config[${i}][mode]`, s.mode);
+      outForm.append(`story_board_config[${i}][scene_index]`, String(i));
+    });
     outForm.append('aspect_ratio', aspect_ratio);
     outForm.append('resolution', resolution);
     outForm.append('model', 'grok-video');
 
-    console.log('Storyboard request:', { scenes: sanitizedScenes.length, totalDuration, aspect_ratio, resolution });
+    console.log('Storyboard request:', { scenes: sanitizedScenes.length, totalDuration, aspect_ratio, resolution, format: 'story_board_config[i][field]' });
 
     const response = await fetch('https://api.geminigen.ai/uapi/v1/video-storyboard/grok', {
       method: 'POST',
@@ -193,7 +199,13 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       console.error('GeminiGen storyboard error:', response.status, rawText?.substring(0, 500));
     }
-    console.log('Storyboard response:', { uuid: data.uuid, status: response.status });
+    console.log('Storyboard response:', {
+      uuid: data.uuid,
+      status: response.status,
+      input_text: typeof data?.input_text === 'string' ? data.input_text.substring(0, 300) : null,
+      has_story_board_config: Array.isArray(data?.story_board_config),
+      story_board_config_len: Array.isArray(data?.story_board_config) ? data.story_board_config.length : 0,
+    });
 
     const generationUuid = data?.uuid || null;
     const apiFailed = !response.ok || !generationUuid;
