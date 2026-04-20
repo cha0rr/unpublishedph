@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface UseCooldownOptions {
   key: string;
@@ -12,9 +12,11 @@ interface UseCooldownResult {
 }
 
 // Cooldown desativado: botões de gerar ficam sempre disponíveis.
+// Mantemos os mesmos hooks internos para preservar compatibilidade com Fast Refresh.
 export function useCooldown({ key }: UseCooldownOptions): UseCooldownResult {
+  const [_remaining] = useState(0);
+
   useEffect(() => {
-    // Limpa qualquer cooldown remanescente persistido em sessões anteriores.
     try { localStorage.removeItem(key); } catch {}
   }, [key]);
 
@@ -24,7 +26,7 @@ export function useCooldown({ key }: UseCooldownOptions): UseCooldownResult {
 
   return {
     isCooling: false,
-    remainingSeconds: 0,
+    remainingSeconds: _remaining,
     startCooldown,
   };
 }
