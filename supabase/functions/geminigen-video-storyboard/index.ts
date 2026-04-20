@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const MAX_PROMPT_LENGTH = 4000;
-const MAX_TOTAL_DURATION = 45;
+const MAX_TOTAL_DURATION = 30;
 const ALLOWED_DURATIONS = [6, 10];
 const ALLOWED_ASPECTS = ['landscape', 'portrait', 'square'];
 const ALLOWED_RESOLUTIONS = ['480p', '720p'];
