@@ -198,7 +198,7 @@ export function StoryboardGenerator() {
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Orientação</p>
           <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as any)} disabled={isLoading}>
-            <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+            <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -220,7 +220,7 @@ export function StoryboardGenerator() {
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Resolução</p>
           <Select value={resolution} onValueChange={(v) => setResolution(v as any)} disabled={isLoading}>
-            <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+            <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
