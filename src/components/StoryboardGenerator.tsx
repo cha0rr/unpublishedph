@@ -194,40 +194,41 @@ export function StoryboardGenerator() {
           <Progress value={(totalDuration / MAX_TOTAL) * 100} className="h-1.5" />
         </div>
 
-        {/* Aspect ratio */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Orientação</p>
-          <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as any)} disabled={isLoading}>
-            <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ASPECT_OPTIONS.map(opt => {
-                const Icon = opt.icon;
-                return (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    <span className="flex items-center gap-2">
-                      <Icon className="h-3.5 w-3.5" /> {opt.label}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Aspect ratio + Resolution side-by-side */}
+        <div className="flex flex-wrap gap-3">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Orientação</p>
+            <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as any)} disabled={isLoading}>
+              <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs bg-background/40 border-border/40 gap-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASPECT_OPTIONS.map(opt => {
+                  const Icon = opt.icon;
+                  return (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5" /> {opt.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* Resolution */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Resolução</p>
-          <Select value={resolution} onValueChange={(v) => setResolution(v as any)} disabled={isLoading}>
-            <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="480p">480p</SelectItem>
-              <SelectItem value="720p">720p</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Resolução</p>
+            <Select value={resolution} onValueChange={(v) => setResolution(v as any)} disabled={isLoading}>
+              <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs bg-background/40 border-border/40 gap-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="480p">480p</SelectItem>
+                <SelectItem value="720p">720p</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {!isAdmin && (
