@@ -10,7 +10,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap, Frame } from "lucide-react";
 import { mergeVideoSegments } from "@/lib/mergeVideoSegments";
 import { Badge } from "@/components/ui/badge";
