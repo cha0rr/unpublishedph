@@ -298,7 +298,7 @@ export function VideoGenerator() {
             }}
             disabled={isLoading}
           >
-            <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+            <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -534,7 +534,7 @@ export function VideoGenerator() {
                 <Layers className="h-3 w-3" /> Orientação
               </p>
               <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
-                <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+                <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -614,7 +614,7 @@ export function VideoGenerator() {
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] text-muted-foreground">Orientação</span>
                 <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
-                  <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40 min-w-[120px]">
+                  <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40 min-w-[120px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -632,7 +632,7 @@ export function VideoGenerator() {
             <div className="flex flex-col gap-1">
               <span className="text-[10px] text-muted-foreground">Resolução</span>
               <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
-                <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40 min-w-[100px]">
+                <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40 min-w-[100px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
