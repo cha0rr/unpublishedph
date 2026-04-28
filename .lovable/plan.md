@@ -1,133 +1,74 @@
-
 ## Objetivo
-Corrigir de vez o erro do Storyboard alinhando a edge function ao formato oficial documentado pela GeminiGen.
 
-## Diagnóstico
-A documentação oficial de `https://docs.geminigen.ai/resources/8.grok-storyboard` mostra que o endpoint:
+1. Renomear a aba/feature **Storyboard** para **Vídeos 30s** na UI.
+2. Substituir os controles atuais (toggle groups) por **dropdowns Select** em:
+   - **Modelo** (no `VideoGenerator`)
+   - **Orientação / Aspect ratio** (em `VideoGenerator` e `StoryboardGenerator`)
+   - **Resolução** (em `VideoGenerator` e `StoryboardGenerator`)
+3. Restringir a opção **"Gerar 2 versões"** ao plano **Pro** (atualmente está liberada para todos no VEO).
 
-```text
-POST /uapi/v1/video-storyboard/grok
-Content-Type: multipart/form-data
-```
+---
 
-e exige:
+## Alterações por arquivo
 
-```text
-scenes = JSON string
-aspect_ratio = string
-resolution = string
-model = grok-video
-```
+### 1) `src/pages/StudioVideos.tsx`
+- Trocar o label do `<TabsTrigger value="storyboard">` de **"Storyboard"** para **"Vídeos 30s"**.
+- Trocar o toast `"Storyboard disponível apenas no plano Pro."` para `"Vídeos 30s disponível apenas no plano Pro."`.
+- Manter o badge "Pro" e o ícone `Layers`.
+- Não alterar o `value="storyboard"` da tab (apenas o label visível) para evitar quebrar lógica interna.
 
-Exemplo oficial:
-```bash
---form 'scenes=[{"prompt":"...","duration":6,"mode":"custom"}]'
-```
+### 2) `src/components/StoryboardGenerator.tsx`
+- Trocar título/labels visíveis: textos de botão `"Gerar Storyboard ({totalDuration}s)"` → `"Gerar Vídeo 30s ({totalDuration}s)"`. Botão "Novo" e download de "storyboard.mp4" continuam.
+- Substituir o `ToggleGroup` de **Orientação** por um `<Select>` (shadcn) com as 3 opções (Landscape / Portrait / Square), mostrando o ícone correspondente ao lado do label dentro do `SelectItem`.
+- Substituir o `ToggleGroup` de **Resolução** por um `<Select>` com as opções `480p` e `720p`.
+- Manter a lógica/estado existentes (`aspectRatio`, `resolution`); apenas trocar o componente visual.
 
-Hoje o projeto está enviando para a GeminiGen:
+### 3) `src/components/VideoGenerator.tsx`
+- **Modelo**: substituir o `ToggleGroup` de modelos por um `<Select>`:
+  - Itens: `Veo 3 Fast`, `Veo 3.1 Fast`, `Grok 3` (com badge "PRO" inline).
+  - Se o usuário não for Pro/Admin e selecionar `Grok 3`, manter o comportamento atual (bloquear via toast/disabled). Implementar via `disabled` no `SelectItem` + tooltip/badge "Pro" e mostrar `Lock` quando bloqueado.
+  - Manter o efeito colateral existente: ao trocar para `grok-3` com `resolution === "1080p"`, resetar para `720p`.
+- **Orientação (aspect ratio)**: substituir os `ToggleGroup` (tanto o do VEO quanto o do Grok — `GROK_ASPECT_OPTIONS`) por `<Select>`. Manter os mesmos valores e ícones nos `SelectItem`.
+- **Resolução**: substituir o `ToggleGroup` de resolução por `<Select>` com as opções já existentes (`720p`, `1080p` para VEO; `480p`, `720p` para Grok), respeitando as regras atuais de quais aparecem por modelo.
+- **Gerar 2 versões (gatear como Pro)**:
+  - Computar `canUseVariants = isAdmin || profile?.plan === "pro"`.
+  - Quando `!canUseVariants`:
+    - Forçar `variants = 1` (impedir o switch de ligar; se já estiver 2, resetar).
+    - Renderizar o switch como `disabled`, com badge **Pro** e ícone `Lock` ao lado do título "Gerar 2 versões".
+    - Ao clicar no switch desabilitado, mostrar toast: `"Gerar 2 versões disponível apenas no plano Pro."`.
+  - Manter o subtexto explicativo. Para usuários Pro/Admin, comportamento igual ao atual.
+  - Defesa adicional em `handleGenerate`: se `variants === 2 && !canUseVariants`, sobrescrever para `1` antes de chamar `generate(...)`.
 
-```ts
-Content-Type: application/json
-body: JSON.stringify({ scenes: [...] })
-```
+### 4) `src/components/landing/Navbar.tsx` (apenas se houver link nomeado "Storyboard")
+- Verificar e renomear qualquer link de navbar/menu que diga "Storyboard" para "Vídeos 30s". Caso não exista, nenhuma mudança.
 
-Por isso a API responde:
-```text
-Invalid input field: ('body', 'scenes'), Field required
-```
+---
 
-Ela não está procurando `scenes` em JSON puro; está esperando um campo multipart chamado `scenes` contendo uma string JSON.
+## Detalhes técnicos
 
-Também há dois desvios secundários em relação à doc:
-1. estamos enviando `scene_index`, que não aparece no contrato oficial;
-2. estamos logando `story_board_config`, campo que a documentação não define como parte da resposta do endpoint.
+- Usar o componente `Select` já existente em `src/components/ui/select.tsx` (Radix). Estrutura padrão:
+  ```tsx
+  <Select value={x} onValueChange={setX}>
+    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="...">
+        <span className="flex items-center gap-2"><Icon className="h-3.5 w-3.5" /> Label</span>
+      </SelectItem>
+    </SelectContent>
+  </Select>
+  ```
+- Manter classes/estilo coerentes com o tema (border `border-border/40`, `bg-background/40`, foco neon-cyan já vem do tema).
+- `SelectItem` com `disabled` para entradas Pro bloqueadas; ainda assim exibir badge "PRO".
+- Não alterar a edge function nem o hook `useStoryboardGenerator` — somente UI/UX.
+- Não alterar o `value="storyboard"` da `Tabs` (apenas o label) para não quebrar o `onValueChange`.
 
-## O que vou corrigir
+## Validação
 
-### 1) Ajustar `supabase/functions/geminigen-video-storyboard/index.ts`
-Manter o request do frontend para a edge function em JSON como está hoje, mas converter internamente para `FormData` antes de chamar a GeminiGen:
-
-```ts
-const outForm = new FormData();
-outForm.append("scenes", JSON.stringify(
-  sanitizedScenes.map((s) => ({
-    prompt: s.prompt,
-    duration: s.duration,
-    mode: "custom",
-  }))
-));
-outForm.append("aspect_ratio", aspect_ratio);
-outForm.append("resolution", resolution);
-outForm.append("model", "grok-video");
-```
-
-E enviar assim:
-```ts
-await fetch("https://api.geminigen.ai/uapi/v1/video-storyboard/grok", {
-  method: "POST",
-  headers: { "x-api-key": apiKey },
-  body: outForm,
-});
-```
-
-Importante:
-- não definir manualmente `Content-Type`;
-- deixar o runtime montar o boundary de multipart automaticamente.
-
-### 2) Remover campos não documentados do payload externo
-Não enviar mais:
-```ts
-scene_index
-```
-
-Para reduzir risco de rejeição por validação estrita.
-
-### 3) Corrigir logs de diagnóstico
-Trocar logs para refletir o formato real enviado, por exemplo:
-
-```text
-format: multipart/scenes-json-string
-scenes_count
-totalDuration
-aspect_ratio
-resolution
-```
-
-E no response log, priorizar campos documentados:
-- `uuid`
-- `status`
-- `input_text`
-- `estimated_credit`
-- `error_code`
-- `error_message`
-
-Remover dependência de `story_board_config` como sinal de sucesso.
-
-### 4) Manter a regra de erro amigável
-Preservar a regra já planejada:
-- se a GeminiGen não retornar `uuid`, tratar como falha;
-- nunca retornar falso sucesso ao frontend;
-- mostrar a mensagem real da API ao usuário.
-
-### 5) Não alterar a UI neste passo
-O frontend do storyboard já envia `scenes`, `aspect_ratio` e `resolution` corretamente para a edge function.
-O problema está apenas no formato do request da edge para a GeminiGen.
-
-## Arquivos a alterar
-- `supabase/functions/geminigen-video-storyboard/index.ts`
-
-## Validação após a correção
-Validar com um storyboard simples de 3 cenas bem diferentes:
-1. praia ensolarada
-2. floresta escura com neblina
-3. deserto vermelho ao pôr do sol
-
-Critérios de sucesso:
-- a edge function não retorna mais `Field required`;
-- a resposta inicial contém `uuid`;
-- o frontend entra em polling normalmente;
-- o vídeo final mostra cenas distintas;
-- os logs mostram envio em `multipart/scenes-json-string`.
-
-## Observação técnica
-A documentação oficial também informa limite máximo total de `45s`, enquanto o projeto hoje restringe a `30s`. Isso não causa o erro atual. A correção principal é o formato multipart com `scenes` serializado como string JSON. O limite de 30s pode continuar como regra interna do produto, se desejado.
+1. Aba aparece como **"Vídeos 30s"** com badge Pro.
+2. Em Studio Videos / Gerar Vídeo:
+   - "Modelo", "Orientação" e "Resolução" agora são dropdowns.
+   - Usuário não-Pro vê `Grok 3` no dropdown como item desabilitado/Pro.
+   - Switch "Gerar 2 versões" aparece bloqueado para não-Pro com badge Pro; clique mostra toast.
+   - Usuário Pro/Admin consegue ativar normalmente.
+3. Em Vídeos 30s: "Orientação" e "Resolução" também são dropdowns, restante intacto.
+4. Geração continua funcionando exatamente como antes em todos os modelos.
