@@ -248,7 +248,7 @@ export function StoryboardGenerator() {
           ) : isCooling ? (
             <>Aguarde {formatCool(remainingSeconds)}</>
           ) : (
-            <><Sparkles className="h-4 w-4 mr-2" /> Gerar Vídeo 30s ({totalDuration}s)</>
+              <><Sparkles className="h-4 w-4 mr-2" /> Gerar Vídeo</>
           )}
         </Button>
       </div>
