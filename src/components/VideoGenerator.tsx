@@ -6,6 +6,7 @@ import { useDailyGenerationCount } from "@/hooks/useDailyGenerationCount";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
@@ -92,6 +93,7 @@ export function VideoGenerator() {
   const { profile, isAdmin } = useAuth();
   const isGrokAllowed = isAdmin || profile?.plan === "pro";
   const canAccessFrame = isAdmin || profile?.plan === "pro";
+  const canUseVariants = isAdmin || profile?.plan === "pro";
   const isGrok = model === "grok-3";
 
   const [grokMode, setGrokMode] = useState("normal");
@@ -188,6 +190,9 @@ export function VideoGenerator() {
     setVideoSegments([]);
     startCooldown();
 
+    // Defesa: forçar 1 versão para usuários não-Pro
+    const safeVariants: 1 | 2 = canUseVariants ? variants : 1;
+
     if (isGrok) {
       generate({
         prompt: prompt.trim(),
@@ -207,7 +212,7 @@ export function VideoGenerator() {
         model,
         modeImage: refImages.length > 0 ? modeImage : "none",
         refImages,
-        variants,
+        variants: safeVariants,
       });
     }
   };
@@ -277,48 +282,39 @@ export function VideoGenerator() {
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <Cpu className="h-3 w-3" /> Modelo
           </p>
-          <TooltipProvider>
-            <ToggleGroup
-              type="single"
-              value={model}
-              onValueChange={(v) => {
-                if (!v) return;
-                if (v === "grok-3" && !isGrokAllowed) return;
-                setModel(v);
-                // Reset resolution to 720p if switching to grok and currently 1080p
-                if (v === "grok-3" && resolution === "1080p") setResolution("720p");
-              }}
-              className="justify-start gap-1"
-            >
+          <Select
+            value={model}
+            onValueChange={(v) => {
+              if (v === "grok-3" && !isGrokAllowed) {
+                toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
+                return;
+              }
+              setModel(v);
+              if (v === "grok-3" && resolution === "1080p") setResolution("720p");
+            }}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
               {MODEL_OPTIONS.map((opt) => {
                 const isLocked = opt.pro && !isGrokAllowed;
-                const item = (
-                  <ToggleGroupItem
-                    key={opt.value}
-                    value={opt.value}
-                    disabled={isLocked}
-                    className={`text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40 ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    {opt.label}
-                    {opt.pro && (
-                      <span className="ml-1 text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                        {isLocked ? <Lock className="h-3 w-3 inline" /> : "PRO"}
-                      </span>
-                    )}
-                  </ToggleGroupItem>
+                return (
+                  <SelectItem key={opt.value} value={opt.value} disabled={isLocked}>
+                    <span className="flex items-center gap-2">
+                      {opt.label}
+                      {opt.pro && (
+                        <span className="text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                          {isLocked && <Lock className="h-3 w-3" />} PRO
+                        </span>
+                      )}
+                    </span>
+                  </SelectItem>
                 );
-                if (isLocked) {
-                  return (
-                    <Tooltip key={opt.value}>
-                      <TooltipTrigger asChild>{item}</TooltipTrigger>
-                      <TooltipContent>Disponível no plano Pro</TooltipContent>
-                    </Tooltip>
-                  );
-                }
-                return item;
               })}
-            </ToggleGroup>
-          </TooltipProvider>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 2 versions toggle (VEO only) */}
@@ -327,20 +323,35 @@ export function VideoGenerator() {
             <div className="flex flex-col">
               <span className="text-xs font-medium text-foreground flex items-center gap-1">
                 <Layers className="h-3 w-3" /> Gerar 2 versões
+                {!canUseVariants && (
+                  <span className="ml-1 text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                    <Lock className="h-3 w-3" /> PRO
+                  </span>
+                )}
               </span>
               <span className="text-[10px] text-muted-foreground">
-                {variants === 2 ? "Consome 2 gerações do limite diário" : "Receba duas variações da mesma geração"}
+                {!canUseVariants
+                  ? "Disponível apenas no plano Pro"
+                  : variants === 2
+                    ? "Consome 2 gerações do limite diário"
+                    : "Receba duas variações da mesma geração"}
               </span>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={variants === 2}
-              disabled={isLoading}
-              onClick={() => setVariants((v) => (v === 2 ? 1 : 2))}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-border/50 transition-colors ${variants === 2 ? "bg-primary" : "bg-muted"} disabled:opacity-50`}
+              disabled={isLoading || !canUseVariants}
+              onClick={() => {
+                if (!canUseVariants) {
+                  toast.error("Gerar 2 versões disponível apenas no plano Pro.");
+                  return;
+                }
+                setVariants((v) => (v === 2 ? 1 : 2));
+              }}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-border/50 transition-colors ${variants === 2 && canUseVariants ? "bg-primary" : "bg-muted"} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${variants === 2 ? "translate-x-4" : "translate-x-0.5"} mt-[1px]`} />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${variants === 2 && canUseVariants ? "translate-x-4" : "translate-x-0.5"} mt-[1px]`} />
             </button>
           </div>
         )}
@@ -518,26 +529,23 @@ export function VideoGenerator() {
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Layers className="h-3 w-3" /> Orientação
               </p>
-              <ToggleGroup
-                type="single"
-                value={aspectRatio}
-                onValueChange={(v) => v && setAspectRatio(v)}
-                className="justify-start gap-1 flex-wrap"
-              >
-                {GROK_ASPECT_OPTIONS.map((opt) => {
-                  const Icon = opt.icon;
-                  return (
-                    <ToggleGroupItem
-                      key={opt.value}
-                      value={opt.value}
-                      className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-                    >
-                      <Icon className="h-3.5 w-3.5 mr-1" />
-                      {opt.label}
-                    </ToggleGroupItem>
-                  );
-                })}
-              </ToggleGroup>
+              <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
+                <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GROK_ASPECT_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-3.5 w-3.5" /> {opt.label} ({opt.value})
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Duration */}
@@ -599,21 +607,37 @@ export function VideoGenerator() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2 flex-wrap">
             {!isGrok && (
-              <>
-                <ToggleGroup type="single" value={aspectRatio} onValueChange={(v) => v && setAspectRatio(v)} className="gap-1">
-                  <ToggleGroupItem value="16:9" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">16:9</ToggleGroupItem>
-                  <ToggleGroupItem value="9:16" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">9:16</ToggleGroupItem>
-                </ToggleGroup>
-              </>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] text-muted-foreground">Orientação</span>
+                <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
+                  <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40 min-w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="16:9">
+                      <span className="flex items-center gap-2"><Monitor className="h-3.5 w-3.5" /> Landscape (16:9)</span>
+                    </SelectItem>
+                    <SelectItem value="9:16">
+                      <span className="flex items-center gap-2"><Smartphone className="h-3.5 w-3.5" /> Portrait (9:16)</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
 
-            <ToggleGroup type="single" value={resolution} onValueChange={(v) => v && setResolution(v)} className="gap-1">
-              <ToggleGroupItem value="480p" className={`text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground ${!isGrok ? "hidden" : ""}`}>480p</ToggleGroupItem>
-              <ToggleGroupItem value="720p" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">720p</ToggleGroupItem>
-              {!isGrok && (
-                <ToggleGroupItem value="1080p" className="text-xs px-3 h-9 rounded-lg data-[state=on]:bg-muted data-[state=on]:text-foreground">1080p</ToggleGroupItem>
-              )}
-            </ToggleGroup>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-muted-foreground">Resolução</span>
+              <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
+                <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40 min-w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {isGrok && <SelectItem value="480p">480p</SelectItem>}
+                  <SelectItem value="720p">720p</SelectItem>
+                  {!isGrok && <SelectItem value="1080p">1080p</SelectItem>}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
