@@ -58,7 +58,7 @@ const StudioVideos = () => {
           className="w-full"
           onValueChange={(v) => {
             if (v === "storyboard" && !canAccessStoryboard) {
-              toast.error("Storyboard disponível apenas no plano Pro.");
+              toast.error("Vídeos 30s disponível apenas no plano Pro.");
             }
           }}
         >
@@ -72,7 +72,7 @@ const StudioVideos = () => {
               className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
             >
               {!canAccessStoryboard && <Lock className="h-3 w-3 mr-1" />}
-              <Layers className="h-4 w-4 mr-2" /> Storyboard
+              <Layers className="h-4 w-4 mr-2" /> Vídeos 30s
               <Badge className="ml-2 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
                 Pro
               </Badge>
