@@ -96,6 +96,11 @@ export function VideoGenerator() {
   const canUseVariants = isAdmin || profile?.plan === "pro";
   const isGrok = model === "grok-3";
 
+  // Garantir que não-Pro nunca tenha variants=2
+  useEffect(() => {
+    if (!canUseVariants && variants !== 1) setVariants(1);
+  }, [canUseVariants, variants]);
+
   const [grokMode, setGrokMode] = useState("normal");
   const [grokDuration, setGrokDuration] = useState("6");
   const [grokRefImage, setGrokRefImage] = useState<File | null>(null);
