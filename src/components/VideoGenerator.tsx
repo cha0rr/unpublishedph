@@ -436,6 +436,45 @@ export function VideoGenerator() {
           )}
         </div>
 
+        {/* Ideias de prompt geradas por IA */}
+        <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <div className="flex items-start gap-2">
+            <Wand2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              <span className="text-primary font-medium">Sem ideia do que escrever?</span>{" "}
+              Clique em uma categoria abaixo e a IA vai criar o prompt para você.
+              Se você já anexou uma <span className="text-foreground font-medium">imagem de referência</span>,
+              o prompt será gerado com base no produto da imagem.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {PROMPT_IDEAS.map((idea) => {
+              const isThis = generatingIdea === idea.key;
+              const disabled = !!generatingIdea || isLoading;
+              return (
+                <button
+                  key={idea.key}
+                  type="button"
+                  onClick={() => generateIdeaPrompt(idea)}
+                  disabled={disabled}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-all ${
+                    isThis
+                      ? "border-primary bg-primary/20 text-primary"
+                      : "border-border/50 bg-background/60 text-foreground hover:border-primary/40 hover:bg-primary/10"
+                  } ${disabled && !isThis ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isThis ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <span>{idea.emoji}</span>
+                  )}
+                  <span>{idea.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Model selector */}
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground flex items-center gap-1">
