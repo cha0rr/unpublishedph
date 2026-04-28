@@ -80,14 +80,9 @@ export function Navbar() {
                 </>
               )}
               {(isApproved || isAdmin) && (
-                <>
-                  <Button size="sm" variant={currentPath === "/studio-videos" ? "default" : "outline"} className={currentPath === "/studio-videos" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/studio-videos")}>
-                    Studio Videos
-                  </Button>
-                  <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/meu-historico")}>
-                    Histórico
-                  </Button>
-                </>
+                <Button size="sm" variant={currentPath === "/studio-videos" ? "default" : "outline"} className={currentPath === "/studio-videos" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/studio-videos")}>
+                  Studio Videos
+                </Button>
               )}
               {(isPro || isAdmin) && (
                 <>
@@ -101,6 +96,11 @@ export function Navbar() {
                     Roteiros
                   </Button>
                 </>
+              )}
+              {(isApproved || isAdmin) && (
+                <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/meu-historico")}>
+                  Histórico
+                </Button>
               )}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
@@ -149,14 +149,9 @@ export function Navbar() {
                     </>
                   )}
                   {(isApproved || isAdmin) && (
-                    <>
-                      <Button size="sm" variant={currentPath === "/studio-videos" ? "default" : "outline"} className={currentPath === "/studio-videos" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/studio-videos"); }}>
-                        Studio Videos
-                      </Button>
-                      <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/meu-historico"); }}>
-                        Histórico
-                      </Button>
-                    </>
+                    <Button size="sm" variant={currentPath === "/studio-videos" ? "default" : "outline"} className={currentPath === "/studio-videos" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/studio-videos"); }}>
+                      Studio Videos
+                    </Button>
                   )}
                    {(isPro || isAdmin) && (
                     <>
@@ -170,6 +165,11 @@ export function Navbar() {
                         Roteiros
                       </Button>
                     </>
+                  )}
+                  {(isApproved || isAdmin) && (
+                    <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/meu-historico"); }}>
+                      Histórico
+                    </Button>
                   )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
                     Sair
