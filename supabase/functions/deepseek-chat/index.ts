@@ -49,15 +49,24 @@ serve(async (req) => {
       .eq("user_id", user.id);
     const isAdmin = roles?.some((r: any) => r.role === "admin") ?? false;
 
+    const body = await req.json();
+    const { messages, allow_basic: allowBasic } = body;
+
     if (!isAdmin) {
-      if (!profile || profile.status !== "approved" || profile.plan !== "pro") {
-        // Permitir Basic aprovado apenas quando o cliente solicitar via allow_basic
-        // (ex.: geração de ideia de prompt no Studio Videos).
-        const bodyClone = req.clone ? null : null; // placeholder; real check below
+      const approved = profile?.status === "approved";
+      const isPro = approved && profile?.plan === "pro";
+      const isBasic = approved && profile?.plan === "basic";
+      // Pro tem acesso total. Basic só pode usar quando o cliente passar
+      // allow_basic: true (ex.: ideia de prompt no Studio Videos).
+      const ok = isPro || (allowBasic === true && isBasic);
+      if (!ok) {
+        return new Response(
+          JSON.stringify({ error: "Acesso restrito ao plano Pro." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
-    const { messages } = await req.json();
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Mensagens inválidas" }), {
         status: 400,
