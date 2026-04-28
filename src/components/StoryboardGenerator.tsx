@@ -6,6 +6,7 @@ import { useStoryboardGenerator, StoryboardScene } from "@/hooks/useStoryboardGe
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, Loader2, Plus, Trash2, RotateCcw, Download, Monitor, Smartphone, Square, Clock, Film } from "lucide-react";
 import { toast } from "sonner";
@@ -196,38 +197,37 @@ export function StoryboardGenerator() {
         {/* Aspect ratio */}
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Orientação</p>
-          <ToggleGroup
-            type="single"
-            value={aspectRatio}
-            onValueChange={(v) => v && setAspectRatio(v as any)}
-            className="justify-start gap-1"
-          >
-            {ASPECT_OPTIONS.map(opt => {
-              const Icon = opt.icon;
-              return (
-                <ToggleGroupItem
-                  key={opt.value} value={opt.value}
-                  className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary border border-border/40"
-                >
-                  <Icon className="h-3.5 w-3.5 mr-1" /> {opt.label}
-                </ToggleGroupItem>
-              );
-            })}
-          </ToggleGroup>
+          <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as any)} disabled={isLoading}>
+            <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ASPECT_OPTIONS.map(opt => {
+                const Icon = opt.icon;
+                return (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-2">
+                      <Icon className="h-3.5 w-3.5" /> {opt.label}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Resolution */}
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Resolução</p>
-          <ToggleGroup
-            type="single"
-            value={resolution}
-            onValueChange={(v) => v && setResolution(v as any)}
-            className="justify-start gap-1"
-          >
-            <ToggleGroupItem value="480p" className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary border border-border/40">480p</ToggleGroupItem>
-            <ToggleGroupItem value="720p" className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary border border-border/40">720p</ToggleGroupItem>
-          </ToggleGroup>
+          <Select value={resolution} onValueChange={(v) => setResolution(v as any)} disabled={isLoading}>
+            <SelectTrigger className="h-9 text-xs bg-background/40 border-border/40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="480p">480p</SelectItem>
+              <SelectItem value="720p">720p</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {!isAdmin && (
@@ -247,7 +247,7 @@ export function StoryboardGenerator() {
           ) : isCooling ? (
             <>Aguarde {formatCool(remainingSeconds)}</>
           ) : (
-            <><Sparkles className="h-4 w-4 mr-2" /> Gerar Storyboard ({totalDuration}s)</>
+            <><Sparkles className="h-4 w-4 mr-2" /> Gerar Vídeo 30s ({totalDuration}s)</>
           )}
         </Button>
       </div>
