@@ -298,7 +298,7 @@ export function VideoGenerator() {
             }}
             disabled={isLoading}
           >
-            <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
+            <SelectTrigger className="h-8 w-auto max-w-[220px] text-xs bg-background/40 border-border/40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
