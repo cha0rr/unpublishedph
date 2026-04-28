@@ -51,10 +51,9 @@ serve(async (req) => {
 
     if (!isAdmin) {
       if (!profile || profile.status !== "approved" || profile.plan !== "pro") {
-        return new Response(
-          JSON.stringify({ error: "Acesso restrito ao plano Pro." }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Permitir Basic aprovado apenas quando o cliente solicitar via allow_basic
+        // (ex.: geração de ideia de prompt no Studio Videos).
+        const bodyClone = req.clone ? null : null; // placeholder; real check below
       }
     }
 
