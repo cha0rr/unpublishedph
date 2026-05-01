@@ -76,10 +76,23 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: `Falha ao baixar imagem (HTTP ${upstream.status}).` }, 502);
     }
 
-    const contentType = upstream.headers.get('Content-Type') || 'image/png';
-    if (!contentType.startsWith('image/')) {
+    const upstreamType = (upstream.headers.get('Content-Type') || '').toLowerCase();
+
+    // Reject obvious error pages
+    if (upstreamType.startsWith('text/') || upstreamType.includes('application/json')) {
       return jsonResponse({ error: 'Conteúdo remoto não é uma imagem.' }, 415);
     }
+
+    // Infer MIME from URL extension when upstream is generic (octet-stream, empty, etc.)
+    const inferFromExt = (u: string) => {
+      const path = new URL(u).pathname.toLowerCase();
+      if (path.endsWith('.png')) return 'image/png';
+      if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg';
+      if (path.endsWith('.webp')) return 'image/webp';
+      if (path.endsWith('.gif')) return 'image/gif';
+      return 'image/png';
+    };
+    const contentType = upstreamType.startsWith('image/') ? upstreamType : inferFromExt(url);
 
     const headers = new Headers(corsHeaders);
     headers.set('Content-Type', contentType);
