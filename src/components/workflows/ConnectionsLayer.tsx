@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 
 interface ConnectionsLayerProps {
   canvasRef: RefObject<HTMLDivElement>;
+  zoom?: number;
 }
 
 function bezierPath(x1: number, y1: number, x2: number, y2: number) {
@@ -11,7 +12,7 @@ function bezierPath(x1: number, y1: number, x2: number, y2: number) {
   return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 }
 
-export function ConnectionsLayer({ canvasRef }: ConnectionsLayerProps) {
+export function ConnectionsLayer({ canvasRef, zoom = 1 }: ConnectionsLayerProps) {
   const { connections, connecting, getPortEl, removeConnection } = useWorkflow();
   // Tick to recompute port positions every animation frame while something is moving.
   const [tick, setTick] = useState(0);
@@ -35,8 +36,8 @@ export function ConnectionsLayer({ canvasRef }: ConnectionsLayerProps) {
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return {
-      x: r.left + r.width / 2 - canvasRect.left + scrollLeft,
-      y: r.top + r.height / 2 - canvasRect.top + scrollTop,
+      x: (r.left + r.width / 2 - canvasRect.left + scrollLeft) / zoom,
+      y: (r.top + r.height / 2 - canvasRect.top + scrollTop) / zoom,
     };
   };
 
@@ -47,8 +48,8 @@ export function ConnectionsLayer({ canvasRef }: ConnectionsLayerProps) {
     return {
       from: src,
       to: {
-        x: connecting.mouse.x - canvasRect.left + scrollLeft,
-        y: connecting.mouse.y - canvasRect.top + scrollTop,
+        x: (connecting.mouse.x - canvasRect.left + scrollLeft) / zoom,
+        y: (connecting.mouse.y - canvasRect.top + scrollTop) / zoom,
       },
     };
   })();
