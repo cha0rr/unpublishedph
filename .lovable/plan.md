@@ -1,73 +1,154 @@
+## Objetivo
 
-# Página de Workflows — Canvas com Cards Arrastáveis
+Três mudanças no canvas de **Workflows**:
 
-Criar uma nova rota `/workflows` que apresenta um **canvas infinito** (área vazia "tipo Figma/n8n"). Ao clicar em qualquer ponto vazio do canvas, abre-se um menu flutuante com 4 opções de nó. Ao escolher, um **card arrastável** é criado naquela posição com os campos específicos daquele tipo. Cada card pode ser movido livremente e gera seu próprio resultado.
+1. Substituir o seletor "Conectar imagem do canvas" por **conexões visuais** — o usuário arrasta um fio de uma porta de saída do nó de imagem até a porta de entrada do nó de vídeo.
+2. Corrigir o erro **"Não foi possível carregar a imagem conectada"** (causado por CORS ao tentar baixar a URL da GeminiGen direto no navegador).
+3. Adicionar **Grok 3** ao seletor de modelos dos nós **Texto → Vídeo** e **Imagem → Vídeo**, replicando as mesmas regras do gerador principal (gating Pro, modos, durações, aspect ratios).
 
-## O que o usuário verá
+---
 
-Canvas em tela cheia (fundo com grade pontilhada no estilo já usado no projeto, navy `#03133F` + cyan `#46C6F4`).
+## 1. Conexões por fio (wire connections)
 
-Clique em área vazia → popover/menu com:
-- **Texto para Imagem**
-- **Texto para Vídeo**
-- **Imagem para Vídeo**
-- **Criação de Avatar**
+### Modelo de dados (no `WorkflowContext`)
 
-Cada opção cria um card naquela posição. Cards são arrastáveis pela "barra de título", podem ser fechados (X), e mostram o resultado da geração dentro deles.
-
-## Tipos de card
-
-```text
-┌─────────────────────────────┐
-│ ▤ Texto → Imagem        × │  ← arrasta aqui
-├─────────────────────────────┤
-│ [Textarea: prompt]          │
-│ [Aspect ratio] [Modelo]     │
-│ [ Gerar Imagem ]            │
-│ ─────────────────────────── │
-│ [preview da imagem gerada]  │
-└─────────────────────────────┘
+```ts
+ports:       { nodeId, side: "out" | "in", el: HTMLElement }[]
+connections: { id, sourceNodeId, targetNodeId }[]   // 1 source → 1 target
+connecting:  { sourceNodeId, mouse: {x,y} } | null  // estado do arraste em curso
 ```
 
-- **Texto → Imagem**: textarea de prompt + aspect ratio (1:1, 9:16, 16:9) + botão Gerar. Usa o hook existente `useImageGenerator` apontando para `geminigen-image`. Mostra a imagem dentro do card.
-- **Texto → Vídeo**: textarea de prompt + orientação (9:16/16:9) + resolução + botão Gerar. Usa `useGenerator` (sem `refImages`).
-- **Imagem → Vídeo**: upload de imagem de referência + textarea de prompt + orientação + botão Gerar. Usa `useGenerator` com `modeImage: "ingredient"` e `refImages`.
-- **Criação de Avatar**: textarea de descrição + (opcional) reaproveita o wizard simplificado do Avatar Maker, ou apenas um campo de prompt com modelo `nano-banana-pro` em 9:16. Usa `useImageGenerator`.
+API exposta: `registerPort`, `unregisterPort`, `startConnect`, `updateConnectingMouse`, `completeConnect`, `cancelConnect`, `getConnectedSource(targetId)`, `removeConnection`.
 
-Cada card mantém seu próprio estado de geração (idle/loading/success), barra de progresso e respeita o cooldown global de 90s já existente em `useCooldown`.
+### Componentes novos
 
-## Acesso
+- **`NodePort.tsx`** — bolinha de 14px posicionada absolutamente nas laterais do `WorkflowCard`. 
+  - Saída (`out`) à direita: `onPointerDown` chama `startConnect(nodeId)`.
+  - Entrada (`in`) à esquerda: recebe `pointerup` para finalizar via hit-test no `ConnectionsLayer`. 
+  - Estados visuais: livre (`border-primary bg-background`), conectada (`bg-primary`), hover/destino válido (`ring-2 ring-primary`).
+  - Registra seu elemento DOM no contexto via `useEffect`/`ref`.
 
-Mesma regra do resto do app: somente usuários autenticados e aprovados (`isApproved || isAdmin`). Avatar e Texto→Imagem/Imagem→Vídeo (Studio Imagens) continuam gated por **Pro**, conforme já está. Se um usuário Basic adicionar um card Pro, mostramos um aviso dentro do card e o botão Gerar fica desabilitado.
+- **`ConnectionsLayer.tsx`** — `<svg className="absolute inset-0 pointer-events-none">` sobre o canvas que desenha:
+  - Curvas de Bézier cúbicas para cada `connection` (control points horizontais com offset = 0.5·Δx).
+  - Curva "ghost" enquanto `connecting` está ativo (saída → posição do mouse).
+  - Cada curva tem `pointer-events: stroke`; clique nela mostra um botão "X" no ponto médio para remover.
+  - Posições são calculadas a cada frame durante drag de cards via `getBoundingClientRect()` relativo ao `canvasRef`.
 
-## Implementação técnica
+### Atualização do `WorkflowCard`
 
-Sem dependências novas — drag-and-drop feito com `framer-motion` (já instalado) usando `drag` + `dragConstraints={false}` e posicionamento absoluto.
+Adicionar slots opcionais `inputPort?: ReactNode` e `outputPort?: ReactNode` renderizados em wrappers absolutos `-left-2 top-1/2 -translate-y-1/2` e `-right-2 top-1/2 -translate-y-1/2`. Expor `onPositionChange` (via `useMotionValueEvent` no x/y do `motion.div`) para o context atualizar as portas durante o drag dos cards.
 
-**Novos arquivos:**
-- `src/pages/Workflows.tsx` — página com canvas, gerencia array de nós `{ id, type, x, y }`, captura `onClick` no fundo para abrir o menu de criação na posição do mouse.
-- `src/components/workflows/WorkflowCanvas.tsx` — fundo com grade, captura clique vazio (apenas se `e.target === e.currentTarget`).
-- `src/components/workflows/NodeMenu.tsx` — popover com as 4 opções, posicionado nas coordenadas do clique.
-- `src/components/workflows/WorkflowCard.tsx` — wrapper arrastável (motion.div com `drag`), header com título + botão X, slot para conteúdo.
-- `src/components/workflows/nodes/TextToImageNode.tsx`
-- `src/components/workflows/nodes/TextToVideoNode.tsx`
-- `src/components/workflows/nodes/ImageToVideoNode.tsx`
-- `src/components/workflows/nodes/AvatarNode.tsx`
+### Atualização nos nós
 
-Cada nó instancia seu próprio `useImageGenerator()` ou `useGenerator()` para isolar estado.
+- **`TextToImageNode`** e **`AvatarNode`**: adicionam `<NodePort side="out" />` quando `resultUrl` existe. O badge "Saída disponível…" é removido (a porta acesa já comunica isso).
+- **`ImageToVideoNode`**: 
+  - Remove o `<Select>` "Conectar imagem do canvas".
+  - Adiciona `<NodePort side="in" />` permanente.
+  - `useEffect` observa `getConnectedSource(id)` → busca URL em `imageOutputs` → `urlToFile()` → `setRefImage(File)`.
+  - Mantém upload manual; bloqueia upload quando há conexão ativa.
+  - Mostra chip "Conectado" sobre o preview quando vier de wire.
 
-**Rota:** adicionar `<Route path="/workflows" element={<Workflows />} />` em `src/App.tsx`.
+### Drag global do fio
 
-**Navbar:** adicionar botão "Workflows" em `src/components/landing/Navbar.tsx` (desktop + mobile), seguindo o mesmo padrão outline/filled das outras rotas, posicionado antes de "Histórico".
+`WorkflowCanvas` registra `pointermove`/`pointerup` no `window` enquanto `connecting !== null`:
+- `pointermove` → `updateConnectingMouse({x,y})`.
+- `pointerup` → faz hit-test (via `document.elementFromPoint`) procurando um elemento com `data-port-target="<nodeId>"`; se encontrar, `completeConnect(targetId)`; senão, `cancelConnect()`.
 
-**Persistência (opcional, não nesta entrega):** o estado dos nós fica em memória apenas. Refresh limpa o canvas. Posso adicionar `localStorage` se desejar — me avise.
+---
 
-## Resumo do escopo
+## 2. Correção do erro de carregamento (CORS)
 
-1. Criar página `/workflows` com canvas + grade.
-2. Menu de criação por clique no vazio (4 tipos).
-3. 4 componentes de card arrastáveis, cada um com seus campos e geração isolada.
-4. Adicionar rota em `App.tsx` e link na `Navbar.tsx`.
-5. Respeitar gating Pro existente nos cards que dependem dele.
+Causa: `urlToFile` faz `fetch(url).blob()` em URLs `*.geminigen.ai` que não retornam CORS para o origem do app.
 
-Posso prosseguir?
+**Solução**: criar edge function `image-reference-proxy` (espelho do `video-segment-proxy` mas para imagens):
+
+- `supabase/functions/image-reference-proxy/index.ts`
+- Aceita `POST { url }` autenticado.
+- Valida sufixos permitidos: `.geminigen.ai`, `.r2.cloudflarestorage.com`.
+- Faz `fetch(url)` server-side e retorna o blob com `Content-Type` correto + `Access-Control-Allow-Origin: *`.
+- Registrar no `supabase/config.toml` se necessário (a maioria das funções deste projeto já usa `verify_jwt = false` + validação manual; seguiremos o padrão do `video-segment-proxy`).
+
+`WorkflowContext.urlToFile(url)` passa a chamar:
+```ts
+const { data } = await supabase.functions.invoke('image-reference-proxy', { body: { url } });
+// data é Blob → File
+```
+
+---
+
+## 3. Grok 3 nos nós de vídeo
+
+### Arquivo compartilhado
+
+Criar `src/components/workflows/nodes/grok-options.ts` exportando as constantes copiadas de `VideoGenerator.tsx`:
+
+```ts
+export const GROK_MODE_OPTIONS = [
+  { value: "normal", label: "Normal" },
+  { value: "custom", label: "Custom" },
+  { value: "extremely-crazy", label: "Extremely Crazy" },
+  { value: "extremely-spicy-or-crazy", label: "Extremely Spicy or Crazy" },
+];
+export const GROK_ASPECT_OPTIONS = [
+  { value: "16:9", label: "Landscape" },
+  { value: "9:16", label: "Portrait" },
+  { value: "1:1", label: "Square" },
+  { value: "2:3", label: "Vertical" },
+  { value: "3:2", label: "Horizontal" },
+];
+export const GROK_DURATION_OPTIONS = [
+  { value: "6", label: "6s" },
+  { value: "10", label: "10s" },
+];
+```
+
+### Regras (replicadas do gerador principal)
+
+- **Acesso**: apenas Pro/admin. Tentar selecionar sem ser Pro → `toast.error("O modelo Grok 3 está disponível apenas no plano Pro.")` e estado é revertido.
+- **Resolução**: forçada para `720p`; o seletor de resolução é ocultado quando `model === "grok-3"`.
+- **Aspect ratio**: usa `GROK_ASPECT_OPTIONS`; ao trocar para Grok com aspect inválido, normaliza para `9:16`.
+- **Duração**: novo seletor com `GROK_DURATION_OPTIONS` (6s/10s), padrão 6s. Visível apenas para Grok.
+- **Modo**: novo seletor `mode` (Normal/Custom/Extremely Crazy/Extremely Spicy or Crazy). Visível apenas para Grok.
+- **Imagem de referência**: continua como `modeImage: "ingredient"` (já implementado).
+
+### Aplicação
+
+Tanto **`TextToVideoNode`** quanto **`ImageToVideoNode`**:
+
+1. Importar `useAuth` e `grok-options.ts`.
+2. Adicionar `model: "grok-3"` à lista `MODEL_OPTIONS` (com flag `pro: true`).
+3. Adicionar `grokMode` e `grokDuration` no estado.
+4. Renderização condicional (`isGrok`) dos seletores extras e ocultação do seletor de resolução.
+5. Em `generate()`, para Grok:
+   ```ts
+   { model: "grok-3", aspectRatio, resolution: "720p", duration: grokDuration, mode: grokMode, ... }
+   ```
+6. Item do select para "Grok 3" mostra ícone `Lock` ao lado quando o usuário não é Pro.
+
+---
+
+## Arquivos
+
+**Criar**
+- `supabase/functions/image-reference-proxy/index.ts`
+- `src/components/workflows/NodePort.tsx`
+- `src/components/workflows/ConnectionsLayer.tsx`
+- `src/components/workflows/nodes/grok-options.ts`
+
+**Editar**
+- `src/components/workflows/WorkflowContext.tsx` — ports/connections/connecting + `urlToFile` via proxy.
+- `src/components/workflows/WorkflowCanvas.tsx` — renderiza `ConnectionsLayer`, captura `pointermove/up` globais durante drag de fio.
+- `src/components/workflows/WorkflowCard.tsx` — slots `inputPort`/`outputPort` + callback de mudança de posição.
+- `src/components/workflows/nodes/TextToImageNode.tsx` — porta de saída + remover badge de saída.
+- `src/components/workflows/nodes/AvatarNode.tsx` — porta de saída + remover badge de saída.
+- `src/components/workflows/nodes/ImageToVideoNode.tsx` — remover `Select` de conexão, porta de entrada, ler conexão do context, **+ Grok 3**.
+- `src/components/workflows/nodes/TextToVideoNode.tsx` — **+ Grok 3** (modos, duração, aspect, gating Pro).
+- `supabase/config.toml` — registrar `image-reference-proxy` se necessário.
+
+## Detalhes técnicos
+
+- Cor do fio: `hsl(var(--primary))` opacidade `0.7`, `stroke-width: 2`, `fill: none`.
+- Coordenadas das portas e do mouse são calculadas relativas ao `canvasRef.getBoundingClientRect()`, considerando `scrollLeft/Top` (canvas usa `overflow-auto`).
+- Durante `connecting`, o cursor do canvas vira `crosshair` e o `onClick` que abre o `NodeMenu` é suprimido.
+- Conexão é desfeita automaticamente se o nó de origem for removido ou se sua imagem for limpa (já temos `unregisterImage` em cleanup).
+- Substituir uma conexão existente no mesmo target ao criar nova (apenas 1 entrada por nó de vídeo).
