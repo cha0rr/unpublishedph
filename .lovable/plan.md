@@ -1,86 +1,73 @@
-## Objetivo
 
-Adicionar no campo de prompt do **Studio Videos** (componente `VideoGenerator`) atalhos clicáveis com **5 categorias de ideias de prompt**. Ao clicar, a mesma API do Gerador de Roteiros (`deepseek-chat`) gera o prompt e o insere automaticamente no campo. Se o usuário tiver anexado uma imagem de referência (produto), a imagem é analisada e o prompt é gerado com base nela.
+# Página de Workflows — Canvas com Cards Arrastáveis
 
-## Categorias
+Criar uma nova rota `/workflows` que apresenta um **canvas infinito** (área vazia "tipo Figma/n8n"). Ao clicar em qualquer ponto vazio do canvas, abre-se um menu flutuante com 4 opções de nó. Ao escolher, um **card arrastável** é criado naquela posição com os campos específicos daquele tipo. Cada card pode ser movido livremente e gera seu próprio resultado.
 
-1. Vídeo de apresentação de produto para TikTok Shop
-2. Vídeo Frutas Virais
-3. Vídeos Comercial de Loja
-4. Estilo Review POV
-5. (mantemos as 4 originais + ajustamos para englobar essas 5 — confirmado abaixo)
+## O que o usuário verá
 
-> Observação: o usuário citou "Videos; Comercial de loja" como itens separados na frase, mas pelo contexto parece ser uma única categoria "Vídeos Comercial de Loja". Vou seguir com **4 categorias** (item 3 unificado). Se quiser separar, é só pedir.
+Canvas em tela cheia (fundo com grade pontilhada no estilo já usado no projeto, navy `#03133F` + cyan `#46C6F4`).
 
-Categorias finais: **TikTok Shop**, **Frutas Virais**, **Comercial de Loja**, **Review POV**.
+Clique em área vazia → popover/menu com:
+- **Texto para Imagem**
+- **Texto para Vídeo**
+- **Imagem para Vídeo**
+- **Criação de Avatar**
 
-## Mudanças no frontend
+Cada opção cria um card naquela posição. Cards são arrastáveis pela "barra de título", podem ser fechados (X), e mostram o resultado da geração dentro deles.
 
-### `src/components/VideoGenerator.tsx`
+## Tipos de card
 
-1. **Constantes novas** com as categorias e suas instruções para a IA:
-```ts
-const PROMPT_IDEAS = [
-  { key: "tiktok-shop", label: "Apresentação de Produto (TikTok Shop)", emoji: "🛍️", instruction: "Crie um prompt curto e cinematográfico em português para um vídeo vertical 9:16 de até 8 segundos apresentando um produto para TikTok Shop, com close-ups dinâmicos, iluminação publicitária e foco em destacar o produto." },
-  { key: "frutas-virais", label: "Frutas Virais", emoji: "🍓", instruction: "Crie um prompt em português para um vídeo viral de frutas falantes ou explodindo em câmera lenta, estilo TikTok, com efeitos visuais surreais e colorido vibrante." },
-  { key: "comercial-loja", label: "Comercial de Loja", emoji: "🏪", instruction: "Crie um prompt em português para um comercial curto de loja, com pessoas reais usando o produto, ambiente moderno, transições rápidas e chamada para ação visual." },
-  { key: "review-pov", label: "Review POV", emoji: "🎥", instruction: "Crie um prompt em português para um vídeo estilo review em primeira pessoa (POV), com câmera na mão, mostrando o uso real do produto, naturalidade e foco no benefício." },
-];
-```
-
-2. **UI**: adicionar uma faixa horizontal de "chips" logo **abaixo do textarea de prompt**, com um pequeno texto explicativo:
 ```text
-✨ Gerar prompt automaticamente — escolha uma ideia. Se você anexar uma imagem
-de produto na referência, o prompt será gerado com base nela.
-[🛍️ TikTok Shop] [🍓 Frutas Virais] [🏪 Comercial de Loja] [🎥 Review POV]
+┌─────────────────────────────┐
+│ ▤ Texto → Imagem        × │  ← arrasta aqui
+├─────────────────────────────┤
+│ [Textarea: prompt]          │
+│ [Aspect ratio] [Modelo]     │
+│ [ Gerar Imagem ]            │
+│ ─────────────────────────── │
+│ [preview da imagem gerada]  │
+└─────────────────────────────┘
 ```
 
-3. **Função `generatePromptIdea(category)`**:
-   - Verifica se já existe imagem anexada (`refImages[0]` para Veo ou `grokRefImage` para Grok). Se sim, converte para base64 (`FileReader.readAsDataURL`).
-   - Monta `messages: [{ role: "user", content: instruction + " Sua resposta deve conter APENAS o prompt final, sem explicações, sem aspas e sem cabeçalhos.", image?: base64DataUrl }]`.
-   - Faz POST para `${VITE_SUPABASE_URL}/functions/v1/deepseek-chat` com `Authorization: Bearer ${session.access_token}` (mesmo padrão usado em `GerarRoteiro.tsx`).
-   - Lê o stream SSE, vai concatenando deltas e atualizando `setPrompt(currentText)` em tempo real (efeito "digitando").
-   - Mostra um estado de loading no chip clicado (`generatingIdea: string | null`) e desabilita os outros enquanto roda.
-   - Trata erros com `toast.error`.
+- **Texto → Imagem**: textarea de prompt + aspect ratio (1:1, 9:16, 16:9) + botão Gerar. Usa o hook existente `useImageGenerator` apontando para `geminigen-image`. Mostra a imagem dentro do card.
+- **Texto → Vídeo**: textarea de prompt + orientação (9:16/16:9) + resolução + botão Gerar. Usa `useGenerator` (sem `refImages`).
+- **Imagem → Vídeo**: upload de imagem de referência + textarea de prompt + orientação + botão Gerar. Usa `useGenerator` com `modeImage: "ingredient"` e `refImages`.
+- **Criação de Avatar**: textarea de descrição + (opcional) reaproveita o wizard simplificado do Avatar Maker, ou apenas um campo de prompt com modelo `nano-banana-pro` em 9:16. Usa `useImageGenerator`.
 
-4. **Estado novo**: `const [generatingIdea, setGeneratingIdea] = useState<string | null>(null);`
+Cada card mantém seu próprio estado de geração (idle/loading/success), barra de progresso e respeita o cooldown global de 90s já existente em `useCooldown`.
 
-5. **Texto explicativo** logo acima dos chips, em fonte pequena e estilo `text-muted-foreground`:
-   > "Sem inspiração? Clique em uma das ideias abaixo e a IA vai escrever o prompt para você. Se você já anexou uma imagem de referência, o prompt será gerado a partir do produto na imagem."
+## Acesso
 
-## Backend
+Mesma regra do resto do app: somente usuários autenticados e aprovados (`isApproved || isAdmin`). Avatar e Texto→Imagem/Imagem→Vídeo (Studio Imagens) continuam gated por **Pro**, conforme já está. Se um usuário Basic adicionar um card Pro, mostramos um aviso dentro do card e o botão Gerar fica desabilitado.
 
-Nenhuma mudança. A função `deepseek-chat` já:
-- Aceita imagens (usa Lovable AI Gateway com `google/gemini-2.5-flash` quando há imagem).
-- Sem imagem, usa DeepSeek.
-- Já valida acesso (admin ou Pro).
+## Implementação técnica
 
-> Atenção: a função exige plano Pro. Como o Studio Videos é acessível também a usuários do plano Basic, **usuários não-Pro receberão erro 403** ao clicar nos chips. Opções:
-> - **(A) Liberar para todos os usuários aprovados** — ajustar `deepseek-chat` removendo o gate de Pro só para esse uso (criar parâmetro `purpose: "video-prompt-idea"` que permite Basic).
-> - **(B) Bloquear chips para Basic** — mostrar tooltip "Disponível no plano Pro" e exibir badge PRO no chip.
->
-> **Vou seguir com a opção (A)**: criar um parâmetro opcional `allow_basic: true` na requisição que, quando presente, permite usuários Basic aprovados também (mantendo bloqueio para `pending`/sem plano). Isso amplia o uso da feature sem comprometer a monetização do Gerador de Roteiros completo.
+Sem dependências novas — drag-and-drop feito com `framer-motion` (já instalado) usando `drag` + `dragConstraints={false}` e posicionamento absoluto.
 
-### Ajuste mínimo em `supabase/functions/deepseek-chat/index.ts`
+**Novos arquivos:**
+- `src/pages/Workflows.tsx` — página com canvas, gerencia array de nós `{ id, type, x, y }`, captura `onClick` no fundo para abrir o menu de criação na posição do mouse.
+- `src/components/workflows/WorkflowCanvas.tsx` — fundo com grade, captura clique vazio (apenas se `e.target === e.currentTarget`).
+- `src/components/workflows/NodeMenu.tsx` — popover com as 4 opções, posicionado nas coordenadas do clique.
+- `src/components/workflows/WorkflowCard.tsx` — wrapper arrastável (motion.div com `drag`), header com título + botão X, slot para conteúdo.
+- `src/components/workflows/nodes/TextToImageNode.tsx`
+- `src/components/workflows/nodes/TextToVideoNode.tsx`
+- `src/components/workflows/nodes/ImageToVideoNode.tsx`
+- `src/components/workflows/nodes/AvatarNode.tsx`
 
-Substituir o bloco de validação:
-```ts
-if (!isAdmin) {
-  const allowBasic = body.allow_basic === true;
-  const okPro = profile?.status === "approved" && profile?.plan === "pro";
-  const okBasic = allowBasic && profile?.status === "approved" && (profile?.plan === "basic" || profile?.plan === "pro");
-  if (!okPro && !okBasic) {
-    return 403...
-  }
-}
-```
+Cada nó instancia seu próprio `useImageGenerator()` ou `useGenerator()` para isolar estado.
 
-E ler `allow_basic` do body junto com `messages`.
+**Rota:** adicionar `<Route path="/workflows" element={<Workflows />} />` em `src/App.tsx`.
 
-## Resumo das alterações
+**Navbar:** adicionar botão "Workflows" em `src/components/landing/Navbar.tsx` (desktop + mobile), seguindo o mesmo padrão outline/filled das outras rotas, posicionado antes de "Histórico".
 
-**Arquivos modificados**:
-- `src/components/VideoGenerator.tsx` — UI dos chips + lógica de geração streaming preenchendo o textarea.
-- `supabase/functions/deepseek-chat/index.ts` — aceitar `allow_basic: true` para liberar usuários Basic neste uso específico.
+**Persistência (opcional, não nesta entrega):** o estado dos nós fica em memória apenas. Refresh limpa o canvas. Posso adicionar `localStorage` se desejar — me avise.
 
-**Sem alterações de banco, secrets ou outras edge functions.**
+## Resumo do escopo
+
+1. Criar página `/workflows` com canvas + grade.
+2. Menu de criação por clique no vazio (4 tipos).
+3. 4 componentes de card arrastáveis, cada um com seus campos e geração isolada.
+4. Adicionar rota em `App.tsx` e link na `Navbar.tsx`.
+5. Respeitar gating Pro existente nos cards que dependem dele.
+
+Posso prosseguir?
