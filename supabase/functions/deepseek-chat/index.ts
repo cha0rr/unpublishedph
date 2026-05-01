@@ -55,11 +55,10 @@ serve(async (req) => {
     if (!isAdmin) {
       const approved = profile?.status === "approved";
       const isPro = approved && profile?.plan === "pro";
-      const isBasic = approved && profile?.plan === "basic";
-      // Pro tem acesso total. Basic também pode usar a função (acesso server-side
-      // verificado pelo plano). Removido o flag allow_basic controlado pelo cliente.
-      const ok = isPro || isBasic;
-      if (!ok) {
+      // Apenas Pro tem acesso. O flag allow_basic foi removido por ser
+      // controlado pelo cliente (bypass de plano). Para liberar usos
+      // específicos a usuários Basic, crie um endpoint dedicado server-side.
+      if (!isPro) {
         return new Response(
           JSON.stringify({ error: "Acesso restrito ao plano Pro." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
