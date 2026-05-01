@@ -18,6 +18,7 @@ import GerarRoteiro from "./pages/GerarRoteiro.tsx";
 import MeuHistorico from "./pages/MeuHistorico.tsx";
 import AvatarMaker from "./pages/AvatarMaker.tsx";
 import AdminLimites from "./pages/AdminLimites.tsx";
+import Workflows from "./pages/Workflows.tsx";
 
 import NotFound from "./pages/NotFound.tsx";
 
@@ -46,7 +47,8 @@ const App = () => (
            <Route path="/meu-historico" element={<MeuHistorico />} />
            <Route path="/avatar-maker" element={<AvatarMaker />} />
            <Route path="/admin/limites" element={<AdminLimites />} />
-          
+          <Route path="/workflows" element={<Workflows />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -102,6 +102,11 @@ export function Navbar() {
                   Histórico
                 </Button>
               )}
+              {(isApproved || isAdmin) && (
+                <Button size="sm" variant="outline" className={currentPath === "/workflows" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => navigate("/workflows")}>
+                  Workflows
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -169,6 +174,11 @@ export function Navbar() {
                   {(isApproved || isAdmin) && (
                     <Button size="sm" variant="outline" className={currentPath === "/meu-historico" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/meu-historico"); }}>
                       Histórico
+                    </Button>
+                  )}
+                  {(isApproved || isAdmin) && (
+                    <Button size="sm" variant="outline" className={currentPath === "/workflows" ? "bg-primary text-primary-foreground hover:bg-primary/90 ring-2 ring-primary/50 border-primary" : "border-primary/50 text-primary hover:bg-primary/10"} onClick={() => { setMobileOpen(false); navigate("/workflows"); }}>
+                      Workflows
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="border-border text-foreground" onClick={handleSignOut}>
