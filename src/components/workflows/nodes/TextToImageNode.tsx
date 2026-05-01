@@ -3,11 +3,12 @@ import { useImageGenerator } from "@/hooks/useImageGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { WorkflowCard } from "../WorkflowCard";
 import { useWorkflow } from "../WorkflowContext";
+import { NodePort } from "../NodePort";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { ImageIcon, Loader2, Lock, Sparkles, Link2 } from "lucide-react";
+import { ImageIcon, Loader2, Lock, Sparkles } from "lucide-react";
 
 interface NodeProps {
   id: string;
@@ -54,6 +55,7 @@ export function TextToImageNode({ id, x, y, onRemove }: NodeProps) {
       title="Texto → Imagem"
       icon={<ImageIcon className="h-4 w-4 text-primary" />}
       onRemove={onRemove}
+      outputPort={<NodePort nodeId={id} side="out" active={!!resultUrl} label="img" />}
     >
       {!isPro ? (
         <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-200">
@@ -107,15 +109,9 @@ export function TextToImageNode({ id, x, y, onRemove }: NodeProps) {
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {resultUrl && (
-        <>
-          <div className="rounded-md overflow-hidden border border-primary/20">
-            <img src={resultUrl} alt="Resultado" className="w-full h-auto" />
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-primary/80 bg-primary/5 border border-primary/20 rounded px-2 py-1">
-            <Link2 className="h-3 w-3" />
-            <span>Saída disponível para o nó Imagem → Vídeo</span>
-          </div>
-        </>
+        <div className="rounded-md overflow-hidden border border-primary/20">
+          <img src={resultUrl} alt="Resultado" className="w-full h-auto" />
+        </div>
       )}
     </WorkflowCard>
   );
