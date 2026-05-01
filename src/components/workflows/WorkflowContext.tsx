@@ -170,12 +170,37 @@ export function useWorkflow() {
 
 export async function urlToFile(url: string, filename = "ref"): Promise<File> {
   // Use the image proxy edge function to bypass CORS on geminigen.ai / R2 hosts.
-  const { data, error } = await supabase.functions.invoke("image-reference-proxy", {
-    body: { url },
+  // We must call fetch directly (not supabase.functions.invoke) because invoke
+  // tries to parse the response as JSON, which corrupts binary image data.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const proxyUrl = `https://${projectId}.supabase.co/functions/v1/image-reference-proxy`;
+
+  const response = await fetch(proxyUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({ url }),
   });
-  if (error) throw error;
-  const blob: Blob = data instanceof Blob ? data : new Blob([data as ArrayBuffer], { type: "image/png" });
-  const ext = (blob.type.split("/")[1] || "png").split(";")[0];
+
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const err = await response.json();
+      detail = err?.error || detail;
+    } catch { /* ignore */ }
+    throw new Error(`Falha ao baixar imagem: ${detail}`);
+  }
+
+  const blob = await response.blob();
+  const type = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
+  const ext = (type.split("/")[1] || "png").split(";")[0];
   const name = filename.includes(".") ? filename : `${filename}.${ext}`;
-  return new File([blob], name, { type: blob.type || "image/png" });
+  return new File([blob], name, { type });
 }
