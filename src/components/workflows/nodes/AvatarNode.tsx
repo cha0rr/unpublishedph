@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useImageGenerator } from "@/hooks/useImageGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { WorkflowCard } from "../WorkflowCard";
+import { useWorkflow } from "../WorkflowContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { User, Loader2, Lock, Sparkles } from "lucide-react";
+import { User, Loader2, Lock, Sparkles, Link2 } from "lucide-react";
 
 interface NodeProps {
   id: string;
@@ -17,10 +18,20 @@ interface NodeProps {
 export function AvatarNode({ id, x, y, onRemove }: NodeProps) {
   const { profile, isAdmin } = useAuth();
   const isPro = (profile?.plan === "pro" && profile?.status === "approved") || isAdmin;
+  const { registerImage, unregisterImage } = useWorkflow();
 
   const [prompt, setPrompt] = useState("");
   const { state, resultUrl, error, progress, statusText, generate } = useImageGenerator();
   const isLoading = state === "generating" || state === "polling";
+
+  useEffect(() => {
+    if (resultUrl) {
+      registerImage({ nodeId: id, nodeLabel: "Avatar", url: resultUrl });
+    }
+    return () => {
+      unregisterImage(id);
+    };
+  }, [resultUrl, id, registerImage, unregisterImage]);
 
   const handleGenerate = () => {
     if (!prompt.trim() || isLoading || !isPro) return;
@@ -81,9 +92,15 @@ export function AvatarNode({ id, x, y, onRemove }: NodeProps) {
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {resultUrl && (
-        <div className="rounded-md overflow-hidden border border-primary/20">
-          <img src={resultUrl} alt="Avatar" className="w-full h-auto" />
-        </div>
+        <>
+          <div className="rounded-md overflow-hidden border border-primary/20">
+            <img src={resultUrl} alt="Avatar" className="w-full h-auto" />
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-primary/80 bg-primary/5 border border-primary/20 rounded px-2 py-1">
+            <Link2 className="h-3 w-3" />
+            <span>Saída disponível para o nó Imagem → Vídeo</span>
+          </div>
+        </>
       )}
     </WorkflowCard>
   );
