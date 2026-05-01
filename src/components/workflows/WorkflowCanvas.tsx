@@ -6,6 +6,12 @@ import { ImageToVideoNode } from "./nodes/ImageToVideoNode";
 import { AvatarNode } from "./nodes/AvatarNode";
 import { WorkflowProvider, useWorkflow } from "./WorkflowContext";
 import { ConnectionsLayer } from "./ConnectionsLayer";
+import { ZoomControls } from "./ZoomControls";
+
+const ZOOM_MIN = 0.4;
+const ZOOM_MAX = 2;
+const ZOOM_STEP = 0.1;
+const clampZoom = (z: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100));
 
 export interface WorkflowNode {
   id: string;
@@ -18,6 +24,7 @@ function CanvasInner() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [zoom, setZoom] = useState(1);
   const { connecting, updateConnectingMouse, completeConnect, cancelConnect } = useWorkflow();
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -25,8 +32,13 @@ function CanvasInner() {
     if (connecting) return; // ignore clicks while wiring
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, [connecting]);
+    const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
+    const scrollTop = canvasRef.current?.scrollTop ?? 0;
+    setMenu({
+      x: (e.clientX - rect.left + scrollLeft) / zoom,
+      y: (e.clientY - rect.top + scrollTop) / zoom,
+    });
+  }, [connecting, zoom]);
 
   const addNode = useCallback((type: NodeType) => {
     if (!menu) return;
@@ -37,6 +49,42 @@ function CanvasInner() {
 
   const removeNode = useCallback((id: string) => {
     setNodes((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
+  const zoomIn = useCallback(() => setZoom((z) => clampZoom(z + ZOOM_STEP)), []);
+  const zoomOut = useCallback(() => setZoom((z) => clampZoom(z - ZOOM_STEP)), []);
+  const resetZoom = useCallback(() => setZoom(1), []);
+
+  // Keyboard shortcuts: Ctrl/Cmd + +, -, 0
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        zoomIn();
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        zoomOut();
+      } else if (e.key === "0") {
+        e.preventDefault();
+        resetZoom();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoomIn, zoomOut, resetZoom]);
+
+  // Ctrl + wheel to zoom on canvas
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      setZoom((z) => clampZoom(z + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
   // Global pointer handlers while a wire is being dragged
@@ -71,12 +119,20 @@ function CanvasInner() {
       style={{
         backgroundImage:
           "radial-gradient(circle, hsl(var(--primary) / 0.15) 1px, transparent 1px)",
-        backgroundSize: "24px 24px",
+        backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundColor: "hsl(var(--background))",
         cursor: connecting ? "crosshair" : "default",
       }}
     >
-        <ConnectionsLayer canvasRef={canvasRef} />
+      <div
+        className="absolute top-0 left-0 origin-top-left"
+        style={{
+          transform: `scale(${zoom})`,
+          width: `${100 / zoom}%`,
+          height: `${100 / zoom}%`,
+        }}
+      >
+        <ConnectionsLayer canvasRef={canvasRef} zoom={zoom} />
         {nodes.map((node) => {
           const common = { key: node.id, id: node.id, x: node.x, y: node.y, onRemove: () => removeNode(node.id) };
           switch (node.type) {
@@ -101,6 +157,7 @@ function CanvasInner() {
             onClose={() => setMenu(null)}
           />
         )}
+      </div>
 
         {nodes.length === 0 && !menu && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -112,6 +169,13 @@ function CanvasInner() {
             </div>
           </div>
         )}
+
+        <ZoomControls
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onReset={resetZoom}
+        />
     </div>
   );
 }
