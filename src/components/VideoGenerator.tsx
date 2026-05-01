@@ -215,7 +215,6 @@ export function VideoGenerator() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          allow_basic: true,
           messages: [
             imageDataUrl
               ? { role: "user", content: userContent, image: imageDataUrl }
