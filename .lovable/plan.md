@@ -1,65 +1,81 @@
-## Objetivo
+# Reposicionamento da Landing Page — All-in-One
 
-Permitir aplicar zoom no canvas de Workflows via:
-- Botões flutuantes no canto inferior direito (Zoom In, Zoom Out, Reset).
-- Atalhos de teclado: `Ctrl +` / `Ctrl =` para aumentar, `Ctrl -` para diminuir, `Ctrl 0` para resetar.
+Reescrita completa da copy e adição de duas novas seções (Dor e Diferencial), mantendo o design system atual (Navy + Cyan, glass-cards, motion).
 
-## Comportamento
-
-- Escala vai de **0.4x até 2x**, em passos de **0.1**.
-- Default: **1x**.
-- Zoom é puramente visual (CSS `transform: scale`); coordenadas dos nós continuam armazenadas em pixels não-escalados.
-- Indicador percentual entre os botões (ex: `100%`).
-- Atalhos previnem o zoom nativo do navegador (`e.preventDefault()`).
-
-## Mudanças técnicas
-
-### 1. `src/components/workflows/WorkflowCanvas.tsx`
-- Adicionar estado `zoom` (number, default 1) em `CanvasInner`.
-- Criar wrapper interno `<div>` com `transform: scale(zoom)` e `transformOrigin: "0 0"`, contendo `ConnectionsLayer` + nós + menu. O div externo (rolável, com grid de fundo) permanece como está.
-- Listener global `keydown`: detectar `(ctrlKey || metaKey)` + (`+`, `=`, `-`, `0`) → ajusta zoom, `preventDefault`.
-- Handler `wheel` no canvas: se `ctrlKey`, ajustar zoom e `preventDefault` (bonus, opcional mas comum em editores de nó).
-- Ao calcular posição do menu de criação de nós no clique, dividir `(e.clientX - rect.left)` pelo zoom para o nó nascer onde o usuário clicou.
-- Ao detectar drop em porta de entrada (`pointerup`), nada muda — `elementFromPoint` continua usando coordenadas de viewport.
-- Renderizar novo componente `<ZoomControls zoom={zoom} setZoom={setZoom} />` posicionado `absolute bottom-4 right-4 z-20`.
-
-### 2. `src/components/workflows/ConnectionsLayer.tsx`
-- A camada SVG fica DENTRO do wrapper escalado, então as coordenadas continuam corretas sem mudanças (o SVG escala junto). Porém precisamos ajustar o cálculo do ghost (mouse): `connecting.mouse` está em coords de viewport, e o SVG agora vive em espaço escalado. Dividir o offset relativo ao canvas pelo zoom:
-  ```ts
-  to: {
-    x: (connecting.mouse.x - canvasRect.left + scrollLeft) / zoom,
-    y: (connecting.mouse.y - canvasRect.top + scrollTop) / zoom,
-  }
-  ```
-- Aceitar `zoom` via prop ou via contexto.
-
-### 3. `src/components/workflows/WorkflowContext.tsx`
-- Adicionar `zoom` e `setZoom` no contexto para que `ConnectionsLayer` possa ler sem prop drilling. Alternativa simples: passar prop. Vou preferir prop para manter contexto enxuto.
-
-### 4. Novo: `src/components/workflows/ZoomControls.tsx`
-- Componente pequeno com três botões (`ZoomOut`, label `xx%`, `ZoomIn`) e um botão de reset (`Maximize2` ou texto "100%" clicável).
-- Estilo: card flutuante com `border border-primary/30 bg-card/95 backdrop-blur` para combinar com o restante.
-
-## Layout dos controles
+## Nova ordem das seções em `src/pages/Index.tsx`
 
 ```text
-┌──────────────────────────────┐
-│  Canvas                       │
-│                               │
-│                               │
-│                               │
-│              ┌──────────────┐ │
-│              │ [-] 100% [+] │ │
-│              └──────────────┘ │
-└──────────────────────────────┘
+Navbar
+HeroSection           (texto novo)
+PainSection           (NOVA — "várias ferramentas vs você")
+SolutionSection       (substitui BenefitsSection — bullets do "tudo em um")
+HowItWorks            (3 passos novos)
+UseCasesSection       (NOVA — TikTok Shop, IG Shop, YT Shop, afiliados, dark…)
+ShowcaseSection       (mantida — vira "Exemplos")
+DifferentialSection   (NOVA — all-in-one)
+PricingSection        (reforço "Substitui várias ferramentas")
+FinalCTA              (texto novo)
+Footer
 ```
 
-## Edge cases
-- Múltiplos pressionamentos rápidos: usar `setZoom(z => clamp(z ± 0.1))`.
-- macOS: aceitar `metaKey` além de `ctrlKey`.
-- Tecla `+` em alguns layouts vem como `=` com Shift; tratar `e.key === '+' || e.key === '=' `.
-- `preventDefault` apenas quando a combinação for nossa, para não bloquear outros atalhos.
+## Mudanças por arquivo
 
-## Arquivos
-- **Criar**: `src/components/workflows/ZoomControls.tsx`
-- **Editar**: `src/components/workflows/WorkflowCanvas.tsx`, `src/components/workflows/ConnectionsLayer.tsx`
+### 1. `HeroSection.tsx` — copy nova
+- Badge: "Tudo em um só lugar — Roteiros, Imagens & Vídeos com IA"
+- H1: **"Crie vídeos para vender nas redes — sem precisar de várias ferramentas"** (com "várias ferramentas" em gradient cyan)
+- Subheadline: "Roteiros, prompts, imagens e vídeos com IA em um único lugar. Tudo que você precisa para TikTok Shop, Instagram e YouTube."
+- CTA: "Começar agora" (rola para `#planos`)
+- Microcopy abaixo do CTA: "Sem apps extras. Sem complicação."
+- Bullets de prova substituídos por: "Roteiros · Imagens · Vídeos · Prompts"
+
+### 2. `PainSection.tsx` (NOVO)
+Layout de duas colunas em desktop, empilhado em mobile:
+- Coluna esquerda — "Antes": cards riscados com ChatGPT / Midjourney / Editor / App de legenda + texto "horas perdidas".
+- Coluna direita — "Agora com PH Studio": um único card cyan glow com ícone Sparkles + "Tudo em um fluxo".
+- Headline: "Cansado de usar várias ferramentas pra criar um único vídeo?"
+
+### 3. `SolutionSection.tsx` (NOVO, substitui `BenefitsSection`)
+- Headline: "Agora você faz tudo dentro de um único sistema"
+- 5 bullets com ícones (FileText, Wand2, ImageIcon, Video, Send):
+  - Gere roteiros prontos para venda
+  - Crie prompts automaticamente
+  - Produza imagens com IA
+  - Anime e transforme em vídeos
+  - Pronto para postar nas redes
+- Texto de fechamento destacado: "Do zero ao vídeo pronto em minutos."
+
+### 4. `HowItWorks.tsx` — passos atualizados
+- 01 — Escreva sua ideia (ou nem isso) — "Envie a imagem do produto ou tema"
+- 02 — A IA cria tudo — "Roteiro + imagens + vídeo"
+- 03 — Baixe e poste — "Pronto para vender"
+
+### 5. `UseCasesSection.tsx` (NOVO)
+- Headline: "Perfeito para quem vende ou cria conteúdo"
+- Grid 3×2 de chips/cards: TikTok Shop · Instagram Shop · YouTube Shop · Afiliados · Produtos próprios · Conteúdo dark
+- Cada item com ícone Lucide e leve hover.
+
+### 6. `ShowcaseSection` — apenas título atualizado para "O que você pode criar" com subtítulo "Vídeos de produto · UGC com IA · Conteúdo dark · Anúncios para social commerce".
+
+### 7. `DifferentialSection.tsx` (NOVO)
+- Layout centralizado, large quote feel.
+- Headline: "Você não precisa mais montar um quebra-cabeça de ferramentas"
+- Parágrafo conforme copy.
+- Linha de fechamento em destaque: "Menos esforço. Mais produção. Mais resultado."
+
+### 8. `PricingSection.tsx` — reforço
+- Adicionar pequeno badge acima do título: "Substitui ChatGPT + Midjourney + Editor + Apps de legenda"
+- Em cada plano, adicionar uma linha de feature inicial: "Substitui várias ferramentas".
+
+### 9. `FinalCTA.tsx` — copy nova
+- H2: "Tudo que você precisa para criar vídeos está aqui"
+- Sub: "Pare de perder tempo com ferramentas. Comece a produzir de verdade."
+- Botão: "Criar meu primeiro vídeo" → leva para `#planos`.
+
+### 10. `Index.tsx`
+Importar e ordenar as seções conforme o wireframe novo.
+
+## Notas de design
+- Mantém a estética atual: `glass-card`, gradiente cyan em palavras-chave, motion via framer-motion (fade + y) com `viewport={{ once: true }}`.
+- Sem novas dependências, sem alterações no design system.
+- Responsivo (mobile-first) seguindo o padrão das seções existentes.
+- Sem mudanças em rotas, backend, banco ou edge functions.
