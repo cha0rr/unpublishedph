@@ -1,24 +1,24 @@
 import { motion } from "framer-motion";
-import { Target, Wand2, Rocket, DollarSign } from "lucide-react";
+import { PenLine, SlidersHorizontal, Download } from "lucide-react";
 
 const steps = [
   {
     num: "01",
-    icon: Target,
-    title: "Escolha o nicho",
-    description: "Dark, UGC, influencer IA, review sem rosto, cartomante, rural, notícias — você decide.",
+    icon: PenLine,
+    title: "Descreva seu vídeo",
+    description: "UGC, cartomante, fazendeiro, frutas falantes, notícias... descreva o que quiser.",
   },
   {
     num: "02",
-    icon: Wand2,
-    title: "Gere vídeos + avatar IA",
-    description: "Em escala, com 1 clique. Sem aparecer, sem gravar, sem editar.",
+    icon: SlidersHorizontal,
+    title: "Escolha o formato TikTok",
+    description: "9:16 vertical, ideal para a FYP e máximo alcance orgânico.",
   },
   {
     num: "03",
-    icon: Rocket,
-    title: "Poste e escale múltiplas contas",
-    description: "Replique para 5, 10, 50 perfis em automático. Sem rastros, sem duplicidade.",
+    icon: Download,
+    title: "Publique e escale",
+    description: "Baixe e poste direto nas suas contas. Sem marca d'água.",
   },
 ];
 
@@ -60,28 +60,6 @@ export function HowItWorks() {
             </motion.div>
           ))}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-10 sm:mt-14 max-w-2xl mx-auto"
-        >
-          <div className="glass-card border-primary/30 glow-cyan p-6 flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-              <DollarSign className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold text-foreground">
-                Monetize com afiliados, TikTok Shop ou produtos digitais
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Você só foca em vender. A criação de conteúdo roda no automático.
-              </p>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

@@ -1,107 +1,65 @@
+## Objetivo
 
-# Reestruturação da Landing Page — High Conversion
+Permitir aplicar zoom no canvas de Workflows via:
+- Botões flutuantes no canto inferior direito (Zoom In, Zoom Out, Reset).
+- Atalhos de teclado: `Ctrl +` / `Ctrl =` para aumentar, `Ctrl -` para diminuir, `Ctrl 0` para resetar.
 
-Reposicionar a landing de "criar vídeos com IA" para "automatizar perfis que vendem sem aparecer", com linguagem orientada a dinheiro, anonimato e escala.
+## Comportamento
 
-## Alerta importante sobre os planos
+- Escala vai de **0.4x até 2x**, em passos de **0.1**.
+- Default: **1x**.
+- Zoom é puramente visual (CSS `transform: scale`); coordenadas dos nós continuam armazenadas em pixels não-escalados.
+- Indicador percentual entre os botões (ex: `100%`).
+- Atalhos previnem o zoom nativo do navegador (`e.preventDefault()`).
 
-Você pediu para subir os preços (Starter R$59 / Growth R$97 / Scale R$197+). **Atualmente o sistema tem apenas 2 planos integrados ao backend: `basico` (R$ 49,90) e `pro` (R$ 69,90)** — eles estão amarrados ao banco, RPCs, gates de feature (Studio Imagens, Avatar Maker, DeepSeek) e fluxo de ativação manual via WhatsApp.
+## Mudanças técnicas
 
-Mexer no preço/estrutura de planos **na landing apenas** é seguro (visual). Mas criar 3 tiers reais exigiria migração de banco, novos gates, novo fluxo de cobrança. Por isso vou propor **duas opções** e pedir sua decisão antes de executar.
+### 1. `src/components/workflows/WorkflowCanvas.tsx`
+- Adicionar estado `zoom` (number, default 1) em `CanvasInner`.
+- Criar wrapper interno `<div>` com `transform: scale(zoom)` e `transformOrigin: "0 0"`, contendo `ConnectionsLayer` + nós + menu. O div externo (rolável, com grid de fundo) permanece como está.
+- Listener global `keydown`: detectar `(ctrlKey || metaKey)` + (`+`, `=`, `-`, `0`) → ajusta zoom, `preventDefault`.
+- Handler `wheel` no canvas: se `ctrlKey`, ajustar zoom e `preventDefault` (bonus, opcional mas comum em editores de nó).
+- Ao calcular posição do menu de criação de nós no clique, dividir `(e.clientX - rect.left)` pelo zoom para o nó nascer onde o usuário clicou.
+- Ao detectar drop em porta de entrada (`pointerup`), nada muda — `elementFromPoint` continua usando coordenadas de viewport.
+- Renderizar novo componente `<ZoomControls zoom={zoom} setZoom={setZoom} />` posicionado `absolute bottom-4 right-4 z-20`.
 
-## Mudanças por seção
+### 2. `src/components/workflows/ConnectionsLayer.tsx`
+- A camada SVG fica DENTRO do wrapper escalado, então as coordenadas continuam corretas sem mudanças (o SVG escala junto). Porém precisamos ajustar o cálculo do ghost (mouse): `connecting.mouse` está em coords de viewport, e o SVG agora vive em espaço escalado. Dividir o offset relativo ao canvas pelo zoom:
+  ```ts
+  to: {
+    x: (connecting.mouse.x - canvasRect.left + scrollLeft) / zoom,
+    y: (connecting.mouse.y - canvasRect.top + scrollTop) / zoom,
+  }
+  ```
+- Aceitar `zoom` via prop ou via contexto.
 
-### 1. HeroSection.tsx
-- Headline: **"Crie perfis que vendem todos os dias — sem aparecer."**
-- Highlight em cyan na palavra "vendem" e/ou "sem aparecer".
-- Subheadline: "Gere vídeos, influencers IA e conteúdo viral em escala para TikTok, Instagram e YouTube."
-- Badge superior: trocar "Geração Ilimitada" por "Marca fantasma · Conteúdo invisível · Escala em piloto automático".
-- CTA primário: **"🔥 Criar meu primeiro perfil agora"** → rola para `#planos`.
-- CTA secundário (novo, ghost): "Testar sem aparecer" → também `#planos`.
-- Trust pills inferiores: trocar para "Dark creators", "TikTok Shop / Afiliados", "Influencers IA".
+### 3. `src/components/workflows/WorkflowContext.tsx`
+- Adicionar `zoom` e `setZoom` no contexto para que `ConnectionsLayer` possa ler sem prop drilling. Alternativa simples: passar prop. Vou preferir prop para manter contexto enxuto.
 
-### 2. Nova seção: `WhatYouCanCreate.tsx` (Prova de valor imediata)
-Inserir logo após o Hero, antes de Benefits. Título: **"O que você pode criar em minutos"**. Grid 2x2 com cards (ícone + título + 1 linha):
-- Influencer IA feminina vendendo produto
-- Vídeos estilo "review sem rosto"
-- Canal dark automatizado
-- UGC fake com IA
+### 4. Novo: `src/components/workflows/ZoomControls.tsx`
+- Componente pequeno com três botões (`ZoomOut`, label `xx%`, `ZoomIn`) e um botão de reset (`Maximize2` ou texto "100%" clicável).
+- Estilo: card flutuante com `border border-primary/30 bg-card/95 backdrop-blur` para combinar com o restante.
 
-Reaproveita estilo `glass-card` e tokens já existentes.
+## Layout dos controles
 
-### 3. BenefitsSection.tsx — reescrever copy
-Manter layout, trocar textos para vocabulário orientado a venda/escala/anonimato:
-- "Automatize vendas" — Perfis que postam, engajam e convertem sem você aparecer.
-- "Escale múltiplos perfis" — Conteúdo único por conta, sem deixar rastro de duplicidade.
-- "Marca fantasma" — Crie influencers IA que vendem por você 24/7.
-- "Conteúdo invisível" — UGC, dark e nicho gerados em volume com 1 clique.
-
-Título da seção: "Por que criadores estão migrando pro PH Studio".
-
-### 4. Nova seção: `WhoIsItFor.tsx` (Posicionamento)
-Inserir após Benefits. Título: **"Para quem é isso?"**. Lista com ícones:
-- Criadores dark (sem aparecer)
-- Afiliados TikTok Shop
-- Donos de páginas de nicho
-- Criadores de influencers IA
-- Sellers de produtos digitais / PLR / dropshipping
-
-### 5. HowItWorks.tsx — reescrever
-- 01 → **Escolha o nicho** (dark, UGC, influencer IA, review sem rosto…)
-- 02 → **Gere vídeos + avatar IA** em escala
-- 03 → **Poste e escale múltiplas contas** em automático
-- Card extra (4º, destacado em cyan): **💰 "Monetize com afiliados, TikTok Shop ou produtos digitais"**.
-
-### 6. Nova seção: `SocialProof.tsx` (Prova social)
-Antes de PricingSection. Grid de "prints" mockados (cards estilizados — não imagens reais para evitar fake explícito). 3 cards com:
-- Métrica grande (1.2M views, 487k views, R$ 12.4k em comissões)
-- Legenda curta ("Conta de cartomante – 14 dias", "Afiliado TikTok Shop – nicho beleza", "Página dark de fatos – 1º mês")
-- Mini barra/gráfico decorativo
-
-Aviso visual sutil: "Resultados de criadores usando IA. Performance individual varia."
-
-### 7. PricingSection.tsx — escolher direção (PRECISO DA SUA DECISÃO)
-
-**Opção A — Apenas visual (recomendado para não quebrar backend):**
-- Manter os 2 planos atuais (basico R$49,90 / pro R$69,90).
-- Renomear na UI: "Starter" e "Growth".
-- Adicionar copy "Feito para quem quer escalar múltiplas contas".
-- Adicionar 3º card "Scale — Em breve / Lista de espera" (R$197+) somente visual, com botão que abre WhatsApp ou formulário.
-
-**Opção B — Reestruturar planos de verdade:**
-- Criar 3 tiers reais (Starter R$59, Growth R$97, Scale R$197).
-- Exige: migração no banco (`profiles.plan` enum), novos gates em todas as Edge Functions, ajuste do fluxo de ativação, atualização da memória de pricing-plans, possível impacto em assinantes atuais.
-- Trabalho considerável (1-2h adicionais).
-
-### 8. FinalCTA.tsx — reescrever
-- Headline: "Pare de aparecer. **Comece a vender.**"
-- Sub: "Lance seu primeiro perfil fantasma hoje e escale em piloto automático."
-- CTA: "🔥 Criar meu primeiro perfil agora".
-
-### 9. Index.tsx — nova ordem
-```
-Hero
-WhatYouCanCreate   (novo)
-Benefits           (copy reescrita)
-WhoIsItFor         (novo)
-HowItWorks         (4 passos)
-ShowcaseSection    (mantido)
-SocialProof        (novo)
-PricingSection     (ajustado)
-FinalCTA           (reescrito)
-Footer
+```text
+┌──────────────────────────────┐
+│  Canvas                       │
+│                               │
+│                               │
+│                               │
+│              ┌──────────────┐ │
+│              │ [-] 100% [+] │ │
+│              └──────────────┘ │
+└──────────────────────────────┘
 ```
 
-## Detalhes técnicos
-- Todas as novas seções seguem o padrão: `motion.div` com `whileInView`, `glass-card`, tokens `text-gradient-cyan`, `bg-navy-light/30` alternado.
-- Sem novas dependências — usa `framer-motion`, `lucide-react`, `Button` já existentes.
-- Mobile-first mantido (mesmos breakpoints `sm:` / `md:` / `lg:`).
-- Atualizar memória `mem://business/product-positioning` com o novo posicionamento ("marca fantasma / sem aparecer / vendas automáticas").
+## Edge cases
+- Múltiplos pressionamentos rápidos: usar `setZoom(z => clamp(z ± 0.1))`.
+- macOS: aceitar `metaKey` além de `ctrlKey`.
+- Tecla `+` em alguns layouts vem como `=` com Shift; tratar `e.key === '+' || e.key === '=' `.
+- `preventDefault` apenas quando a combinação for nossa, para não bloquear outros atalhos.
 
-## Pergunta antes de executar
-
-Qual caminho seguir nos planos?
-- **A)** Só visual (rápido, sem risco) — renomeia para Starter/Growth, mantém preços atuais, adiciona "Scale em breve".
-- **B)** Reestruturar planos reais (Starter R$59 / Growth R$97 / Scale R$197) — requer migração de banco e ajustes em várias Edge Functions.
-
-Vou aguardar sua resposta para essa decisão antes de executar.
+## Arquivos
+- **Criar**: `src/components/workflows/ZoomControls.tsx`
+- **Editar**: `src/components/workflows/WorkflowCanvas.tsx`, `src/components/workflows/ConnectionsLayer.tsx`
