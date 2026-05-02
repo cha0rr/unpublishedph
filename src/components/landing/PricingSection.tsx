@@ -77,10 +77,10 @@ const plans: {
 
 export function PricingSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState("pro");
+  const [selectedPlan, setSelectedPlan] = useState("growth");
 
-  const handleSelectPlan = (slug: string) => {
-    setSelectedPlan(slug);
+  const handleSelectPlan = (variant: string) => {
+    setSelectedPlan(variant);
     setDialogOpen(true);
   };
 
@@ -177,7 +177,7 @@ export function PricingSection() {
               </ul>
 
               <Button
-                onClick={() => handleSelectPlan(plan.slug)}
+                onClick={() => handleSelectPlan(plan.variant)}
                 className={
                   plan.highlighted
                     ? "btn-money w-full"
