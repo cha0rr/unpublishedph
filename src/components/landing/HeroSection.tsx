@@ -26,8 +26,8 @@ export function HeroSection() {
             <span className="text-xs text-muted-foreground">Tudo em um só lugar — Roteiros, Imagens & Vídeos com IA</span>
           </motion.div>
 
-          <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Crie vídeos para vender nas redes — sem precisar de{" "}
+          <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl px-[2px] lg:text-7xl my-0 shadow-sm">
+            Crie conteúdo de qualidade para as redes sem precisar de{" "}
             <span className="text-gradient-cyan">várias ferramentas</span>
           </h1>
 
