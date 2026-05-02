@@ -1,26 +1,42 @@
 import { motion } from "framer-motion";
-import { Zap, Sparkles, MousePointerClick, Briefcase } from "lucide-react";
+import { Banknote, Layers, EyeOff, Ghost } from "lucide-react";
 
 const benefits = [
   {
-    icon: Sparkles,
-    title: "Vídeos Virais com IA",
-    description: "Cartomante, fazendeiros, frutas falantes, notícias... crie qualquer nicho viral.",
+    icon: Banknote,
+    title: "Automatize vendas",
+    description:
+      "Afiliados e ofertas rodando 24/7. A IA produz, posta e converte enquanto você dorme.",
+    accent: "text-money",
+    ring: "ring-money/30",
+    bg: "bg-money/10",
   },
   {
-    icon: Zap,
-    title: "UGC Realista",
-    description: "Reviews, unboxings e depoimentos que parecem orgânicos.",
+    icon: Layers,
+    title: "Escala de perfis",
+    description:
+      "Múltiplas contas com conteúdo único em cada uma. Sem repetição, sem shadowban.",
+    accent: "text-cyan",
+    ring: "ring-cyan/30",
+    bg: "bg-cyan/10",
   },
   {
-    icon: Briefcase,
-    title: "Escale Múltiplas Contas",
-    description: "Conteúdo único para cada conta, sem esforço.",
+    icon: EyeOff,
+    title: "Conteúdo invisível",
+    description:
+      "Você nunca aparece. A IA é o rosto, a voz e o roteiro. 100% anônimo.",
+    accent: "text-purple-ai",
+    ring: "ring-purple-ai/30",
+    bg: "bg-purple-ai/10",
   },
   {
-    icon: MousePointerClick,
-    title: "Geração Ilimitada",
-    description: "Sem limites. Crie quantos vídeos precisar para crescer rápido.",
+    icon: Ghost,
+    title: "Marca fantasma",
+    description:
+      "Branding de nicho sem identidade real. Construa império digital sem expor sua vida.",
+    accent: "text-foreground",
+    ring: "ring-white/15",
+    bg: "bg-white/[0.04]",
   },
 ];
 
@@ -46,10 +62,11 @@ export function BenefitsSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Por que usar PH Studio para TikTok?
+            Tudo o que uma equipe de 10 pessoas faria —{" "}
+            <span className="text-gradient-money">você sozinho, no automático.</span>
           </h2>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Tudo que você precisa para escalar contas e vender mais.
+            Quatro alavancas para quem quer construir um império de perfis sem expor a vida real.
           </p>
         </motion.div>
 
@@ -64,14 +81,20 @@ export function BenefitsSection() {
             <motion.div
               key={b.title}
               variants={cardVariants}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="glass-card p-6 transition-shadow hover:shadow-lg hover:shadow-primary/5"
+              whileHover={{ y: -6, transition: { duration: 0.2 } }}
+              className="glass-premium p-6 transition-shadow"
             >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <b.icon className="h-5 w-5 text-primary" />
+              <div
+                className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${b.bg} ring-1 ${b.ring}`}
+              >
+                <b.icon className={`h-5 w-5 ${b.accent}`} />
               </div>
-              <h3 className="mb-2 text-base font-semibold text-foreground">{b.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{b.description}</p>
+              <h3 className="mb-2 text-base font-semibold text-foreground">
+                {b.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {b.description}
+              </p>
             </motion.div>
           ))}
         </motion.div>
