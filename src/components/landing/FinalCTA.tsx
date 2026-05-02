@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
 
 export function FinalCTA() {
   return (
@@ -17,18 +16,20 @@ export function FinalCTA() {
         transition={{ duration: 0.6 }}
       >
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-5xl leading-tight">
-          Escale suas contas.{" "}
-          <span className="text-gradient-cyan">Venda mais no </span>TikTok.
+          Tudo que você precisa para criar{" "}
+          <span className="text-gradient-cyan">vídeos está aqui</span>
         </h2>
         <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
-          Comece a gerar vídeos virais e UGC agora. Sem limites, sem complicação.
+          Pare de perder tempo com ferramentas. Comece a produzir de verdade.
         </p>
         <div className="mt-10">
-          <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8">
-            <Link to="/gerar-video">
-              Começar a escalar agora
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+          <Button
+            size="lg"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8"
+            onClick={() => document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Criar meu primeiro vídeo
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
       </motion.div>
