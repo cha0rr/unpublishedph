@@ -1,4 +1,15 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+
+const HERO_VIDEOS = [
+  "/videos/showcase-1.mp4",
+  "/videos/showcase-2.mp4",
+  "/videos/showcase-3.mp4",
+  "/videos/showcase-4.mp4",
+  "/videos/showcase-5.mp4",
+  "/videos/showcase-6.mp4",
+];
+const CYCLE_MS = 8000;
 
 function Particle({ delay, x, y }: { delay: number; x: string; y: string }) {
   return (
@@ -25,6 +36,15 @@ function Frame({ delay }: { delay: number }) {
 }
 
 export function HeroAnimation() {
+  const [videoIndex, setVideoIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setVideoIndex((i) => (i + 1) % HERO_VIDEOS.length);
+    }, CYCLE_MS);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div className="relative w-full max-w-lg mx-auto">
       <motion.div
@@ -40,14 +60,21 @@ export function HeroAnimation() {
         </div>
 
         <div className="relative aspect-[9/16] w-48 mx-auto rounded-xl bg-muted/30 border border-white/[0.06] overflow-hidden mb-4">
-          <video
-            src="/videos/showcase-1.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <AnimatePresence mode="wait">
+            <motion.video
+              key={videoIndex}
+              src={HERO_VIDEOS[videoIndex]}
+              autoPlay
+              loop
+              muted
+              playsInline
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </AnimatePresence>
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent"
             style={{ backgroundSize: "200% 100%" }}
