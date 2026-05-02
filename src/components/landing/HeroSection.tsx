@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HeroAnimation } from "./HeroAnimation";
-import { VideoIcon } from "lucide-react";
+import { Ghost, EyeOff } from "lucide-react";
 
 export function HeroSection() {
+  const scrollToPlans = () => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
   return (
     <section id="hero" className="relative min-h-[80vh] lg:min-h-screen flex items-center pt-20 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-navy-light/50" />
@@ -24,37 +24,40 @@ export function HeroSection() {
             transition={{ delay: 0.3 }}
           >
             <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-            <span className="text-xs text-muted-foreground">Vídeos com IA para TikTok — Geração Ilimitada</span>
+            <span className="text-xs text-muted-foreground">Marca fantasma · Conteúdo invisível · Escala em piloto automático</span>
           </motion.div>
 
           <h1 className="text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Cresça contas no <span className="tiktok-text">TikTok</span> com{" "}
-            <span className="text-gradient-cyan">vídeos gerados por IA</span>
+            Crie perfis que <span className="text-gradient-cyan">vendem todos os dias</span> —{" "}
+            <span className="text-gradient-cyan">sem aparecer</span>.
           </h1>
 
           <p className="mt-4 sm:mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-muted-foreground">
-            Crie UGC, vídeos virais de cartomante, fazendeiros, frutas falantes, notícias e muito mais para escalar contas no TikTok.
+            Gere vídeos, influencers IA e conteúdo viral em escala para TikTok, Instagram e YouTube. Automatize vendas sem expor seu rosto.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2" onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' })}>
-                <VideoIcon className="h-4 w-4" />
-                Começar a Escalar
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2" onClick={scrollToPlans}>
+              🔥 Criar meu primeiro perfil agora
+            </Button>
+            <Button size="lg" variant="outline" className="border-primary/40 text-foreground hover:bg-primary/10 gap-2" onClick={scrollToPlans}>
+              <EyeOff className="h-4 w-4" />
+              Testar sem aparecer
             </Button>
           </div>
 
           <div className="mt-8 sm:mt-10 flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
-              UGC & Vídeos Virais
+              Dark creators
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
-              TikTok Shop
+              TikTok Shop / Afiliados
             </div>
             <div className="flex items-center gap-2">
               <div className="h-1 w-1 rounded-full bg-primary" />
-              Venda de contas
+              Influencers IA
             </div>
           </div>
         </motion.div>

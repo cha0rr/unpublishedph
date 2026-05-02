@@ -17,16 +17,16 @@ export function FinalCTA() {
         transition={{ duration: 0.6 }}
       >
         <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-5xl leading-tight">
-          Escale suas contas.{" "}
-          <span className="text-gradient-cyan">Venda mais no </span>TikTok.
+          Pare de aparecer.{" "}
+          <span className="text-gradient-cyan">Comece a vender.</span>
         </h2>
         <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
-          Comece a gerar vídeos virais e UGC agora. Sem limites, sem complicação.
+          Lance seu primeiro perfil fantasma hoje e escale em piloto automático.
         </p>
         <div className="mt-10">
           <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-8">
-            <Link to="/gerar-video">
-              Começar a escalar agora
+            <Link to="/registro">
+              🔥 Criar meu primeiro perfil agora
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>

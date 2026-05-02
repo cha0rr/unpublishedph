@@ -1,26 +1,26 @@
 import { motion } from "framer-motion";
-import { Zap, Sparkles, MousePointerClick, Briefcase } from "lucide-react";
+import { TrendingUp, Layers, Ghost, EyeOff } from "lucide-react";
 
 const benefits = [
   {
-    icon: Sparkles,
-    title: "Vídeos Virais com IA",
-    description: "Cartomante, fazendeiros, frutas falantes, notícias... crie qualquer nicho viral.",
+    icon: TrendingUp,
+    title: "Automatize vendas",
+    description: "Perfis que postam, engajam e convertem sem você aparecer um segundo sequer.",
   },
   {
-    icon: Zap,
-    title: "UGC Realista",
-    description: "Reviews, unboxings e depoimentos que parecem orgânicos.",
+    icon: Layers,
+    title: "Escale múltiplos perfis",
+    description: "Conteúdo único por conta, sem deixar rastro de duplicidade entre suas páginas.",
   },
   {
-    icon: Briefcase,
-    title: "Escale Múltiplas Contas",
-    description: "Conteúdo único para cada conta, sem esforço.",
+    icon: Ghost,
+    title: "Marca fantasma",
+    description: "Crie influencers IA que vendem por você 24/7 — sua identidade fica protegida.",
   },
   {
-    icon: MousePointerClick,
-    title: "Geração Ilimitada",
-    description: "Sem limites. Crie quantos vídeos precisar para crescer rápido.",
+    icon: EyeOff,
+    title: "Conteúdo invisível",
+    description: "UGC, dark e nicho gerados em volume com 1 clique. Você só posta e fatura.",
   },
 ];
 
@@ -46,10 +46,10 @@ export function BenefitsSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Por que usar PH Studio para TikTok?
+            Por que criadores estão migrando pro <span className="text-gradient-cyan">PH Studio</span>
           </h2>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Tudo que você precisa para escalar contas e vender mais.
+            A stack completa para quem vive de perfis fantasma e quer escalar sem ser visto.
           </p>
         </motion.div>
 
