@@ -8,6 +8,8 @@ const HERO_VIDEOS = [
   "/videos/showcase-4.mp4",
   "/videos/showcase-5.mp4",
   "/videos/showcase-6.mp4",
+  "/videos/hero-extra-1.mp4",
+  "/videos/hero-extra-2.mp4",
 ];
 const CYCLE_MS = 8000;
 
