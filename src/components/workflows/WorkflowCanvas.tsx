@@ -22,13 +22,14 @@ export interface WorkflowNode {
 
 function CanvasInner() {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const { connecting, updateConnectingMouse, completeConnect, cancelConnect } = useWorkflow();
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
+    if (e.target !== canvasRef.current && e.target !== innerRef.current) return;
     if (connecting) return; // ignore clicks while wiring
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -125,6 +126,7 @@ function CanvasInner() {
       }}
     >
       <div
+        ref={innerRef}
         className="absolute top-0 left-0 origin-top-left"
         style={{
           transform: `scale(${zoom})`,
@@ -158,17 +160,6 @@ function CanvasInner() {
           />
         )}
       </div>
-
-        {nodes.length === 0 && !menu && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-2xl font-semibold text-foreground">Canvas vazio</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Clique em qualquer lugar para começar
-              </p>
-            </div>
-          </div>
-        )}
 
         <ZoomControls
           zoom={zoom}
