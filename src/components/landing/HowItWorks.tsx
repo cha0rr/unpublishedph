@@ -1,24 +1,24 @@
 import { motion } from "framer-motion";
-import { PenLine, SlidersHorizontal, Download } from "lucide-react";
+import { PenLine, Sparkles, Download } from "lucide-react";
 
 const steps = [
   {
     num: "01",
     icon: PenLine,
-    title: "Descreva seu vídeo",
-    description: "UGC, cartomante, fazendeiro, frutas falantes, notícias... descreva o que quiser.",
+    title: "Escreva sua ideia (ou nem isso)",
+    description: "Envie a imagem do produto ou tema — a IA cuida do resto.",
   },
   {
     num: "02",
-    icon: SlidersHorizontal,
-    title: "Escolha o formato TikTok",
-    description: "9:16 vertical, ideal para a FYP e máximo alcance orgânico.",
+    icon: Sparkles,
+    title: "A IA cria tudo",
+    description: "Roteiro + imagens + vídeo, em um único fluxo automático.",
   },
   {
     num: "03",
     icon: Download,
-    title: "Publique e escale",
-    description: "Baixe e poste direto nas suas contas. Sem marca d'água.",
+    title: "Baixe e poste",
+    description: "Pronto para vender. Sem edição, sem marca d'água.",
   },
 ];
 
