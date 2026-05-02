@@ -28,12 +28,6 @@ export default {
           light: "hsl(var(--cyan-light))",
         },
         ice: "hsl(var(--ice))",
-        money: {
-          DEFAULT: "hsl(var(--money))",
-        },
-        "purple-ai": {
-          DEFAULT: "hsl(var(--purple-ai))",
-        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

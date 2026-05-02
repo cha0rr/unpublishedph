@@ -1,32 +1,65 @@
 ## Objetivo
 
-Alinhar a tela de cadastro (`/registro`) e o `RegistroDialog` aos 3 planos da landing (Starter / Growth / Scale) e aumentar a logo da página de cadastro.
+Permitir aplicar zoom no canvas de Workflows via:
+- Botões flutuantes no canto inferior direito (Zoom In, Zoom Out, Reset).
+- Atalhos de teclado: `Ctrl +` / `Ctrl =` para aumentar, `Ctrl -` para diminuir, `Ctrl 0` para resetar.
 
-## Mudanças
+## Comportamento
 
-### 1. `src/pages/Registro.tsx`
-- Substituir o mapa `plans` pelos 3 tiers da landing:
-  - `starter` → "Starter — R$ 59/mês" (envia slug `basico` no backend)
-  - `growth` → "Growth — R$ 97/mês" (envia slug `pro`)
-  - `scale` → "Scale — R$ 197/mês" (envia slug `pro`)
-- Trocar o `<Select>` para usar 3 opções com `value` lógico (`starter`, `growth`, `scale`) e, no submit, mapear para o slug aceito pelo backend (`basico` ou `pro`) antes de chamar `supabase.functions.invoke("register")`. Isso evita mexer na edge function `register` que só aceita `['basico','pro']`.
-- Aceitar `?plano=starter|growth|scale` na URL; manter retrocompatibilidade aceitando `basico`/`pro` (mapeando para `starter`/`growth`).
-- Aumentar a logo: `h-16` → `h-28 sm:h-32`, ajustar `mb-4` para `mb-6`.
-- Atualizar a mensagem de WhatsApp para usar o nome novo do tier (ex.: "Growth — R$ 97/mês").
+- Escala vai de **0.4x até 2x**, em passos de **0.1**.
+- Default: **1x**.
+- Zoom é puramente visual (CSS `transform: scale`); coordenadas dos nós continuam armazenadas em pixels não-escalados.
+- Indicador percentual entre os botões (ex: `100%`).
+- Atalhos previnem o zoom nativo do navegador (`e.preventDefault()`).
 
-### 2. `src/components/landing/RegistroDialog.tsx`
-- Mesma atualização do mapa `plans` e do `<Select>` (3 opções: Starter / Growth / Scale).
-- Mesmo mapeamento `tier → slug backend` no submit.
-- O `selectedPlan` recebido por prop continua sendo o slug do backend (`basico`/`pro`); converter para o tier visual ao abrir o dialog (`pro` → `growth` por padrão).
+## Mudanças técnicas
 
-### 3. `PricingSection.tsx` (ajuste mínimo)
-- Passar o tier visual (ex.: `"growth"`, `"scale"`) em vez do slug backend para o `RegistroDialog`, para que o dialog abra com o tier correto destacado. O dialog converte para slug backend antes de enviar.
+### 1. `src/components/workflows/WorkflowCanvas.tsx`
+- Adicionar estado `zoom` (number, default 1) em `CanvasInner`.
+- Criar wrapper interno `<div>` com `transform: scale(zoom)` e `transformOrigin: "0 0"`, contendo `ConnectionsLayer` + nós + menu. O div externo (rolável, com grid de fundo) permanece como está.
+- Listener global `keydown`: detectar `(ctrlKey || metaKey)` + (`+`, `=`, `-`, `0`) → ajusta zoom, `preventDefault`.
+- Handler `wheel` no canvas: se `ctrlKey`, ajustar zoom e `preventDefault` (bonus, opcional mas comum em editores de nó).
+- Ao calcular posição do menu de criação de nós no clique, dividir `(e.clientX - rect.left)` pelo zoom para o nó nascer onde o usuário clicou.
+- Ao detectar drop em porta de entrada (`pointerup`), nada muda — `elementFromPoint` continua usando coordenadas de viewport.
+- Renderizar novo componente `<ZoomControls zoom={zoom} setZoom={setZoom} />` posicionado `absolute bottom-4 right-4 z-20`.
 
-## Backend / DB
+### 2. `src/components/workflows/ConnectionsLayer.tsx`
+- A camada SVG fica DENTRO do wrapper escalado, então as coordenadas continuam corretas sem mudanças (o SVG escala junto). Porém precisamos ajustar o cálculo do ghost (mouse): `connecting.mouse` está em coords de viewport, e o SVG agora vive em espaço escalado. Dividir o offset relativo ao canvas pelo zoom:
+  ```ts
+  to: {
+    x: (connecting.mouse.x - canvasRect.left + scrollLeft) / zoom,
+    y: (connecting.mouse.y - canvasRect.top + scrollTop) / zoom,
+  }
+  ```
+- Aceitar `zoom` via prop ou via contexto.
 
-Sem alterações. A edge function `register` continua aceitando apenas `basico` e `pro`. Growth e Scale são enviados como `pro`, exatamente como já é feito na landing (comentário existente em `PricingSection.tsx` confirma essa decisão).
+### 3. `src/components/workflows/WorkflowContext.tsx`
+- Adicionar `zoom` e `setZoom` no contexto para que `ConnectionsLayer` possa ler sem prop drilling. Alternativa simples: passar prop. Vou preferir prop para manter contexto enxuto.
 
-## Fora de escopo
+### 4. Novo: `src/components/workflows/ZoomControls.tsx`
+- Componente pequeno com três botões (`ZoomOut`, label `xx%`, `ZoomIn`) e um botão de reset (`Maximize2` ou texto "100%" clicável).
+- Estilo: card flutuante com `border border-primary/30 bg-card/95 backdrop-blur` para combinar com o restante.
 
-- Refatoração real de planos no Supabase (criar slugs `growth`/`scale` separados).
-- Mudanças em gating de features das edge functions.
+## Layout dos controles
+
+```text
+┌──────────────────────────────┐
+│  Canvas                       │
+│                               │
+│                               │
+│                               │
+│              ┌──────────────┐ │
+│              │ [-] 100% [+] │ │
+│              └──────────────┘ │
+└──────────────────────────────┘
+```
+
+## Edge cases
+- Múltiplos pressionamentos rápidos: usar `setZoom(z => clamp(z ± 0.1))`.
+- macOS: aceitar `metaKey` além de `ctrlKey`.
+- Tecla `+` em alguns layouts vem como `=` com Shift; tratar `e.key === '+' || e.key === '=' `.
+- `preventDefault` apenas quando a combinação for nossa, para não bloquear outros atalhos.
+
+## Arquivos
+- **Criar**: `src/components/workflows/ZoomControls.tsx`
+- **Editar**: `src/components/workflows/WorkflowCanvas.tsx`, `src/components/workflows/ConnectionsLayer.tsx`

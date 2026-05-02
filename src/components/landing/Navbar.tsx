@@ -116,8 +116,8 @@ export function Navbar() {
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => navigate("/login")}>
                 Entrar
               </Button>
-              <Button size="sm" className="btn-money" onClick={() => navigate("/registro")}>
-                Criar perfil grátis
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate("/registro")}>
+                Começar Agora
               </Button>
             </>
           )}
@@ -190,8 +190,8 @@ export function Navbar() {
                   <Button variant="outline" size="sm" className="flex-1 border-border text-foreground" onClick={() => { setMobileOpen(false); navigate("/login"); }}>
                     Entrar
                   </Button>
-                  <Button size="sm" className="flex-1 btn-money" onClick={() => { setMobileOpen(false); navigate("/registro"); }}>
-                    Criar perfil
+                  <Button size="sm" className="flex-1 bg-primary text-primary-foreground" onClick={() => { setMobileOpen(false); navigate("/registro"); }}>
+                    Começar Agora
                   </Button>
                 </>
               )}

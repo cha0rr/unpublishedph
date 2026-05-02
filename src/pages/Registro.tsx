@@ -14,32 +14,15 @@ import logo from "@/assets/logo.png";
 
 const WHATSAPP_NUMBER = "5585982089367";
 
-type Tier = "starter" | "growth" | "scale";
-
-const tierLabels: Record<Tier, string> = {
-  starter: "Starter — R$ 59/mês",
-  growth: "Growth — R$ 97/mês",
-  scale: "Scale — R$ 197/mês",
-};
-
-// Map visual tier -> backend slug accepted by the register edge function.
-const tierToBackendSlug: Record<Tier, "basico" | "pro"> = {
-  starter: "basico",
-  growth: "pro",
-  scale: "pro",
-};
-
-const normalizeTier = (raw: string | null): Tier => {
-  if (raw === "starter" || raw === "growth" || raw === "scale") return raw;
-  if (raw === "basico") return "starter";
-  if (raw === "pro") return "growth";
-  return "growth";
+const plans: Record<string, string> = {
+  basico: "Básico — R$ 49,90/mês",
+  pro: "Pro — R$ 69,90/mês",
 };
 
 const Registro = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const selectedPlan: Tier = normalizeTier(searchParams.get("plano"));
+  const selectedPlan = searchParams.get("plano") || "pro";
 
   const [form, setForm] = useState({
     full_name: "",
@@ -59,7 +42,7 @@ const Registro = () => {
   };
 
   const buildWhatsAppMessage = () => {
-    const planLabel = tierLabels[form.plan as Tier] || form.plan;
+    const planLabel = plans[form.plan] || form.plan;
     return encodeURIComponent(
       `🎬 *Nova solicitação PH Studio*\n\n` +
       `*Nome:* ${form.full_name}\n` +
@@ -77,9 +60,8 @@ const Registro = () => {
     setError("");
 
     try {
-      const backendPlan = tierToBackendSlug[form.plan as Tier] ?? "pro";
       const { data, error: fnError } = await supabase.functions.invoke("register", {
-        body: { ...form, plan: backendPlan },
+        body: form,
       });
 
       if (fnError) throw new Error(fnError.message);
@@ -130,7 +112,7 @@ const Registro = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="mb-8 text-center">
-            <img src={logo} alt="PH Studio" className="mx-auto h-28 w-auto rounded-xl mb-6 sm:h-32" />
+            <img src={logo} alt="PH Studio" className="mx-auto h-16 w-auto rounded-xl mb-4" />
             <h1 className="text-2xl font-bold text-foreground">Criar Conta</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Preencha seus dados para solicitar acesso ao PH Studio
@@ -146,9 +128,8 @@ const Registro = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="starter">Starter — R$ 59/mês</SelectItem>
-                  <SelectItem value="growth">Growth — R$ 97/mês</SelectItem>
-                  <SelectItem value="scale">Scale — R$ 197/mês</SelectItem>
+                  <SelectItem value="basico">Básico — R$ 49,90/mês</SelectItem>
+                  <SelectItem value="pro">Pro — R$ 69,90/mês</SelectItem>
                 </SelectContent>
               </Select>
             </div>

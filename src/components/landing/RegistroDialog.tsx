@@ -10,25 +10,9 @@ import { Loader2, CheckCircle } from "lucide-react";
 
 const WHATSAPP_NUMBER = "5585982089367";
 
-type Tier = "starter" | "growth" | "scale";
-
-const tierLabels: Record<Tier, string> = {
-  starter: "Starter — R$ 59/mês",
-  growth: "Growth — R$ 97/mês",
-  scale: "Scale — R$ 197/mês",
-};
-
-const tierToBackendSlug: Record<Tier, "basico" | "pro"> = {
-  starter: "basico",
-  growth: "pro",
-  scale: "pro",
-};
-
-const normalizeTier = (raw: string): Tier => {
-  if (raw === "starter" || raw === "growth" || raw === "scale") return raw;
-  if (raw === "basico") return "starter";
-  if (raw === "pro") return "growth";
-  return "growth";
+const plans: Record<string, string> = {
+  basico: "Básico — R$ 49,90/mês",
+  pro: "Pro — R$ 79,90/mês",
 };
 
 interface RegistroDialogProps {
@@ -45,14 +29,14 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
     whatsapp: "",
     usage_type: "",
     payment_method: "",
-    plan: normalizeTier(selectedPlan),
+    plan: selectedPlan,
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
   useState(() => {
-    setForm((prev) => ({ ...prev, plan: normalizeTier(selectedPlan) }));
+    setForm((prev) => ({ ...prev, plan: selectedPlan }));
   });
 
   const handleChange = (field: string, value: string) => {
@@ -60,7 +44,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
   };
 
   const buildWhatsAppMessage = () => {
-    const planLabel = tierLabels[form.plan as Tier] || form.plan;
+    const planLabel = plans[form.plan] || form.plan;
     return encodeURIComponent(
       `🎬 *Nova solicitação PH Studio*\n\n` +
       `*Nome:* ${form.full_name}\n` +
@@ -78,9 +62,8 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
     setError("");
 
     try {
-      const backendPlan = tierToBackendSlug[form.plan as Tier] ?? "pro";
       const { data, error: fnError } = await supabase.functions.invoke("register", {
-        body: { ...form, plan: backendPlan },
+        body: form,
       });
 
       if (fnError) throw new Error(fnError.message);
@@ -109,7 +92,7 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
         whatsapp: "",
         usage_type: "",
         payment_method: "",
-        plan: normalizeTier(selectedPlan),
+        plan: selectedPlan,
       });
     }
     onOpenChange(value);
@@ -146,9 +129,8 @@ export function RegistroDialog({ open, onOpenChange, selectedPlan }: RegistroDia
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="starter">Starter — R$ 59/mês</SelectItem>
-                    <SelectItem value="growth">Growth — R$ 97/mês</SelectItem>
-                    <SelectItem value="scale">Scale — R$ 197/mês</SelectItem>
+                    <SelectItem value="basico">Básico — R$ 49,90/mês</SelectItem>
+                    <SelectItem value="pro">Pro — R$ 79,90/mês</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
