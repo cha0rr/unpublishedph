@@ -21,6 +21,7 @@ const plans: {
     slug: "basico",
     description: "Para quem está começando a criar contas no TikTok.",
     features: [
+      "Substitui várias ferramentas",
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
@@ -37,6 +38,7 @@ const plans: {
     slug: "pro",
     description: "Para quem gerencia múltiplas contas e precisa de volume.",
     features: [
+      "Substitui várias ferramentas",
       "Geração de vídeos ilimitada",
       "Formatos 16:9 e 9:16",
       "Gerador com Frame Mode",
@@ -70,10 +72,13 @@ export function PricingSection() {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.5 }}
         >
+          <span className="inline-block mb-4 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-xs font-semibold text-primary">
+            Substitui ChatGPT + Midjourney + Editor + Apps de legenda
+          </span>
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Planos para escalar no TikTok
+            Planos que substituem várias ferramentas
           </h2>
-          <p className="mt-4 text-muted-foreground">Geração ilimitada de UGC para suas contas.</p>
+          <p className="mt-4 text-muted-foreground">Tudo que você precisa para criar vídeos que vendem — em um só lugar.</p>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">

@@ -86,9 +86,9 @@ export function ShowcaseSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-            Exemplos de <span className="text-gradient-cyan">vídeos para TikTok</span>
+            O que você pode <span className="text-gradient-cyan">criar</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">UGC, virais, nichos criativos — veja o que você pode criar.</p>
+          <p className="mt-4 text-muted-foreground">Vídeos de produto · UGC com IA · Conteúdo dark · Anúncios para social commerce.</p>
         </motion.div>
       </div>
 
