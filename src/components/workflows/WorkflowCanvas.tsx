@@ -115,6 +115,36 @@ function CanvasInner() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  useEffect(() => {
+    if (!isPanning) return;
+
+    const onMove = (e: MouseEvent) => {
+      if (!panRef.current) return;
+      e.preventDefault();
+      const dx = e.clientX - panRef.current.x;
+      const dy = e.clientY - panRef.current.y;
+      if (Math.abs(dx) + Math.abs(dy) > 2) panMovedRef.current = true;
+      setPan({
+        x: panRef.current.panX + dx,
+        y: panRef.current.panY + dy,
+      });
+    };
+
+    const onUp = (e: MouseEvent) => {
+      e.preventDefault();
+      panRef.current = null;
+      setIsPanning(false);
+      if (panMovedRef.current) pointerDownTargetRef.current = null;
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false });
+    window.addEventListener("mouseup", onUp, { passive: false });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isPanning]);
+
   // Global pointer handlers while a wire is being dragged
   useEffect(() => {
     if (!connecting) return;
@@ -143,17 +173,15 @@ function CanvasInner() {
     <div
       ref={canvasRef}
       onClick={handleCanvasClick}
-      onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }}
+      onMouseDown={onMouseDown}
       onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endPan}
-      onPointerCancel={endPan}
       onAuxClick={(e) => { if (e.button === 1) e.preventDefault(); }}
-      className="absolute inset-0 overflow-auto"
+      className="absolute inset-0 overflow-hidden"
       style={{
         backgroundImage:
           "radial-gradient(circle, hsl(var(--primary) / 0.15) 1px, transparent 1px)",
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+        backgroundPosition: `${pan.x}px ${pan.y}px`,
         backgroundColor: "hsl(var(--background))",
         cursor: isPanning ? "grabbing" : connecting ? "crosshair" : "default",
       }}
@@ -162,12 +190,12 @@ function CanvasInner() {
         ref={innerRef}
         className="absolute top-0 left-0 origin-top-left"
         style={{
-          transform: `scale(${zoom})`,
-          width: `${100 / zoom}%`,
-          height: `${100 / zoom}%`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          width: "100%",
+          height: "100%",
         }}
       >
-        <ConnectionsLayer canvasRef={canvasRef} zoom={zoom} />
+        <ConnectionsLayer canvasRef={canvasRef} zoom={zoom} pan={pan} />
         {nodes.map((node) => {
           const common = { key: node.id, id: node.id, x: node.x, y: node.y, onRemove: () => removeNode(node.id) };
           switch (node.type) {
