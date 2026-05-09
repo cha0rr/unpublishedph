@@ -26,9 +26,10 @@ function CanvasInner() {
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const pointerDownTargetRef = useRef<EventTarget | null>(null);
-  const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const panMovedRef = useRef(false);
   const { connecting, updateConnectingMouse, completeConnect, cancelConnect } = useWorkflow();
 
@@ -41,49 +42,31 @@ function CanvasInner() {
     if (connecting) return; // ignore clicks while wiring
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
-    const scrollTop = canvasRef.current?.scrollTop ?? 0;
     setMenu({
-      x: (e.clientX - rect.left + scrollLeft) / zoom,
-      y: (e.clientY - rect.top + scrollTop) / zoom,
+      x: (e.clientX - rect.left - pan.x) / zoom,
+      y: (e.clientY - rect.top - pan.y) / zoom,
     });
-  }, [connecting, zoom]);
+  }, [connecting, pan.x, pan.y, zoom]);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     pointerDownTargetRef.current = e.target;
-    if (e.button === 1 && canvasRef.current) {
+  }, []);
+
+  const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button === 1) {
       e.preventDefault();
-      try { canvasRef.current.setPointerCapture(e.pointerId); } catch { /* noop */ }
+      pointerDownTargetRef.current = e.target;
       panRef.current = {
         x: e.clientX,
         y: e.clientY,
-        sl: canvasRef.current.scrollLeft,
-        st: canvasRef.current.scrollTop,
+        panX: pan.x,
+        panY: pan.y,
       };
       panMovedRef.current = false;
+      setMenu(null);
       setIsPanning(true);
     }
-  }, []);
-
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!panRef.current || !canvasRef.current) return;
-    const dx = e.clientX - panRef.current.x;
-    const dy = e.clientY - panRef.current.y;
-    if (Math.abs(dx) + Math.abs(dy) > 2) panMovedRef.current = true;
-    canvasRef.current.scrollLeft = panRef.current.sl - dx;
-    canvasRef.current.scrollTop = panRef.current.st - dy;
-  }, []);
-
-  const endPan = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!panRef.current) return;
-    panRef.current = null;
-    setIsPanning(false);
-    try { canvasRef.current?.releasePointerCapture(e.pointerId); } catch { /* noop */ }
-    if (panMovedRef.current) {
-      // suppress the synthetic click that follows the middle-button drag
-      pointerDownTargetRef.current = null;
-    }
-  }, []);
+  }, [pan.x, pan.y]);
 
   const addNode = useCallback((type: NodeType) => {
     if (!menu) return;
@@ -132,6 +115,36 @@ function CanvasInner() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  useEffect(() => {
+    if (!isPanning) return;
+
+    const onMove = (e: MouseEvent) => {
+      if (!panRef.current) return;
+      e.preventDefault();
+      const dx = e.clientX - panRef.current.x;
+      const dy = e.clientY - panRef.current.y;
+      if (Math.abs(dx) + Math.abs(dy) > 2) panMovedRef.current = true;
+      setPan({
+        x: panRef.current.panX + dx,
+        y: panRef.current.panY + dy,
+      });
+    };
+
+    const onUp = (e: MouseEvent) => {
+      e.preventDefault();
+      panRef.current = null;
+      setIsPanning(false);
+      if (panMovedRef.current) pointerDownTargetRef.current = null;
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false });
+    window.addEventListener("mouseup", onUp, { passive: false });
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isPanning]);
+
   // Global pointer handlers while a wire is being dragged
   useEffect(() => {
     if (!connecting) return;
@@ -160,17 +173,15 @@ function CanvasInner() {
     <div
       ref={canvasRef}
       onClick={handleCanvasClick}
-      onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }}
+      onMouseDown={onMouseDown}
       onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endPan}
-      onPointerCancel={endPan}
       onAuxClick={(e) => { if (e.button === 1) e.preventDefault(); }}
-      className="absolute inset-0 overflow-auto"
+      className="absolute inset-0 overflow-hidden"
       style={{
         backgroundImage:
           "radial-gradient(circle, hsl(var(--primary) / 0.15) 1px, transparent 1px)",
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+        backgroundPosition: `${pan.x}px ${pan.y}px`,
         backgroundColor: "hsl(var(--background))",
         cursor: isPanning ? "grabbing" : connecting ? "crosshair" : "default",
       }}
@@ -179,12 +190,12 @@ function CanvasInner() {
         ref={innerRef}
         className="absolute top-0 left-0 origin-top-left"
         style={{
-          transform: `scale(${zoom})`,
-          width: `${100 / zoom}%`,
-          height: `${100 / zoom}%`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          width: "100%",
+          height: "100%",
         }}
       >
-        <ConnectionsLayer canvasRef={canvasRef} zoom={zoom} />
+        <ConnectionsLayer canvasRef={canvasRef} zoom={zoom} pan={pan} />
         {nodes.map((node) => {
           const common = { key: node.id, id: node.id, x: node.x, y: node.y, onRemove: () => removeNode(node.id) };
           switch (node.type) {
