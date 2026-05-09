@@ -160,6 +160,7 @@ function CanvasInner() {
     <div
       ref={canvasRef}
       onClick={handleCanvasClick}
+      onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endPan}
