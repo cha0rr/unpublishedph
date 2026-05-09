@@ -26,9 +26,17 @@ function CanvasInner() {
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [isPanning, setIsPanning] = useState(false);
+  const pointerDownTargetRef = useRef<EventTarget | null>(null);
+  const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
+  const panMovedRef = useRef(false);
   const { connecting, updateConnectingMouse, completeConnect, cancelConnect } = useWorkflow();
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const downTarget = pointerDownTargetRef.current;
+    pointerDownTargetRef.current = null;
+    // Only open the menu if the press started on the empty canvas (not on a card/port)
+    if (downTarget !== canvasRef.current && downTarget !== innerRef.current) return;
     if (e.target !== canvasRef.current && e.target !== innerRef.current) return;
     if (connecting) return; // ignore clicks while wiring
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -40,6 +48,42 @@ function CanvasInner() {
       y: (e.clientY - rect.top + scrollTop) / zoom,
     });
   }, [connecting, zoom]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    pointerDownTargetRef.current = e.target;
+    if (e.button === 1 && canvasRef.current) {
+      e.preventDefault();
+      try { canvasRef.current.setPointerCapture(e.pointerId); } catch { /* noop */ }
+      panRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        sl: canvasRef.current.scrollLeft,
+        st: canvasRef.current.scrollTop,
+      };
+      panMovedRef.current = false;
+      setIsPanning(true);
+    }
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!panRef.current || !canvasRef.current) return;
+    const dx = e.clientX - panRef.current.x;
+    const dy = e.clientY - panRef.current.y;
+    if (Math.abs(dx) + Math.abs(dy) > 2) panMovedRef.current = true;
+    canvasRef.current.scrollLeft = panRef.current.sl - dx;
+    canvasRef.current.scrollTop = panRef.current.st - dy;
+  }, []);
+
+  const endPan = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!panRef.current) return;
+    panRef.current = null;
+    setIsPanning(false);
+    try { canvasRef.current?.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    if (panMovedRef.current) {
+      // suppress the synthetic click that follows the middle-button drag
+      pointerDownTargetRef.current = null;
+    }
+  }, []);
 
   const addNode = useCallback((type: NodeType) => {
     if (!menu) return;
@@ -116,13 +160,18 @@ function CanvasInner() {
     <div
       ref={canvasRef}
       onClick={handleCanvasClick}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endPan}
+      onPointerCancel={endPan}
+      onAuxClick={(e) => { if (e.button === 1) e.preventDefault(); }}
       className="absolute inset-0 overflow-auto"
       style={{
         backgroundImage:
           "radial-gradient(circle, hsl(var(--primary) / 0.15) 1px, transparent 1px)",
         backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
         backgroundColor: "hsl(var(--background))",
-        cursor: connecting ? "crosshair" : "default",
+        cursor: isPanning ? "grabbing" : connecting ? "crosshair" : "default",
       }}
     >
       <div

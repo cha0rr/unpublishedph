@@ -1,27 +1,85 @@
-## Alternar vídeos no player fake da Hero
+## Objetivo
 
-Atualmente o `HeroAnimation.tsx` mostra apenas `/videos/showcase-1.mp4` em loop. Vamos fazê-lo alternar entre os 6 vídeos do showcase, sincronizado com o ciclo da barra de progresso "fake" (que dura 8s).
+Dois ajustes no canvas de workflows (`src/components/workflows/WorkflowCanvas.tsx`):
 
-### Mudanças em `src/components/landing/HeroAnimation.tsx`
+1. **Pan com botão do meio (scroll)**: permitir arrastar o canvas mantendo o botão do meio do mouse pressionado.
+2. **Bug do menu ao arrastar nó**: ao arrastar um nó e soltar sobre outro nó, o menu "Adicionar nó" abre indevidamente.
 
-1. Adicionar uma lista local com os mesmos vídeos do `ShowcaseSection`:
-   - `/videos/showcase-1.mp4` até `/videos/showcase-6.mp4`
+---
 
-2. Criar estado `currentVideoIndex` com `useState(0)`.
+## 1. Pan com botão do meio
 
-3. Sincronizar troca com o ciclo do "carregamento":
-   - A barra de progresso já tem animação de 8s em loop infinito.
-   - A cada 8 segundos (mesmo período), avançar `currentVideoIndex` para o próximo vídeo (com `setInterval` em `useEffect`).
-   - No momento da troca, exibir brevemente (≈600ms) um overlay de "transição/processando" sobre o vídeo, simulando o carregamento concluir antes do próximo iniciar — reforça a ideia de "gerando novo vídeo".
+Adicionar handlers de pointer no container `canvasRef`:
 
-4. Trocar a tag `<video>`:
-   - `key={currentVideoIndex}` para forçar remount e reiniciar o playback.
-   - `src={videos[currentVideoIndex]}` dinâmico.
-   - Manter `autoPlay loop muted playsInline`.
-   - Envolver em `AnimatePresence` (framer-motion) com fade-in/fade-out suave (≈300ms) entre trocas para a transição não ser brusca.
+- `onPointerDown`: se `e.button === 1` (middle), `e.preventDefault()`, capturar pointer, gravar `{ startX, startY, scrollLeft, scrollTop }` em uma ref e ativar estado `isPanning`.
+- `onPointerMove` (global enquanto pan ativo): atualizar `canvasRef.current.scrollLeft/Top` com base no delta.
+- `onPointerUp` / `onPointerCancel`: encerrar pan, liberar pointer capture.
+- Cursor muda para `grabbing` enquanto `isPanning`.
+- Suprimir o `onClick` que segue o pan: se houve movimento durante o middle-drag, marcar `suppressNextClick` e ignorar no `handleCanvasClick`.
+- Também tratar `onAuxClick` para `preventDefault` (evita o ícone de auto-scroll do navegador).
 
-5. Atualizar o texto "Gerando vídeo com IA..." mantendo, mas opcionalmente mostrar o tipo do vídeo atual ("Viral", "UGC") abaixo, lendo do mesmo array — isso dá realismo ao "gerador". Manter simples: apenas alternar os vídeos sem mudar copy.
+## 2. Corrigir abertura do menu ao soltar nó sobre outro
 
-### Resultado esperado
+Causa: quando o usuário arrasta a partir do header de um `WorkflowCard` e solta sobre **outro** card, o `pointerdown` ocorre no header e o `pointerup` em outro elemento; o navegador dispara um `click` no ancestral comum — o canvas — que acaba caindo em `handleCanvasClick` e abre o menu.
 
-A cada ~8s o player fake da hero troca de vídeo automaticamente, ciclando pelos 6 exemplos do showcase, com fade suave. A barra de progresso e os efeitos visuais permanecem como estão.
+Correção (apenas frontend):
+
+- Registrar em `onPointerDown` do canvas o alvo original (`pointerDownTargetRef`).
+- Em `handleCanvasClick`, abrir o menu **somente se** `pointerDownTargetRef.current` também for `canvasRef.current` ou `innerRef.current` (ou seja, o mousedown começou no fundo do canvas, não dentro de um card/porta).
+- Limpar a ref após o click.
+
+Isso preserva a UX atual (clicar no fundo abre o menu) e elimina o falso positivo após arrastar nós/portas.
+
+---
+
+## Detalhes técnicos
+
+Arquivo único alterado: `src/components/workflows/WorkflowCanvas.tsx`.
+
+Trechos-chave:
+
+```tsx
+const pointerDownTargetRef = useRef<EventTarget | null>(null);
+const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
+const [isPanning, setIsPanning] = useState(false);
+
+const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  pointerDownTargetRef.current = e.target;
+  if (e.button === 1 && canvasRef.current) {
+    e.preventDefault();
+    canvasRef.current.setPointerCapture(e.pointerId);
+    panRef.current = {
+      x: e.clientX, y: e.clientY,
+      sl: canvasRef.current.scrollLeft,
+      st: canvasRef.current.scrollTop,
+    };
+    setIsPanning(true);
+  }
+};
+
+const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  if (!panRef.current || !canvasRef.current) return;
+  canvasRef.current.scrollLeft = panRef.current.sl - (e.clientX - panRef.current.x);
+  canvasRef.current.scrollTop  = panRef.current.st - (e.clientY - panRef.current.y);
+};
+
+const endPan = (e: React.PointerEvent<HTMLDivElement>) => {
+  if (!panRef.current) return;
+  panRef.current = null;
+  setIsPanning(false);
+  canvasRef.current?.releasePointerCapture(e.pointerId);
+};
+```
+
+E em `handleCanvasClick`, adicionar guard:
+
+```tsx
+const downTarget = pointerDownTargetRef.current;
+pointerDownTargetRef.current = null;
+if (downTarget !== canvasRef.current && downTarget !== innerRef.current) return;
+// ...resto da lógica existente
+```
+
+Cursor: `isPanning ? "grabbing" : connecting ? "crosshair" : "default"`.
+
+Sem mudanças em outros arquivos, sem mudanças de lógica de negócio.
