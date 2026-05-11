@@ -139,6 +139,15 @@ Deno.serve(async (req) => {
       imageUrl = img.image_url || img.file_download_url;
     }
     if (!imageUrl) imageUrl = data.thumbnail_url;
+    imageUrl = normalizeMediaUrl(imageUrl);
+    if (data.generate_result) data.generate_result = normalizeMediaUrl(data.generate_result);
+    if (Array.isArray(data.generated_image)) {
+      data.generated_image = data.generated_image.map((v: any) => ({
+        ...v,
+        image_url: normalizeMediaUrl(v?.image_url),
+        file_download_url: normalizeMediaUrl(v?.file_download_url),
+      }));
+    }
     if (imageUrl) updatePayload.image_url = imageUrl;
 
     // Extract thumbnail_small
