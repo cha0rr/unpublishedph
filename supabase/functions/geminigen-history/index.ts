@@ -5,6 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// GeminiGen sometimes returns URLs like "https://s3.us-east-1.idrivee2.com/https://edge-files.geminigen.ai/..."
+// The bogus S3 prefix breaks the signature (SignatureDoesNotMatch). Strip it.
+function normalizeMediaUrl(url: unknown): string | null {
+  if (!url || typeof url !== 'string') return (url as string) ?? null;
+  const idx = url.indexOf('https://', 8);
+  if (idx > 0) return url.slice(idx);
+  const httpIdx = url.indexOf('http://', 8);
+  if (httpIdx > 0) return url.slice(httpIdx);
+  return url;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
