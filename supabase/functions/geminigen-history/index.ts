@@ -140,6 +140,16 @@ Deno.serve(async (req) => {
       videoUrl = vid.video_url || vid.file_download_url;
     }
     if (!videoUrl) videoUrl = data.thumbnail_url;
+    videoUrl = normalizeMediaUrl(videoUrl);
+    // Also normalize the URLs nested in the payload so the client sees clean URLs
+    if (data.generate_result) data.generate_result = normalizeMediaUrl(data.generate_result);
+    if (Array.isArray(data.generated_video)) {
+      data.generated_video = data.generated_video.map((v: any) => ({
+        ...v,
+        video_url: normalizeMediaUrl(v?.video_url),
+        file_download_url: normalizeMediaUrl(v?.file_download_url),
+      }));
+    }
     if (videoUrl) updatePayload.image_url = videoUrl;
 
     // Credits
