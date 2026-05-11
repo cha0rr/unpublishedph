@@ -66,7 +66,7 @@ export function SequentialVideoPlayer({ segments, aspectRatio, onSegmentChange }
     const vid = videoRef.current;
     if (!vid) return;
     if (vid.paused) {
-      vid.play().then(() => setIsPlaying(true));
+      vid.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     } else {
       vid.pause();
       setIsPlaying(false);
@@ -97,6 +97,7 @@ export function SequentialVideoPlayer({ segments, aspectRatio, onSegmentChange }
         onEnded={segments.length > 1 ? handleEnded : undefined}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onError={() => setIsPlaying(false)}
         onClick={togglePlay}
         className="h-full w-full object-cover cursor-pointer"
       />

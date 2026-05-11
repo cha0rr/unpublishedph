@@ -176,36 +176,47 @@ Deno.serve(async (req) => {
 
     const publicKey = await importPublicKey(publicKeyPem);
 
-    // Step 1: MD5 hash of raw body (hex string) — now using pure JS implementation
-    const bodyMd5HexStr = md5Hex(rawBody);
+    // Parse body first — GeminiGen signs the `event_uuid` field, not the raw body
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      parsed = { raw: rawBody };
+    }
 
-    // Step 2: Decode hex-encoded signature
+    const eventUuid = (parsed.event_uuid || parsed.eventUuid || '') as string;
+    if (!eventUuid) {
+      console.warn('Webhook rejected: missing event_uuid');
+      return new Response(JSON.stringify({ error: 'Missing event_uuid' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Spec: md5Digest = MD5(event_uuid) raw bytes; verify SHA-256(RSA) over md5Digest
+    const md5Digest = md5(new TextEncoder().encode(eventUuid));
     const sigBytes = hexToUint8Array(signature);
 
-    // Step 3: Verify signature against the MD5 hash
-    const md5Bytes = new TextEncoder().encode(bodyMd5HexStr);
     const valid = await crypto.subtle.verify(
       'RSASSA-PKCS1-v1_5',
       publicKey,
       sigBytes,
-      md5Bytes,
+      md5Digest,
     );
 
     if (!valid) {
-      console.warn('Webhook rejected: invalid signature');
+      console.warn('Webhook rejected: invalid signature for event_uuid', eventUuid);
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Signature valid — process payload
-    let data: Record<string, unknown> = {};
-    try {
-      data = JSON.parse(rawBody);
-    } catch {
-      data = { raw: rawBody };
-    }
+    // Webhook payload nests the generation data under `data`
+    const inner = (parsed.data && typeof parsed.data === 'object')
+      ? parsed.data as Record<string, unknown>
+      : parsed;
+    const data: Record<string, unknown> = { ...parsed, ...inner };
 
     console.log('Webhook verified — event:', data.event, '| uuid:', data.uuid, '| status:', data.status);
 
@@ -232,7 +243,9 @@ Deno.serve(async (req) => {
 
       // Extract video/image URL
       let resultUrl: string | undefined;
-      if (data.generate_result) resultUrl = data.generate_result as string;
+      // Webhook payload primary field is `media_url` (working R2 signature).
+      if (data.media_url) resultUrl = data.media_url as string;
+      if (!resultUrl && data.generate_result) resultUrl = data.generate_result as string;
       if (!resultUrl && Array.isArray(data.generated_video) && data.generated_video.length > 0) {
         const vid = data.generated_video[0] as Record<string, unknown>;
         resultUrl = (vid.video_url || vid.file_download_url) as string;
