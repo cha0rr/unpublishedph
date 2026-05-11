@@ -241,7 +241,8 @@ Deno.serve(async (req) => {
         const img = data.generated_image[0] as Record<string, unknown>;
         resultUrl = (img.image_url || img.file_download_url) as string;
       }
-      if (resultUrl) updatePayload.image_url = resultUrl;
+      const normalized = normalizeMediaUrl(resultUrl);
+      if (normalized) updatePayload.image_url = normalized;
 
       // Credits
       if (data.used_credit !== undefined) updatePayload.used_credit = data.used_credit;
