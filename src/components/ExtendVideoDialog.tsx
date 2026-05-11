@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Sparkles, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeMediaUrl } from "@/lib/normalizeMediaUrl";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -123,7 +124,7 @@ export function ExtendVideoDialog({
             finalUrl = vid.video_url || vid.file_download_url;
           }
           if (!finalUrl) finalUrl = data.thumbnail_url;
-          return finalUrl || null;
+          return normalizeMediaUrl(finalUrl) || null;
         }
         if (status === 3) {
           throw new Error(errMsg || "Falha ao estender vídeo.");

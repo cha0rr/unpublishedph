@@ -5,6 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function normalizeMediaUrl(url: unknown): string | null {
+  if (!url || typeof url !== 'string') return (url as string) ?? null;
+  const idx = url.indexOf('https://', 8);
+  if (idx > 0) return url.slice(idx);
+  const httpIdx = url.indexOf('http://', 8);
+  if (httpIdx > 0) return url.slice(httpIdx);
+  return url;
+}
+
 function pemToArrayBuffer(pem: string): ArrayBuffer {
   const b64 = pem
     .replace(/-----BEGIN PUBLIC KEY-----/, '')
@@ -232,7 +241,8 @@ Deno.serve(async (req) => {
         const img = data.generated_image[0] as Record<string, unknown>;
         resultUrl = (img.image_url || img.file_download_url) as string;
       }
-      if (resultUrl) updatePayload.image_url = resultUrl;
+      const normalized = normalizeMediaUrl(resultUrl);
+      if (normalized) updatePayload.image_url = normalized;
 
       // Credits
       if (data.used_credit !== undefined) updatePayload.used_credit = data.used_credit;

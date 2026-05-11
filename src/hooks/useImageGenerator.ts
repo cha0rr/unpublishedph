@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { normalizeMediaUrl } from "@/lib/normalizeMediaUrl";
 
 type GeneratorState = "idle" | "generating" | "polling" | "success" | "error";
 
@@ -164,7 +165,7 @@ export function useImageGenerator(): ImageGeneratorResult {
             finalUrl = img.image_url || img.file_download_url;
           }
           if (!finalUrl) finalUrl = data.thumbnail_url;
-          return finalUrl || null;
+          return normalizeMediaUrl(finalUrl) || null;
         }
 
         if (data.status === 3) {

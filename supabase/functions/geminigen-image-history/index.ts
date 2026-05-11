@@ -5,6 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function normalizeMediaUrl(url: unknown): string | null {
+  if (!url || typeof url !== 'string') return (url as string) ?? null;
+  const idx = url.indexOf('https://', 8);
+  if (idx > 0) return url.slice(idx);
+  const httpIdx = url.indexOf('http://', 8);
+  if (httpIdx > 0) return url.slice(httpIdx);
+  return url;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -130,6 +139,15 @@ Deno.serve(async (req) => {
       imageUrl = img.image_url || img.file_download_url;
     }
     if (!imageUrl) imageUrl = data.thumbnail_url;
+    imageUrl = normalizeMediaUrl(imageUrl);
+    if (data.generate_result) data.generate_result = normalizeMediaUrl(data.generate_result);
+    if (Array.isArray(data.generated_image)) {
+      data.generated_image = data.generated_image.map((v: any) => ({
+        ...v,
+        image_url: normalizeMediaUrl(v?.image_url),
+        file_download_url: normalizeMediaUrl(v?.file_download_url),
+      }));
+    }
     if (imageUrl) updatePayload.image_url = imageUrl;
 
     // Extract thumbnail_small
