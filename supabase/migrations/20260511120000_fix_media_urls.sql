@@ -1,5 +1,5 @@
--- Strip bogus "https://s3.us-east-1.idrivee2.com/" prefix that GeminiGen
--- sometimes prepends to signed media URLs (causes SignatureDoesNotMatch).
+-- Strip bogus "https://<s3-host>/" prefix that GeminiGen sometimes prepends to
+-- signed media URLs (causes SignatureDoesNotMatch on download/preview).
 UPDATE public.image_generations
-SET image_url = substring(image_url FROM position('https://' IN substring(image_url FROM 9)) + 8)
-WHERE image_url LIKE 'https://%/https://%';
+SET image_url = regexp_replace(image_url, '^https?://[^/]+/(https?://)', '\1')
+WHERE image_url ~ '^https?://[^/]+/https?://';
