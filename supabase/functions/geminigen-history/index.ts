@@ -141,7 +141,6 @@ Deno.serve(async (req) => {
     }
     if (!videoUrl) videoUrl = data.thumbnail_url;
     videoUrl = normalizeMediaUrl(videoUrl);
-    // Also normalize the URLs nested in the payload so the client sees clean URLs
     if (data.generate_result) data.generate_result = normalizeMediaUrl(data.generate_result);
     if (Array.isArray(data.generated_video)) {
       data.generated_video = data.generated_video.map((v: any) => ({
@@ -150,7 +149,29 @@ Deno.serve(async (req) => {
         file_download_url: normalizeMediaUrl(v?.file_download_url),
       }));
     }
-    if (videoUrl) updatePayload.image_url = videoUrl;
+
+    // The GeminiGen history endpoint returns signed URLs that frequently fail
+    // (SignatureDoesNotMatch). The webhook delivers a working `media_url` to
+    // the same row. If the DB already has a working image_url, prefer it.
+    const { data: existingRow } = await adminClient
+      .from('image_generations')
+      .select('image_url')
+      .eq('uuid', uuid)
+      .eq('user_id', userId)
+      .maybeSingle();
+    const dbImageUrl: string | null = existingRow?.image_url ?? null;
+
+    if (dbImageUrl) {
+      // Surface the DB (webhook) URL to the client so playback/download works.
+      videoUrl = dbImageUrl;
+      if (Array.isArray(data.generated_video) && data.generated_video.length > 0) {
+        data.generated_video[0] = { ...data.generated_video[0], video_url: dbImageUrl };
+      }
+      data.generate_result = dbImageUrl;
+      updatePayload.image_url = dbImageUrl;
+    } else if (videoUrl) {
+      updatePayload.image_url = videoUrl;
+    }
 
     // Credits
     if (data.used_credit !== undefined) updatePayload.used_credit = data.used_credit;
