@@ -135,7 +135,7 @@ export function useGenerator(): GeneratorResult {
           finalUrl = vid.video_url || vid.file_download_url;
         }
         if (!finalUrl) finalUrl = data.thumbnail_url;
-        return finalUrl || null;
+        return normalizeMediaUrl(finalUrl) || null;
       }
 
       if (status === 3) {
