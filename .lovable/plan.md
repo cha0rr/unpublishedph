@@ -1,37 +1,39 @@
-Do I know what the issue is? Sim.
+## Objetivo
 
-O problema não está no player em si: o registro da geração completou, mas a URL salva/entregue para o `<video>` retorna `403 SignatureDoesNotMatch`. A normalização anterior removeu/alterou prefixos de URL, mas a assinatura AWS/R2 é sensível ao host e ao caminho; qualquer reescrita pode invalidar a assinatura. Além disso, o webhook atual está rejeitando a assinatura da GeminiGen, então o app depende do polling e pode receber/salvar payloads parcialmente normalizados.
+Deixar claro na página `/gerar-roteiro` que o usuário pode gerar **roteiros e prompts** para três finalidades:
+1. Vídeos virais
+2. Vídeos UGC
+3. Criativos para vendas
 
-Plano de correção:
+E atualizar os exemplos para refletir esses três casos de uso.
 
-1. Corrigir a validação do webhook GeminiGen
-   - Ajustar a verificação RSA para assinar/verificar o `event_uuid`, conforme a documentação oficial da GeminiGen, em vez do corpo bruto.
-   - Suportar payloads com `data` aninhado e payloads diretos.
-   - Normalizar e salvar a resposta certa no banco quando o webhook chegar.
+## Alterações em `src/pages/GerarRoteiro.tsx`
 
-2. Parar de quebrar URLs assinadas
-   - Substituir `normalizeMediaUrl` por uma versão conservadora: não reescrever URLs assinadas válidas (`X-Amz-Signature`).
-   - Só corrigir casos realmente malformados de URL duplicada quando for seguro e preservando host/caminho assinados.
-   - Aplicar a mesma lógica nas Edge Functions `geminigen-history`, `geminigen-image-history` e `geminigen-webhook`.
+### 1. Atualizar o cabeçalho e subtítulo
+- Manter o título "Gerador de Roteiros & Prompts".
+- Adicionar logo abaixo (ou no estado vazio) uma frase curta de posicionamento:
+  > "Crie roteiros e prompts para vídeos virais, UGC e criativos para vendas."
 
-3. Criar proxy seguro para preview/download de vídeo
-   - Reusar/ajustar `video-segment-proxy` para aceitar URLs da GeminiGen/R2, buscar o vídeo no backend e devolver `Content-Type: video/mp4`, `Accept-Ranges`/headers compatíveis quando possível.
-   - O frontend passará a usar esse proxy para o `src` do player e para download, evitando CORS/content-type e reduzindo exposição a URLs assinadas quebradas no navegador.
+### 2. Substituir `EXAMPLE_PROMPTS`
+Trocar a lista atual por 6 exemplos agrupados em 3 categorias (2 por categoria), exibidos com um pequeno rótulo de categoria:
 
-4. Melhorar o player e o download
-   - Atualizar `SequentialVideoPlayer` para tratar `play()` com `catch`, evitando rejeição não tratada quando a mídia falha.
-   - Mostrar erro amigável quando o vídeo remoto estiver inválido/expirado.
-   - Atualizar botões de download em `VideoGenerator` para baixar pelo proxy em vez de abrir diretamente a URL assinada.
+- **Vídeos Virais**
+  - "Gere um roteiro de Notícias Virais com gancho nos primeiros 3 segundos"
+  - "Crie um prompt de vídeo de Frutas Falantes para viralizar no TikTok"
+- **Vídeos UGC**
+  - "Gere um roteiro UGC de unboxing autêntico para Instagram Reels"
+  - "Crie um prompt de UGC estilo 'POV: testei esse produto por 7 dias'"
+- **Criativos para Vendas**
+  - "Gere um roteiro de criativo de vendas com gatilho de escassez"
+  - "Crie um prompt de anúncio de produto com CTA forte para TikTok Shop"
 
-5. Validar
-   - Consultar novamente a geração de teste e testar o proxy com a URL salva.
-   - Verificar logs das Edge Functions após deploy e confirmar que preview/download usam uma URL servida pelo backend.
+### 3. UI do estado vazio
+- Renderizar as 3 categorias como blocos (ou chips agrupados), cada um com ícone:
+  - Vídeos Virais → `Flame` (lucide)
+  - Vídeos UGC → `Users`
+  - Criativos para Vendas → `ShoppingBag`
+- Cada exemplo continua clicável (chama `sendMessage(example)`) para enviar o prompt direto ao chat — hoje os exemplos são apenas decorativos, então isso também torna o estado vazio funcional.
 
-Arquivos principais:
-- `src/lib/normalizeMediaUrl.ts`
-- `src/components/SequentialVideoPlayer.tsx`
-- `src/components/VideoGenerator.tsx`
-- `supabase/functions/geminigen-history/index.ts`
-- `supabase/functions/geminigen-image-history/index.ts`
-- `supabase/functions/geminigen-webhook/index.ts`
-- `supabase/functions/video-segment-proxy/index.ts`
+## Fora de escopo
+- Nenhuma mudança em backend, edge functions, ou no modelo (DeepSeek Chat).
+- Sem mexer em outras páginas (Studio Videos, Showcase, etc.).

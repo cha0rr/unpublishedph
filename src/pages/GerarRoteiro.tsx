@@ -5,13 +5,38 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, FileText, Trash2, Lightbulb, ImagePlus, X } from "lucide-react";
+import { Loader2, Send, FileText, Trash2, ImagePlus, X, Flame, Users, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
-const EXAMPLE_PROMPTS = [
-  "Gere um roteiro de Frutas Falantes",
-  "Gere um roteiro de Cartomante",
-  "Gere um roteiro de Notícias Virais",
+const EXAMPLE_CATEGORIES: {
+  label: string;
+  icon: typeof Flame;
+  prompts: string[];
+}[] = [
+  {
+    label: "Vídeos Virais",
+    icon: Flame,
+    prompts: [
+      "Gere um roteiro de Notícias Virais com gancho nos primeiros 3 segundos",
+      "Crie um prompt de vídeo de Frutas Falantes para viralizar no TikTok",
+    ],
+  },
+  {
+    label: "Vídeos UGC",
+    icon: Users,
+    prompts: [
+      "Gere um roteiro UGC de unboxing autêntico para Instagram Reels",
+      "Crie um prompt de UGC estilo 'POV: testei esse produto por 7 dias'",
+    ],
+  },
+  {
+    label: "Criativos para Vendas",
+    icon: ShoppingBag,
+    prompts: [
+      "Gere um roteiro de criativo de vendas com gatilho de escassez",
+      "Crie um prompt de anúncio de produto com CTA forte para TikTok Shop",
+    ],
+  },
 ];
 
 interface Message {
