@@ -5,13 +5,38 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, FileText, Trash2, Lightbulb, ImagePlus, X } from "lucide-react";
+import { Loader2, Send, FileText, Trash2, ImagePlus, X, Flame, Users, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
-const EXAMPLE_PROMPTS = [
-  "Gere um roteiro de Frutas Falantes",
-  "Gere um roteiro de Cartomante",
-  "Gere um roteiro de Notícias Virais",
+const EXAMPLE_CATEGORIES: {
+  label: string;
+  icon: typeof Flame;
+  prompts: string[];
+}[] = [
+  {
+    label: "Vídeos Virais",
+    icon: Flame,
+    prompts: [
+      "Gere um roteiro de Notícias Virais com gancho nos primeiros 3 segundos",
+      "Crie um prompt de vídeo de Frutas Falantes para viralizar no TikTok",
+    ],
+  },
+  {
+    label: "Vídeos UGC",
+    icon: Users,
+    prompts: [
+      "Gere um roteiro UGC de unboxing autêntico para Instagram Reels",
+      "Crie um prompt de UGC estilo 'POV: testei esse produto por 7 dias'",
+    ],
+  },
+  {
+    label: "Criativos para Vendas",
+    icon: ShoppingBag,
+    prompts: [
+      "Gere um roteiro de criativo de vendas com gatilho de escassez",
+      "Crie um prompt de anúncio de produto com CTA forte para TikTok Shop",
+    ],
+  },
 ];
 
 interface Message {
@@ -224,12 +249,27 @@ const GerarRoteiro = () => {
             <div className="flex flex-col items-center justify-center h-full py-10">
               <FileText className="h-10 w-10 text-primary/30 mb-3" />
               <h2 className="text-lg font-semibold text-foreground/70 mb-1">Gerador de Roteiros & Prompts</h2>
-              <p className="text-sm text-muted-foreground mb-6">Digite seu pedido abaixo ou anexe uma imagem de produto. Exemplos:</p>
-              <div className="flex flex-col gap-2 w-full max-w-md">
-                {EXAMPLE_PROMPTS.map((example) => (
-                  <div key={example} className="flex items-start gap-2 rounded-lg border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground">
-                    <Lightbulb className="h-4 w-4 text-primary/50 mt-0.5 shrink-0" />
-                    <span>{example}</span>
+              <p className="text-sm text-muted-foreground mb-2 text-center max-w-md">
+                Crie roteiros e prompts para <span className="text-foreground font-medium">vídeos virais</span>, <span className="text-foreground font-medium">vídeos UGC</span> e <span className="text-foreground font-medium">criativos para vendas</span>.
+              </p>
+              <p className="text-xs text-muted-foreground mb-6">Toque em um exemplo para começar ou anexe uma imagem de produto.</p>
+              <div className="flex flex-col gap-5 w-full max-w-md">
+                {EXAMPLE_CATEGORIES.map((cat) => (
+                  <div key={cat.label} className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-1">
+                      <cat.icon className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-foreground/80">{cat.label}</span>
+                    </div>
+                    {cat.prompts.map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        onClick={() => sendMessage(example)}
+                        className="text-left flex items-start gap-2 rounded-lg border border-border bg-card/50 px-4 py-3 text-sm text-muted-foreground hover:border-primary/50 hover:bg-card hover:text-foreground transition-colors"
+                      >
+                        <span>{example}</span>
+                      </button>
+                    ))}
                   </div>
                 ))}
               </div>
