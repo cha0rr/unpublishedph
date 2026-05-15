@@ -85,7 +85,6 @@ export function VideoGenerator() {
   const [isMerging, setIsMerging] = useState(false);
   const [mergeStatus, setMergeStatus] = useState("");
   const [videoSegments, setVideoSegments] = useState<string[]>([]);
-  const [generatingIdea, setGeneratingIdea] = useState<string | null>(null);
 
   const [refImages, setRefImages] = useState<File[]>([]);
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
@@ -136,119 +135,6 @@ export function VideoGenerator() {
 
   const isLoading = state === "generating" || state === "polling";
   const maxImages = MODE_LIMITS[modeImage];
-
-  const generateIdeaPrompt = async (idea: typeof PROMPT_IDEAS[number]) => {
-    if (generatingIdea) return;
-    setGeneratingIdea(idea.key);
-    try {
-      const refFile = isGrok ? grokRefImage : refImages[0];
-      let imageDataUrl: string | undefined;
-      if (refFile) {
-        try {
-          imageDataUrl = await fileToDataUrl(refFile);
-        } catch {
-          // segue sem imagem
-        }
-      }
-
-      const userContent = imageDataUrl
-        ? `${idea.instruction}\n\nUse a imagem em anexo como o produto principal do vídeo. Descreva o produto pelo que você vê (cor, formato, categoria) e construa o prompt em torno dele.`
-        : idea.instruction;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        return;
-      }
-
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            imageDataUrl
-              ? { role: "user", content: userContent, image: imageDataUrl }
-              : { role: "user", content: userContent },
-          ],
-        }),
-      });
-
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        toast.error(errData.error || `Erro ${resp.status} ao gerar ideia.`);
-        return;
-      }
-      if (!resp.body) {
-        toast.error("Sem resposta da IA.");
-        return;
-      }
-
-      // Limpa o prompt e vai preenchendo conforme o stream chega
-      let assembled = "";
-      setPrompt("");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let streamDone = false;
-
-      while (!streamDone) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") { streamDone = true; break; }
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              assembled += delta;
-              setPrompt(assembled.slice(0, 4000));
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (raw.startsWith(":") || raw.trim() === "") continue;
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              assembled += delta;
-              setPrompt(assembled.slice(0, 4000));
-            }
-          } catch { /* ignore */ }
-        }
-      }
-    } catch (err: any) {
-      console.error("[generateIdeaPrompt]", err);
-      toast.error(err?.message || "Falha ao gerar ideia de prompt.");
-    } finally {
-      setGeneratingIdea(null);
-    }
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -384,45 +270,6 @@ export function VideoGenerator() {
               {dailyCount}/{dailyLimit} gerações hoje
             </p>
           )}
-        </div>
-
-        {/* Ideias de prompt geradas por IA */}
-        <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <div className="flex items-start gap-2">
-            <Wand2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              <span className="text-primary font-medium">Sem ideia do que escrever?</span>{" "}
-              Clique em uma categoria abaixo e a IA vai criar o prompt para você.
-              Se você já anexou uma <span className="text-foreground font-medium">imagem de referência</span>,
-              o prompt será gerado com base no produto da imagem.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {PROMPT_IDEAS.map((idea) => {
-              const isThis = generatingIdea === idea.key;
-              const disabled = !!generatingIdea || isLoading;
-              return (
-                <button
-                  key={idea.key}
-                  type="button"
-                  onClick={() => generateIdeaPrompt(idea)}
-                  disabled={disabled}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-all ${
-                    isThis
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-border/50 bg-background/60 text-foreground hover:border-primary/40 hover:bg-primary/10"
-                  } ${disabled && !isThis ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  {isThis ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <span>{idea.emoji}</span>
-                  )}
-                  <span>{idea.label}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Model selector */}
