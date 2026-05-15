@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 const HERO_VIDEOS = [
   "/videos/showcase-1.mp4",
   "/videos/showcase-3.mp4",
+  "/videos/influencer-ugc.mp4",
   "/videos/showcase-4.mp4",
   "/videos/showcase-5.mp4",
   "/videos/showcase-6.mp4",
