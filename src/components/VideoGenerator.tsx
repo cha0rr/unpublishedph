@@ -348,9 +348,6 @@ export function VideoGenerator() {
     setVideoSegments([]);
     startCooldown();
 
-    // Defesa: forçar 1 versão para usuários não-Pro
-    const safeVariants: 1 | 2 = canUseVariants ? variants : 1;
-
     if (isGrok) {
       generate({
         prompt: prompt.trim(),
@@ -370,7 +367,7 @@ export function VideoGenerator() {
         model,
         modeImage: refImages.length > 0 ? modeImage : "none",
         refImages,
-        variants: safeVariants,
+        variants: 1,
       });
     }
   };
