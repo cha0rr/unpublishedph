@@ -10,7 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Progress } from "@/components/ui/progress";
 import { ExtendVideoDialog } from "@/components/ExtendVideoDialog";
 import { SequentialVideoPlayer } from "@/components/SequentialVideoPlayer";
-import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap, Frame, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, RotateCcw, X, Upload, Film, ImageIcon, Cpu, Layers, Download, FastForward, Lock, Monitor, Smartphone, Square, RectangleVertical, RectangleHorizontal, Clock, Zap, Frame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeVideoSegments } from "@/lib/mergeVideoSegments";
 import { Badge } from "@/components/ui/badge";
@@ -52,45 +52,6 @@ const MODE_LIMITS: Record<ModeImage, number> = {
 const STORAGE_KEY = "ph_video_last_result";
 
 const VIDEO_STATE_TTL_MS = 60 * 1000; // 1 minute
-
-const PROMPT_IDEAS: { key: string; label: string; emoji: string; instruction: string }[] = [
-  {
-    key: "tiktok-shop",
-    label: "TikTok Shop",
-    emoji: "🛍️",
-    instruction:
-      "Crie um prompt curto e cinematográfico em português brasileiro para um vídeo vertical 9:16 de até 8 segundos apresentando um produto para TikTok Shop. Use close-ups dinâmicos, iluminação publicitária, foco em destacar texturas e detalhes do produto, com transições rápidas e sensação de 'must have'. Responda APENAS com o prompt final, sem explicações, sem aspas, sem cabeçalhos.",
-  },
-  {
-    key: "frutas-virais",
-    label: "Frutas Virais",
-    emoji: "🍓",
-    instruction:
-      "Crie um prompt em português brasileiro para um vídeo viral estilo 'frutas falantes' ou frutas explodindo em câmera lenta no estilo TikTok, com efeitos visuais surreais, cores hipersaturadas, gotas de água, partículas e fundo simples. Responda APENAS com o prompt final, sem explicações, sem aspas, sem cabeçalhos.",
-  },
-  {
-    key: "comercial-loja",
-    label: "Comercial de Loja",
-    emoji: "🏪",
-    instruction:
-      "Crie um prompt em português brasileiro para um comercial curto de loja, com pessoas reais usando o produto, ambiente moderno e iluminado, transições rápidas, expressões de satisfação e uma chamada visual final destacando o produto. Responda APENAS com o prompt final, sem explicações, sem aspas, sem cabeçalhos.",
-  },
-  {
-    key: "review-pov",
-    label: "Review POV",
-    emoji: "🎥",
-    instruction:
-      "Crie um prompt em português brasileiro para um vídeo estilo review em primeira pessoa (POV), câmera na mão levemente trêmula, mostrando o uso real do produto, com naturalidade, foco no benefício prático e no momento 'uau' do usuário. Responda APENAS com o prompt final, sem explicações, sem aspas, sem cabeçalhos.",
-  },
-];
-
-const fileToDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 function saveVideoState(data: { url: string; uuid: string; segments: string[]; aspectRatio: string; resolution: string; model: string; prompt: string }) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, _savedAt: Date.now() })); } catch {}
