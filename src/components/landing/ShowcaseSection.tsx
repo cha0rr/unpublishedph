@@ -5,7 +5,6 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const items = [
   { label: "Cartomante / Místico", type: "Viral", src: "/videos/showcase-1.mp4", isVideo: true },
-  { label: "Fazendeiro / Rural", type: "Viral", src: "/videos/showcase-2.mp4", isVideo: true },
   { label: "Frutas Falantes", type: "Viral", src: "/videos/showcase-3.mp4", isVideo: true },
   { label: "Notícias & Fatos", type: "Viral", src: "/videos/showcase-4.mp4", isVideo: true },
   { label: "Review de Produto", type: "UGC", src: "/videos/showcase-5.mp4", isVideo: true },
