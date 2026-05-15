@@ -10,7 +10,6 @@ import { toast } from "sonner";
 
 const EXAMPLE_PROMPTS = [
   "Gere um roteiro de Frutas Falantes",
-  "Gere um roteiro de Fazendeira Hot",
   "Gere um roteiro de Cartomante",
   "Gere um roteiro de Notícias Virais",
 ];
