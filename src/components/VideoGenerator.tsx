@@ -124,7 +124,6 @@ export function VideoGenerator() {
   const [isMerging, setIsMerging] = useState(false);
   const [mergeStatus, setMergeStatus] = useState("");
   const [videoSegments, setVideoSegments] = useState<string[]>([]);
-  const [variants, setVariants] = useState<1 | 2>(1);
   const [generatingIdea, setGeneratingIdea] = useState<string | null>(null);
 
   const [refImages, setRefImages] = useState<File[]>([]);
@@ -133,13 +132,7 @@ export function VideoGenerator() {
   const { profile, isAdmin } = useAuth();
   const isGrokAllowed = isAdmin || profile?.plan === "pro";
   const canAccessFrame = isAdmin || profile?.plan === "pro";
-  const canUseVariants = isAdmin || profile?.plan === "pro";
   const isGrok = model === "grok-3";
-
-  // Garantir que não-Pro nunca tenha variants=2
-  useEffect(() => {
-    if (!canUseVariants && variants !== 1) setVariants(1);
-  }, [canUseVariants, variants]);
 
   const [grokMode, setGrokMode] = useState("normal");
   const [grokDuration, setGrokDuration] = useState("6");
