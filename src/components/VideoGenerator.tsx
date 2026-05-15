@@ -514,45 +514,6 @@ export function VideoGenerator() {
           </Select>
         </div>
 
-        {/* 2 versions toggle (VEO only) */}
-        {!isGrok && (
-          <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/10 px-3 py-2">
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-foreground flex items-center gap-1">
-                <Layers className="h-3 w-3" /> Gerar 2 versões
-                {!canUseVariants && (
-                  <span className="ml-1 text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                    <Lock className="h-3 w-3" /> PRO
-                  </span>
-                )}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {!canUseVariants
-                  ? "Disponível apenas no plano Pro"
-                  : variants === 2
-                    ? "Consome 2 gerações do limite diário"
-                    : "Receba duas variações da mesma geração"}
-              </span>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={variants === 2}
-              disabled={isLoading || !canUseVariants}
-              onClick={() => {
-                if (!canUseVariants) {
-                  toast.error("Gerar 2 versões disponível apenas no plano Pro.");
-                  return;
-                }
-                setVariants((v) => (v === 2 ? 1 : 2));
-              }}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-border/50 transition-colors ${variants === 2 && canUseVariants ? "bg-primary" : "bg-muted"} disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform ${variants === 2 && canUseVariants ? "translate-x-4" : "translate-x-0.5"} mt-[1px]`} />
-            </button>
-          </div>
-        )}
-
         {/* Veo-specific controls */}
         {!isGrok && (
           <>
