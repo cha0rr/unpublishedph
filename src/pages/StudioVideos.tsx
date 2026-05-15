@@ -2,19 +2,14 @@ import { TechBackground } from "@/components/landing/TechBackground";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { VideoGenerator } from "@/components/VideoGenerator";
-import { StoryboardGenerator } from "@/components/StoryboardGenerator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { Loader2, Lock, Film, Layers } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const StudioVideos = () => {
-  const { user, isApproved, isAdmin, profile, loading } = useAuth();
+  const { user, isApproved, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
-  const canAccessStoryboard = isAdmin || profile?.plan === "pro";
 
   useEffect(() => {
     if (!loading) {
@@ -53,39 +48,7 @@ const StudioVideos = () => {
           </p>
         </div>
 
-        <Tabs
-          defaultValue="video"
-          className="w-full"
-          onValueChange={(v) => {
-            if (v === "storyboard" && !canAccessStoryboard) {
-              toast.error("Vídeos 30s disponível apenas no plano Pro.");
-            }
-          }}
-        >
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-card/60 backdrop-blur-sm border border-border/50">
-            <TabsTrigger value="video" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-              <Film className="h-4 w-4 mr-2" /> Gerar Vídeo
-            </TabsTrigger>
-            <TabsTrigger
-              value="storyboard"
-              disabled={!canAccessStoryboard}
-              className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-            >
-              {!canAccessStoryboard && <Lock className="h-3 w-3 mr-1" />}
-              <Layers className="h-4 w-4 mr-2" /> Vídeos 30s
-              <Badge className="ml-2 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">
-                Pro
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="video">
-            <VideoGenerator />
-          </TabsContent>
-          <TabsContent value="storyboard">
-            <StoryboardGenerator />
-          </TabsContent>
-        </Tabs>
+        <VideoGenerator />
       </div>
       <Footer />
     </div>
