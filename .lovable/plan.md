@@ -1,39 +1,30 @@
-## Objetivo
+## Plano revisado
 
-Deixar claro na página `/gerar-roteiro` que o usuário pode gerar **roteiros e prompts** para três finalidades:
-1. Vídeos virais
-2. Vídeos UGC
-3. Criativos para vendas
+Vamos corrigir o erro mantendo o DeepSeek como provedor principal, sem migrar para Lovable AI.
 
-E atualizar os exemplos para refletir esses três casos de uso.
+1. **Manter DeepSeek no fluxo sem imagem**
+   - Preservar `DEEPSEEK_API_KEY` e a chamada para `https://api.deepseek.com/chat/completions` em `supabase/functions/deepseek-chat/index.ts`.
+   - Não trocar o modelo de texto para Lovable AI.
 
-## Alterações em `src/pages/GerarRoteiro.tsx`
+2. **Remover o streaming direto do DeepSeek para o navegador**
+   - O erro atual acontece porque a Edge Function repassa `response.body` diretamente para o browser; quando o upstream demora/corta o stream, o navegador recebe uma conexão quebrada e mostra `NetworkError`.
+   - Ajustar o fluxo sem imagem para usar DeepSeek com `stream: false` e retornar uma resposta JSON completa.
+   - Isso evita o proxy de stream instável sem abandonar o DeepSeek.
 
-### 1. Atualizar o cabeçalho e subtítulo
-- Manter o título "Gerador de Roteiros & Prompts".
-- Adicionar logo abaixo (ou no estado vazio) uma frase curta de posicionamento:
-  > "Crie roteiros e prompts para vídeos virais, UGC e criativos para vendas."
+3. **Adicionar timeout e erro claro**
+   - Usar `AbortController` na chamada ao DeepSeek para não deixar a função pendurada.
+   - Se DeepSeek falhar, expirar ou retornar erro, responder com JSON e CORS corretamente, por exemplo: “DeepSeek demorou para responder. Tente novamente com um prompt menor.”
+   - Tratar status como `401`, `429`, `402`/créditos e erros gerais com mensagens úteis.
 
-### 2. Substituir `EXAMPLE_PROMPTS`
-Trocar a lista atual por 6 exemplos agrupados em 3 categorias (2 por categoria), exibidos com um pequeno rótulo de categoria:
+4. **Atualizar o frontend para aceitar os dois formatos**
+   - Em `src/pages/GerarRoteiro.tsx`, manter compatibilidade com streaming para respostas que ainda venham nesse formato.
+   - Adicionar suporte a resposta JSON completa `{ content: "..." }` para o fluxo DeepSeek sem imagem.
+   - Melhorar o toast para exibir a mensagem real do backend em vez de apenas `NetworkError` quando houver resposta JSON.
 
-- **Vídeos Virais**
-  - "Gere um roteiro de Notícias Virais com gancho nos primeiros 3 segundos"
-  - "Crie um prompt de vídeo de Frutas Falantes para viralizar no TikTok"
-- **Vídeos UGC**
-  - "Gere um roteiro UGC de unboxing autêntico para Instagram Reels"
-  - "Crie um prompt de UGC estilo 'POV: testei esse produto por 7 dias'"
-- **Criativos para Vendas**
-  - "Gere um roteiro de criativo de vendas com gatilho de escassez"
-  - "Crie um prompt de anúncio de produto com CTA forte para TikTok Shop"
+5. **Manter o fluxo com imagem separado**
+   - O fluxo com imagem continua usando o provedor multimodal já existente.
+   - A correção solicitada foca no caso sem imagem, que hoje usa DeepSeek e está falhando.
 
-### 3. UI do estado vazio
-- Renderizar as 3 categorias como blocos (ou chips agrupados), cada um com ícone:
-  - Vídeos Virais → `Flame` (lucide)
-  - Vídeos UGC → `Users`
-  - Criativos para Vendas → `ShoppingBag`
-- Cada exemplo continua clicável (chama `sendMessage(example)`) para enviar o prompt direto ao chat — hoje os exemplos são apenas decorativos, então isso também torna o estado vazio funcional.
+## Resultado esperado
 
-## Fora de escopo
-- Nenhuma mudança em backend, edge functions, ou no modelo (DeepSeek Chat).
-- Sem mexer em outras páginas (Studio Videos, Showcase, etc.).
+Ao enviar um prompt sem imagem no Gerador de Roteiros, o app continuará usando DeepSeek, mas deixará de quebrar a conexão de streaming e passará a exibir o roteiro gerado ou um erro claro quando a API externa não responder.

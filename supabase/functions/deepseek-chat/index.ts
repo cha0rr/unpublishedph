@@ -165,33 +165,76 @@ serve(async (req) => {
       content: typeof m.content === "string" ? m.content.slice(0, 4000) : "",
     }));
 
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...sanitizedMessages,
-        ],
-        stream: true,
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 110_000);
+
+    let response: Response;
+    try {
+      response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...sanitizedMessages,
+          ],
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+    } catch (e: any) {
+      clearTimeout(timeoutId);
+      console.error("DeepSeek fetch error:", e?.name, e?.message);
+      const msg = e?.name === "AbortError"
+        ? "DeepSeek demorou para responder. Tente novamente com um prompt menor."
+        : "Falha ao conectar com a API DeepSeek. Tente novamente.";
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 504,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errText = await response.text();
+      const errText = await response.text().catch(() => "");
       console.error("DeepSeek API error:", response.status, errText);
-      return new Response(JSON.stringify({ error: "Erro na API DeepSeek" }), {
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "Chave DeepSeek inválida. Contate o suporte." }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Limite de requisições do DeepSeek excedido. Tente novamente em instantes." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos do DeepSeek esgotados. Contate o suporte." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Erro na API DeepSeek. Tente novamente." }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    const data = await response.json().catch(() => null);
+    const content: string = data?.choices?.[0]?.message?.content ?? "";
+    if (!content) {
+      console.error("DeepSeek empty content:", JSON.stringify(data));
+      return new Response(JSON.stringify({ error: "Resposta vazia do DeepSeek. Tente novamente." }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ content }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("deepseek-chat internal error:", e);
