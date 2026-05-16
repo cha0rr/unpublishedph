@@ -165,9 +165,6 @@ serve(async (req) => {
       content: typeof m.content === "string" ? m.content.slice(0, 4000) : "",
     }));
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 110_000);
-
     let response: Response;
     try {
       response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -182,22 +179,16 @@ serve(async (req) => {
             { role: "system", content: systemPrompt },
             ...sanitizedMessages,
           ],
-          stream: false,
+          stream: true,
         }),
-        signal: controller.signal,
       });
     } catch (e: any) {
-      clearTimeout(timeoutId);
       console.error("DeepSeek fetch error:", e?.name, e?.message);
-      const msg = e?.name === "AbortError"
-        ? "DeepSeek demorou para responder. Tente novamente com um prompt menor."
-        : "Falha ao conectar com a API DeepSeek. Tente novamente.";
-      return new Response(JSON.stringify({ error: msg }), {
+      return new Response(JSON.stringify({ error: "Falha ao conectar com a API DeepSeek. Tente novamente." }), {
         status: 504,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
@@ -223,18 +214,14 @@ serve(async (req) => {
       });
     }
 
-    const data = await response.json().catch(() => null);
-    const content: string = data?.choices?.[0]?.message?.content ?? "";
-    if (!content) {
-      console.error("DeepSeek empty content:", JSON.stringify(data));
-      return new Response(JSON.stringify({ error: "Resposta vazia do DeepSeek. Tente novamente." }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(response.body, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (e) {
     console.error("deepseek-chat internal error:", e);
