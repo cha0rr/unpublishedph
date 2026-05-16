@@ -1,30 +1,30 @@
-## Plano revisado
+## Objetivo
+Fazer o Gerador de Roteiros voltar a mostrar uma resposta visível enquanto a IA trabalha, permitindo que o usuário perceba imediatamente que o assistente está preparando perguntas/roteiro e possa responder em seguida — sem trocar DeepSeek por Lovable AI.
 
-Vamos corrigir o erro mantendo o DeepSeek como provedor principal, sem migrar para Lovable AI.
+## Plano
+1. **Criar mensagem temporária do assistente imediatamente no frontend**
+   - Assim que o usuário enviar o prompt, inserir uma bolha do assistente com texto de status, por exemplo: `Analisando seu pedido...`.
+   - Trocar o indicador de três pontos por uma mensagem real e persistente durante o processamento.
 
-1. **Manter DeepSeek no fluxo sem imagem**
-   - Preservar `DEEPSEEK_API_KEY` e a chamada para `https://api.deepseek.com/chat/completions` em `supabase/functions/deepseek-chat/index.ts`.
-   - Não trocar o modelo de texto para Lovable AI.
+2. **Atualizar a bolha quando o DeepSeek responder**
+   - Como o backend agora retorna JSON completo para evitar `NetworkError`, substituir o conteúdo temporário pela resposta final recebida de `{ content }`.
+   - Isso mantém a correção anterior contra falha de streaming, mas remove a sensação de “tela parada”.
 
-2. **Remover o streaming direto do DeepSeek para o navegador**
-   - O erro atual acontece porque a Edge Function repassa `response.body` diretamente para o browser; quando o upstream demora/corta o stream, o navegador recebe uma conexão quebrada e mostra `NetworkError`.
-   - Ajustar o fluxo sem imagem para usar DeepSeek com `stream: false` e retornar uma resposta JSON completa.
-   - Isso evita o proxy de stream instável sem abandonar o DeepSeek.
+3. **Permitir fluxo de perguntas e respostas naturalmente**
+   - Se a resposta do DeepSeek pedir informações iniciais, ela aparecerá na conversa como mensagem do assistente.
+   - O campo de texto continuará disponível após terminar a geração para o usuário responder às perguntas.
 
-3. **Adicionar timeout e erro claro**
-   - Usar `AbortController` na chamada ao DeepSeek para não deixar a função pendurada.
-   - Se DeepSeek falhar, expirar ou retornar erro, responder com JSON e CORS corretamente, por exemplo: “DeepSeek demorou para responder. Tente novamente com um prompt menor.”
-   - Tratar status como `401`, `429`, `402`/créditos e erros gerais com mensagens úteis.
+4. **Preservar compatibilidade com imagem/streaming**
+   - Manter o parser de streaming existente para o fluxo multimodal com imagem.
+   - Reaproveitar a mesma bolha temporária para receber deltas quando a resposta vier em streaming.
 
-4. **Atualizar o frontend para aceitar os dois formatos**
-   - Em `src/pages/GerarRoteiro.tsx`, manter compatibilidade com streaming para respostas que ainda venham nesse formato.
-   - Adicionar suporte a resposta JSON completa `{ content: "..." }` para o fluxo DeepSeek sem imagem.
-   - Melhorar o toast para exibir a mensagem real do backend em vez de apenas `NetworkError` quando houver resposta JSON.
+5. **Melhorar recuperação em caso de erro**
+   - Se a chamada falhar antes de gerar conteúdo, substituir a mensagem temporária por um erro claro ou removê-la, evitando conversa confusa.
+   - Continuar exibindo o toast com a mensagem real do backend.
 
-5. **Manter o fluxo com imagem separado**
-   - O fluxo com imagem continua usando o provedor multimodal já existente.
-   - A correção solicitada foca no caso sem imagem, que hoje usa DeepSeek e está falhando.
+## Arquivos a alterar
+- `src/pages/GerarRoteiro.tsx`
 
-## Resultado esperado
-
-Ao enviar um prompt sem imagem no Gerador de Roteiros, o app continuará usando DeepSeek, mas deixará de quebrar a conexão de streaming e passará a exibir o roteiro gerado ou um erro claro quando a API externa não responder.
+## O que não será alterado
+- O provedor DeepSeek continuará sendo usado para prompts sem imagem.
+- A Edge Function `deepseek-chat` não precisa voltar para streaming direto, pois isso era a causa provável do `NetworkError` anterior.
