@@ -82,6 +82,21 @@ serve(async (req) => {
 
     const systemPrompt = promptData?.content || "Você é um assistente especializado em criar roteiros e prompts criativos para geração de vídeos e imagens com IA.";
 
+    // Regra obrigatória anti-fallback: se o assistente precisar de mais
+    // informações do usuário, deve APENAS fazer as perguntas e parar.
+    // Nunca gerar roteiro/prompt genérico, exemplo, template ou modelo
+    // "enquanto aguarda" as respostas.
+    const guardrail = [
+      "",
+      "REGRAS OBRIGATÓRIAS (não podem ser quebradas em nenhuma hipótese):",
+      "1. Se você precisar de qualquer informação do usuário para produzir o roteiro ou prompt, faça SOMENTE as perguntas necessárias (numeradas) e ENCERRE a resposta logo após as perguntas.",
+      "2. NÃO gere roteiro, prompt, exemplo, modelo, template, versão preliminar, versão genérica, placeholder ou \"enquanto isso aqui vai um modelo\" antes de receber as respostas do usuário.",
+      "3. NÃO use frases como \"enquanto não recebo as informações\", \"segue um modelo genérico\", \"prompt padrão\" antes das respostas.",
+      "4. Só produza o roteiro/prompt final DEPOIS que o usuário tiver respondido às perguntas necessárias na conversa.",
+      "5. Se o usuário já tiver fornecido informação suficiente, vá direto ao roteiro/prompt final sem perguntas desnecessárias.",
+    ].join("\n");
+    const effectiveSystemPrompt = `${systemPrompt}\n${guardrail}`;
+
     // Check if any message has an image attached
     const hasImage = messages.some((m: any) => m.image);
 
@@ -121,7 +136,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: effectiveSystemPrompt },
             ...formattedMessages,
           ],
           stream: true,
@@ -176,7 +191,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "deepseek-chat",
           messages: [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: effectiveSystemPrompt },
             ...sanitizedMessages,
           ],
           stream: true,
