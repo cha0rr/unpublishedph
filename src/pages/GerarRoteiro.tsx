@@ -145,6 +145,19 @@ const GerarRoteiro = () => {
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.error || `Erro ${resp.status}`);
       }
+
+      const contentType = resp.headers.get("Content-Type") || "";
+
+      // JSON response (DeepSeek non-streaming path)
+      if (contentType.includes("application/json")) {
+        const data = await resp.json();
+        const full = (data?.content as string) || "";
+        if (!full) throw new Error("Resposta vazia");
+        assistantContent = full;
+        setMessages((prev) => [...prev, { role: "assistant", content: full }]);
+        return;
+      }
+
       if (!resp.body) throw new Error("Sem resposta");
 
       const reader = resp.body.getReader();
