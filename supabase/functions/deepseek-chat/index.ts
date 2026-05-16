@@ -94,6 +94,8 @@ serve(async (req) => {
       "3. NÃO use frases como \"enquanto não recebo as informações\", \"segue um modelo genérico\", \"prompt padrão\" antes das respostas.",
       "4. Só produza o roteiro/prompt final DEPOIS que o usuário tiver respondido às perguntas necessárias na conversa.",
       "5. Se o usuário já tiver fornecido informação suficiente, vá direto ao roteiro/prompt final sem perguntas desnecessárias.",
+      "6. Quando fizer perguntas: o ÚLTIMO caractere útil da sua resposta deve ser o final da última pergunta. NÃO escreva separadores (---), seções de \"Ideia Geral\", \"Pré-planejamento\", \"Formato\", \"Plataforma\", \"Duração\", \"Estrutura criativa\", \"Ganchos\", \"CTA\", nem qualquer conteúdo de roteiro/prompt após as perguntas.",
+      "7. Proibido escrever frases como \"Enquanto isso\", \"já vou estruturando\", \"assim que você responder\", \"segue uma base\" antes de receber as respostas.",
     ].join("\n");
     const effectiveSystemPrompt = `${systemPrompt}\n${guardrail}`;
 
@@ -161,8 +163,14 @@ serve(async (req) => {
         });
       }
 
-      return new Response(response.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      return new Response(wrapWithGuardStream(response.body!), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+          "X-Accel-Buffering": "no",
+        },
       });
     }
 
@@ -229,7 +237,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(response.body, {
+    return new Response(wrapWithGuardStream(response.body!), {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
@@ -246,3 +254,140 @@ serve(async (req) => {
     );
   }
 });
+
+/**
+ * Envolve o stream SSE da OpenAI/DeepSeek/Gemini para cortar a resposta
+ * assim que detectarmos que o assistente fez perguntas e está prestes a
+ * gerar conteúdo extra (roteiro/prompt/modelo) antes do usuário responder.
+ */
+function wrapWithGuardStream(upstream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  // Marcadores que indicam que o modelo começou a produzir conteúdo após
+  // as perguntas (separadores, seções de roteiro, "enquanto isso", etc.).
+  const stopPatterns: RegExp[] = [
+    /\n\s*---\s*\n/i,
+    /\*\*\s*Enquanto/i,
+    /Enquanto isso/i,
+    /já vou estruturando/i,
+    /assim que voc[êe] responder/i,
+    /\*\*\s*Ideia Geral/i,
+    /Pré[- ]planejamento/i,
+    /\*\*\s*Formato\s*:/i,
+    /\*\*\s*Plataforma\s*:/i,
+    /\*\*\s*Duração\s*:/i,
+    /\*\*\s*Estrutura\b/i,
+    /\*\*\s*Roteiro\b/i,
+    /\*\*\s*Prompt( final)?\s*:/i,
+    /segue (uma|um) (base|modelo|exemplo|template)/i,
+    /modelo gen[ée]rico/i,
+  ];
+  // Precisamos ter visto ao menos uma pergunta numerada terminando com "?"
+  const questionPattern = /^\s*\d+\.\s.*\?/m;
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = upstream.getReader();
+      let buffer = "";
+      let assistantText = "";
+      let forwardedLen = 0; // quanto do assistantText já enviamos
+      let stopped = false;
+
+      const flushUpTo = (cutIdx: number) => {
+        // Envia delta com o texto pendente até cutIdx (não inclusive)
+        if (cutIdx > forwardedLen) {
+          const pending = assistantText.slice(forwardedLen, cutIdx);
+          if (pending) {
+            const payload = {
+              choices: [{ delta: { content: pending }, index: 0 }],
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+          }
+          forwardedLen = cutIdx;
+        }
+      };
+
+      const closeStream = () => {
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+        stopped = true;
+        try { reader.cancel(); } catch { /* ignore */ }
+      };
+
+      try {
+        while (!stopped) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let nlIdx: number;
+          while (!stopped && (nlIdx = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, nlIdx);
+            buffer = buffer.slice(nlIdx + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+
+            if (!line.startsWith("data: ")) {
+              // Repassa linhas vazias/comentários
+              controller.enqueue(encoder.encode(line + "\n"));
+              continue;
+            }
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") {
+              // Envia o restante (caso não tenha sido cortado)
+              flushUpTo(assistantText.length);
+              closeStream();
+              break;
+            }
+
+            let parsed: any;
+            try { parsed = JSON.parse(jsonStr); }
+            catch { controller.enqueue(encoder.encode(line + "\n")); continue; }
+
+            const delta: string | undefined = parsed?.choices?.[0]?.delta?.content;
+            if (typeof delta !== "string" || delta.length === 0) {
+              // Repassa eventos sem conteúdo (ex.: finish_reason)
+              controller.enqueue(encoder.encode(line + "\n"));
+              continue;
+            }
+
+            assistantText += delta;
+
+            // Verifica se já temos pergunta + marcador de parada
+            const hasQuestion = questionPattern.test(assistantText);
+            if (hasQuestion) {
+              let earliest = -1;
+              for (const re of stopPatterns) {
+                const m = re.exec(assistantText);
+                if (m && m.index >= 0) {
+                  if (earliest === -1 || m.index < earliest) earliest = m.index;
+                }
+              }
+              if (earliest !== -1) {
+                // Encontra fim da última pergunta antes do marcador
+                const before = assistantText.slice(0, earliest);
+                const lastQ = before.lastIndexOf("?");
+                const cutIdx = lastQ !== -1 ? lastQ + 1 : earliest;
+                flushUpTo(cutIdx);
+                closeStream();
+                break;
+              }
+            }
+
+            // Caso comum: encaminha o delta acumulado pendente
+            flushUpTo(assistantText.length);
+          }
+        }
+        if (!stopped) {
+          flushUpTo(assistantText.length);
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      } catch (err) {
+        console.error("guard stream error:", err);
+        try { controller.error(err); } catch { /* ignore */ }
+      }
+    },
+  });
+}

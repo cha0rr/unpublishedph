@@ -1,22 +1,27 @@
-Plano para corrigir o gerador de roteiros sem trocar o DeepSeek:
+Vou corrigir o gerador para interromper a saída no momento em que o assistente fizer perguntas ao usuário, mantendo streaming.
 
-1. Reforçar a instrução enviada à Edge Function
-- Manter o prompt do admin como base.
-- Acrescentar uma regra server-side obrigatória depois do prompt do admin: quando faltarem informações essenciais, o assistente deve fazer somente as perguntas necessárias e encerrar a resposta, sem gerar roteiro, prompt genérico, exemplo, template ou fallback.
-- Isso impede que um prompt salvo no banco mande gerar “modelo genérico enquanto aguarda respostas”.
+Plano:
 
-2. Detectar respostas de coleta de informações no frontend
-- Quando a resposta do assistente terminar com perguntas/lista de perguntas, o campo de texto volta a ficar disponível normalmente.
-- O usuário poderá responder e a próxima chamada enviará todo o histórico para o DeepSeek continuar a partir das respostas.
+1. Ajustar a Edge Function `deepseek-chat`
+- Substituir o repasse direto do `response.body` por um stream intermediário controlado.
+- Ler os deltas vindos do DeepSeek/Gemini, acumular o texto e detectar quando a resposta entrou em modo de coleta de informações.
+- Assim que detectar uma seção de perguntas numeradas suficiente, encerrar o stream imediatamente para o usuário, sem deixar passar trechos como “enquanto isso”, “ideia geral”, “pré-planejamento” ou roteiro provisório.
 
-3. Bloquear continuação automática indevida
-- Garantir que o app faça apenas uma chamada por envio do usuário.
-- Não haverá segunda chamada automática após o DeepSeek fazer perguntas.
+2. Reforçar o prompt server-side
+- Tornar a regra mais explícita: se fizer perguntas, o último caractere útil da resposta deve ser a última pergunta.
+- Proibir qualquer conteúdo depois das perguntas, incluindo separadores `---`, pré-planejamento, estrutura criativa, formato, plataforma, duração, ganchos ou CTA.
 
-4. Preservar streaming
-- Manter `stream: true` no DeepSeek.
-- Continuar atualizando a bolha do assistente em tempo real conforme chegam os deltas.
+3. Aplicar a mesma proteção nos dois fluxos
+- Fluxo com imagem: Lovable AI Gateway/Gemini.
+- Fluxo sem imagem: DeepSeek.
+- Ambos continuarão retornando `text/event-stream` para preservar streaming.
 
-5. Validação
-- Verificar que a Edge Function ainda usa DeepSeek para mensagens sem imagem.
-- Verificar que a resposta streaming continua sendo `text/event-stream` e que a regra anti-fallback foi aplicada no prompt efetivo.
+4. Manter o frontend simples
+- Não criar chamada automática extra.
+- O campo de texto volta a liberar quando o stream encerra, permitindo que o usuário responda às perguntas manualmente.
+
+Resultado esperado:
+- O usuário envia um pedido incompleto.
+- A IA responde apenas com perguntas.
+- O stream para ali.
+- Nenhuma resposta, roteiro ou “ideia geral” aparece antes do usuário responder.
