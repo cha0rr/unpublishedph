@@ -117,10 +117,24 @@ const GerarRoteiro = () => {
 
     const userMsg: Message = { role: "user", content: trimmed, image: imageBase64 };
     const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    // Insere imediatamente uma bolha do assistente com status, para o
+    // usuário ter feedback visível enquanto o DeepSeek processa.
+    const placeholder: Message = { role: "assistant", content: "Analisando seu pedido..." };
+    setMessages([...newMessages, placeholder]);
     setIsLoading(true);
 
     let assistantContent = "";
+    let receivedAny = false;
+
+    const upsertAssistant = (content: string) => {
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
+        }
+        return [...prev, { role: "assistant", content }];
+      });
+    };
 
     try {
       const { data: { session } } = await (await import("@/integrations/supabase/client")).supabase.auth.getSession();
@@ -154,7 +168,8 @@ const GerarRoteiro = () => {
         const full = (data?.content as string) || "";
         if (!full) throw new Error("Resposta vazia");
         assistantContent = full;
-        setMessages((prev) => [...prev, { role: "assistant", content: full }]);
+        receivedAny = true;
+        upsertAssistant(full);
         return;
       }
 
@@ -163,16 +178,6 @@ const GerarRoteiro = () => {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
-
-      const upsertAssistant = (content: string) => {
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.role === "assistant") {
-            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
-          }
-          return [...prev, { role: "assistant", content }];
-        });
-      };
 
       let streamDone = false;
       while (!streamDone) {
@@ -192,7 +197,7 @@ const GerarRoteiro = () => {
           try {
             const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) { assistantContent += delta; upsertAssistant(assistantContent); }
+            if (delta) { assistantContent += delta; receivedAny = true; upsertAssistant(assistantContent); }
           } catch {
             textBuffer = line + "\n" + textBuffer;
             break;
@@ -211,14 +216,14 @@ const GerarRoteiro = () => {
           try {
             const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) { assistantContent += delta; upsertAssistant(assistantContent); }
+            if (delta) { assistantContent += delta; receivedAny = true; upsertAssistant(assistantContent); }
           } catch { /* ignore */ }
         }
       }
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Erro ao gerar resposta.");
-      if (!assistantContent) setMessages(messages);
+      if (!receivedAny) setMessages(messages);
     } finally {
       setIsLoading(false);
     }
