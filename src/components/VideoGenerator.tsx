@@ -216,50 +216,13 @@ export function VideoGenerator() {
           )}
         </div>
 
-        {/* Model selector */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Cpu className="h-3 w-3" /> Modelo
-          </p>
-          <Select
-            value={model}
-            onValueChange={(v) => {
-              if (v === "grok-3" && !isGrokAllowed) {
-                toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
-                return;
-              }
-              setModel(v);
-              if (v === "grok-3" && resolution === "1080p") setResolution("720p");
-            }}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="h-8 w-auto max-w-[220px] text-xs bg-background/40 border-border/40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MODEL_OPTIONS.map((opt) => {
-                const isLocked = opt.pro && !isGrokAllowed;
-                return (
-                  <SelectItem key={opt.value} value={opt.value} disabled={isLocked}>
-                    <span className="flex items-center gap-2">
-                      {opt.label}
-                      {opt.pro && (
-                        <span className="text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                          {isLocked && <Lock className="h-3 w-3" />} PRO
-                        </span>
-                      )}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+        {/* Modelo */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Cpu className="h-3 w-3" /> Modelo: <span className="text-foreground font-medium">Veo 3.1 Fast</span>
         </div>
 
-        {/* Veo-specific controls */}
-        {!isGrok && (
-          <>
-            {/* Image Reference Type selector */}
+        {/* Image Reference Type selector */}
+
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Layers className="h-3 w-3" /> Image Reference Type
