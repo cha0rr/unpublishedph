@@ -81,7 +81,7 @@ export function VideoGenerator() {
       if (saved.segments?.length > 0) setVideoSegments(saved.segments);
       if (saved.aspectRatio) setAspectRatio(saved.aspectRatio);
       if (saved.resolution) setResolution(saved.resolution);
-      if (saved.model) setModel(saved.model);
+      
       if (saved.prompt) setPrompt(saved.prompt);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
