@@ -52,11 +52,17 @@ async function login(): Promise<string> {
   const data = await res.json().catch(() => ({} as any));
 
   if (!res.ok) {
-    const msg = typeof data?.detail === "string"
+    const raw = typeof data?.detail === "string"
       ? data.detail
       : data?.detail?.error_message || `HTTP ${res.status}`;
+    // A SnapGen devolve 404 "Not found" quando o e-mail não existe
+    // ou a senha não confere (conta criada via Google não tem senha).
+    const msg = /not found/i.test(raw)
+      ? "e-mail ou senha inválidos (verifique os secrets SNAPGEN_EMAIL/SNAPGEN_PASSWORD; contas criadas com login do Google não possuem senha)"
+      : raw;
     throw new Error(`Falha ao autenticar na SnapGen: ${msg}`);
   }
+
 
   const token: string | undefined = data?.access_token || data?.token ||
     data?.data?.access_token || data?.session?.access_token;
