@@ -10,6 +10,14 @@ import { Footer } from "@/components/landing/Footer";
 import { Loader2, Save, ArrowLeft, Key, CheckCircle2, AlertTriangle, RefreshCw, TestTube2 } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * `app_secrets` foi criada depois da última geração de `types.ts`.
+ * Usamos um cliente sem tipagem estrita apenas para esta tabela.
+ */
+const db = supabase as unknown as {
+  from: (table: string) => any;
+};
+
 interface SecretRow {
   key: string;
   value: string;
@@ -52,7 +60,7 @@ const AdminSnapgen = () => {
 
   const fetchSecrets = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("app_secrets")
       .select("key,value,updated_at")
       .in("key", ["snapgen_access_token", "snapgen_token_expires_at"]);
@@ -94,13 +102,13 @@ const AdminSnapgen = () => {
     const userId = session?.user?.id || null;
     const expEpochMs = draftExp > 0 ? String(draftExp) : "0";
 
-    const { error: err1 } = await supabase
+    const { error: err1 } = await db
       .from("app_secrets")
       .upsert(
         { key: "snapgen_access_token", value: trimmed, updated_at: new Date().toISOString(), updated_by: userId },
         { onConflict: "key" },
       );
-    const { error: err2 } = await supabase
+    const { error: err2 } = await db
       .from("app_secrets")
       .upsert(
         { key: "snapgen_token_expires_at", value: expEpochMs, updated_at: new Date().toISOString(), updated_by: userId },
@@ -121,11 +129,11 @@ const AdminSnapgen = () => {
   const handleClear = async () => {
     if (!confirm("Remover o token do SnapGen? A geração de vídeos vai parar até você colar um novo.")) return;
     setSaving(true);
-    await supabase.from("app_secrets").upsert(
+    await db.from("app_secrets").upsert(
       { key: "snapgen_access_token", value: "", updated_at: new Date().toISOString() },
       { onConflict: "key" },
     );
-    await supabase.from("app_secrets").upsert(
+    await db.from("app_secrets").upsert(
       { key: "snapgen_token_expires_at", value: "0", updated_at: new Date().toISOString() },
       { onConflict: "key" },
     );
