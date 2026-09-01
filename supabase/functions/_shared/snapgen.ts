@@ -17,6 +17,92 @@ interface CachedToken {
   expiresAt: number;
 }
 
+/* ------------------------------------------------------------------ *
+ * Antibot guard (x-guard-id)
+ *
+ * A SnapGen rejeita requisições sem o header `x-guard-id` com
+ * `GUARD_NOT_PRESENTED`. O token é derivado de:
+ *   stableId + timeBucket (janela de 60s) + fingerprint de DOM + segredos
+ * públicos do frontend. Reproduzimos o mesmo algoritmo aqui.
+ * ------------------------------------------------------------------ */
+
+const GUARD_SALT = "&vTQm0&u";
+const GUARD_KEY = "45NPBH$&";
+const GUARD_VERSION = 1;
+const GUARD_ID_LENGTH = 22;
+const GUARD_BUCKET_MS = 60_000;
+/** Sem DOM no servidor, o frontend também usa este valor padrão. */
+const GUARD_DOM_FP = "0".repeat(32);
+
+function b64url(input: string): string {
+  return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function b64urlBytes(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return b64url(bin);
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function hexToBytes(hex: string): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < hex.length; i += 2) out.push(parseInt(hex.substr(i, 2), 16));
+  return out;
+}
+
+function cheapHash(text: string): string {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) {
+    h = (h << 5) - h + text.charCodeAt(i);
+    h = h & h;
+  }
+  return Math.abs(h).toString(16).padStart(8, "0");
+}
+
+let cachedStableId: string | null = null;
+
+async function getStableId(): Promise<string> {
+  if (cachedStableId) return cachedStableId;
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  const raw = `${rand}.${cheapHash("unknown")}.${cheapHash("0x0")}`;
+  const hashed = await sha256Hex(`${GUARD_SALT}:${raw}`);
+  cachedStableId = b64url(hashed).slice(0, GUARD_ID_LENGTH);
+  return cachedStableId;
+}
+
+/** Gera o valor do header `x-guard-id` para um path/método. */
+export async function buildGuardId(path: string, method: string): Promise<string> {
+  const stableId = await getStableId();
+  const timeBucket = Math.floor(Date.now() / GUARD_BUCKET_MS);
+  const derivedId = (await sha256Hex(`${GUARD_KEY}:${stableId}`)).slice(0, 32);
+  const signature = await sha256Hex(
+    `${path}:${method.toUpperCase()}:${derivedId}:${timeBucket}:${GUARD_KEY}`,
+  );
+  const bytes = [
+    GUARD_VERSION,
+    ...hexToBytes(derivedId),
+    (timeBucket >>> 24) & 255,
+    (timeBucket >>> 16) & 255,
+    (timeBucket >>> 8) & 255,
+    timeBucket & 255,
+    ...hexToBytes(signature),
+    ...hexToBytes(GUARD_DOM_FP),
+  ];
+  return b64urlBytes(new Uint8Array(bytes));
+}
+
 let cached: CachedToken | null = null;
 let loginInFlight: Promise<string> | null = null;
 
@@ -59,7 +145,10 @@ async function login(): Promise<string> {
   // legado /api/login devolve "Not found" mesmo para contas válidas.
   const res = await fetch(`${SNAPGEN_BASE}/api/login-v2`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-guard-id": await buildGuardId("/api/login-v2", "POST"),
+    },
     body: JSON.stringify({ username: email, password }),
     signal: controller.signal,
   }).finally(() => clearTimeout(timeoutId));
@@ -124,7 +213,9 @@ export async function snapgenFetch(
   init: RequestInit & { body?: BodyInit | null } = {},
   bodyFactory?: () => BodyInit,
 ): Promise<Response> {
+  const method = (init.method || "GET").toUpperCase();
   const doFetch = async (token: string) => {
+    const guardId = await buildGuardId(path, method);
     return await fetch(`${SNAPGEN_BASE}${path}`, {
       ...init,
       // FormData só pode ser consumida uma vez: recriamos na retentativa.
@@ -132,6 +223,7 @@ export async function snapgenFetch(
       headers: {
         ...(init.headers as Record<string, string> | undefined),
         Authorization: `Bearer ${token}`,
+        "x-guard-id": guardId,
       },
     });
   };
