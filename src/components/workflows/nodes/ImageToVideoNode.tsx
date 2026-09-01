@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useGenerator } from "@/hooks/useGenerator";
-import { useAuth } from "@/hooks/useAuth";
 import { WorkflowCard } from "../WorkflowCard";
 import { NodePort } from "../NodePort";
 import { useWorkflow, urlToFile } from "../WorkflowContext";
@@ -8,9 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Video, Loader2, Sparkles, Upload, X, Link2, Lock } from "lucide-react";
+import { Video, Loader2, Sparkles, Upload, X, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { GROK_ASPECT_OPTIONS, GROK_DURATION_OPTIONS, GROK_MODE_OPTIONS, GROK_VALID_ASPECTS } from "./grok-options";
 
 interface NodeProps {
   id: string;
@@ -19,29 +17,20 @@ interface NodeProps {
   onRemove: () => void;
 }
 
-const MODEL_OPTIONS = [
-  { value: "veo-3-fast", label: "Veo 3 Fast", pro: false },
-  { value: "veo-3.1-fast", label: "Veo 3.1 Fast", pro: false },
-  { value: "grok-3", label: "Grok 3", pro: true },
-];
+/** Único modelo disponível (SnapGen). */
+const MODEL = "veo-3.1-fast";
 
 export function ImageToVideoNode({ id, x, y, onRemove }: NodeProps) {
-  const { profile, isAdmin } = useAuth();
-  const isPro = (profile?.plan === "pro" && profile?.status === "approved") || isAdmin;
   const { imageOutputs, getConnectedSource } = useWorkflow();
 
   const [prompt, setPrompt] = useState("");
   const [aspect, setAspect] = useState("9:16");
   const [resolution, setResolution] = useState("720p");
-  const [model, setModel] = useState("veo-3-fast");
-  const [grokMode, setGrokMode] = useState("normal");
-  const [grokDuration, setGrokDuration] = useState("6");
 
   const [refImage, setRefImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
 
-  const isGrok = model === "grok-3";
   const sourceNodeId = getConnectedSource(id);
   const sourceUrl = sourceNodeId ? imageOutputs.find((o) => o.nodeId === sourceNodeId)?.url ?? null : null;
 
@@ -85,35 +74,19 @@ export function ImageToVideoNode({ id, x, y, onRemove }: NodeProps) {
     setPreviewUrl(file ? URL.createObjectURL(file) : null);
   };
 
-  const handleModelChange = (v: string) => {
-    if (v === "grok-3" && !isPro) {
-      toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
-      return;
-    }
-    setModel(v);
-    if (v === "grok-3") {
-      if (!GROK_VALID_ASPECTS.includes(aspect)) setAspect("9:16");
-      setResolution("720p");
-    }
-  };
-
   const handleGenerate = () => {
     if (!prompt.trim() || !refImage || isLoading) return;
-    if (isGrok && !isPro) {
-      toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
-      return;
-    }
     generate({
       prompt: prompt.trim(),
       aspectRatio: aspect,
-      resolution: isGrok ? "720p" : resolution,
-      model,
+      resolution,
+      model: MODEL,
       modeImage: "ingredient",
       refImages: [refImage],
-      duration: isGrok ? grokDuration : "8",
-      ...(isGrok ? { mode: grokMode } : {}),
+      duration: "8",
     });
   };
+
 
   return (
     <WorkflowCard
@@ -178,70 +151,29 @@ export function ImageToVideoNode({ id, x, y, onRemove }: NodeProps) {
         className="resize-none"
       />
 
-      <Select value={model} onValueChange={handleModelChange} disabled={isLoading}>
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {MODEL_OPTIONS.map((m) => (
-            <SelectItem key={m.value} value={m.value}>
-              <span className="flex items-center gap-1.5">
-                {m.label}
-                {m.pro && !isPro && <Lock className="h-3 w-3 text-amber-500" />}
-                {m.pro && <span className="text-[10px] text-amber-500">Pro</span>}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <p className="text-[11px] text-muted-foreground">Modelo: <span className="text-foreground">Veo 3.1 Fast</span></p>
 
-      {isGrok ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GROK_ASPECT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={grokDuration} onValueChange={setGrokDuration} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GROK_DURATION_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={grokMode} onValueChange={setGrokMode} disabled={isLoading}>
-            <SelectTrigger className="h-9 col-span-2"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GROK_MODE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>Modo: {o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="9:16">Vertical 9:16</SelectItem>
-              <SelectItem value="16:9">Horizontal 16:9</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="720p">720p</SelectItem>
-              <SelectItem value="1080p">1080p</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="9:16">Vertical 9:16</SelectItem>
+            <SelectItem value="16:9">Horizontal 16:9</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="720p">720p</SelectItem>
+            <SelectItem value="1080p">1080p</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
 
       <Button
         onClick={handleGenerate}
-        disabled={!prompt.trim() || !refImage || isLoading || linking || (isGrok && !isPro)}
+        disabled={!prompt.trim() || !refImage || isLoading || linking}
         className="w-full"
         size="sm"
       >

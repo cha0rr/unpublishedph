@@ -17,31 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 type ModeImage = "none" | "ingredient" | "frame";
 
-const MODEL_OPTIONS = [
-  { value: "veo-3-fast", label: "Veo 3 Fast" },
-  { value: "veo-3.1-fast", label: "Veo 3.1 Fast" },
-  { value: "grok-3", label: "Grok 3", pro: true },
-];
+/** Único modelo disponível após a migração para a SnapGen. */
+const MODEL = "veo-3.1-fast";
 
-const GROK_MODE_OPTIONS = [
-  { value: "normal", label: "Normal" },
-  { value: "custom", label: "Custom" },
-  { value: "extremely-crazy", label: "Extremely Crazy" },
-  { value: "extremely-spicy-or-crazy", label: "Extremely Spicy or Crazy" },
-];
-
-const GROK_ASPECT_OPTIONS = [
-  { value: "16:9", label: "Landscape", icon: Monitor },
-  { value: "9:16", label: "Portrait", icon: Smartphone },
-  { value: "1:1", label: "Square", icon: Square },
-  { value: "2:3", label: "Vertical", icon: RectangleVertical },
-  { value: "3:2", label: "Horizontal", icon: RectangleHorizontal },
-];
-
-const GROK_DURATION_OPTIONS = [
-  { value: "6", label: "6s" },
-  { value: "10", label: "10s" },
-];
 
 const MODE_LIMITS: Record<ModeImage, number> = {
   none: 0,
@@ -78,7 +56,7 @@ export function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [resolution, setResolution] = useState("720p");
-  const [model, setModel] = useState("veo-3.1-fast");
+  const model = MODEL;
   const [modeImage, setModeImage] = useState<ModeImage>("none");
   const [extendOpen, setExtendOpen] = useState(false);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
@@ -90,15 +68,8 @@ export function VideoGenerator() {
   const [refPreviews, setRefPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile, isAdmin } = useAuth();
-  const isGrokAllowed = isAdmin || profile?.plan === "pro";
   const canAccessFrame = isAdmin || profile?.plan === "pro";
-  const isGrok = model === "grok-3";
 
-  const [grokMode, setGrokMode] = useState("normal");
-  const [grokDuration, setGrokDuration] = useState("6");
-  const [grokRefImage, setGrokRefImage] = useState<File | null>(null);
-  const [grokRefPreview, setGrokRefPreview] = useState<string | null>(null);
-  const grokFileInputRef = useRef<HTMLInputElement>(null);
 
   const { state, resultUrl, resultUuid, resultUrls, resultUuids, error, progress, statusText, generate, reset, setSuccessState } = useGenerator();
 
@@ -110,7 +81,7 @@ export function VideoGenerator() {
       if (saved.segments?.length > 0) setVideoSegments(saved.segments);
       if (saved.aspectRatio) setAspectRatio(saved.aspectRatio);
       if (saved.resolution) setResolution(saved.resolution);
-      if (saved.model) setModel(saved.model);
+      
       if (saved.prompt) setPrompt(saved.prompt);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,49 +139,22 @@ export function VideoGenerator() {
     clearAllFiles();
   };
 
-  const handleGrokFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setGrokRefImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setGrokRefPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-    if (grokFileInputRef.current) grokFileInputRef.current.value = "";
-  };
-
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    if (isGrok && !isGrokAllowed) {
-      toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
-      return;
-    }
     setVideoSegments([]);
     startCooldown();
 
-    if (isGrok) {
-      generate({
-        prompt: prompt.trim(),
-        aspectRatio,
-        resolution,
-        model,
-        modeImage: grokRefImage ? "ingredient" : "none",
-        refImages: grokRefImage ? [grokRefImage] : [],
-        duration: grokDuration,
-        mode: grokMode,
-      });
-    } else {
-      generate({
-        prompt: prompt.trim(),
-        aspectRatio,
-        resolution,
-        model,
-        modeImage: refImages.length > 0 ? modeImage : "none",
-        refImages,
-        variants: 1,
-      });
-    }
+    generate({
+      prompt: prompt.trim(),
+      aspectRatio,
+      resolution,
+      model,
+      modeImage: refImages.length > 0 ? modeImage : "none",
+      refImages,
+      duration: "8",
+    });
   };
+
 
   const canGenerate = prompt.trim().length > 0 && !isLoading && !isCooling && !isLimitReached;
 
@@ -272,50 +216,13 @@ export function VideoGenerator() {
           )}
         </div>
 
-        {/* Model selector */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Cpu className="h-3 w-3" /> Modelo
-          </p>
-          <Select
-            value={model}
-            onValueChange={(v) => {
-              if (v === "grok-3" && !isGrokAllowed) {
-                toast.error("O modelo Grok 3 está disponível apenas no plano Pro.");
-                return;
-              }
-              setModel(v);
-              if (v === "grok-3" && resolution === "1080p") setResolution("720p");
-            }}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="h-8 w-auto max-w-[220px] text-xs bg-background/40 border-border/40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MODEL_OPTIONS.map((opt) => {
-                const isLocked = opt.pro && !isGrokAllowed;
-                return (
-                  <SelectItem key={opt.value} value={opt.value} disabled={isLocked}>
-                    <span className="flex items-center gap-2">
-                      {opt.label}
-                      {opt.pro && (
-                        <span className="text-[10px] font-semibold bg-primary/20 text-primary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                          {isLocked && <Lock className="h-3 w-3" />} PRO
-                        </span>
-                      )}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+        {/* Modelo */}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Cpu className="h-3 w-3" /> Modelo: <span className="text-foreground font-medium">Veo 3.1 Fast</span>
         </div>
 
-        {/* Veo-specific controls */}
-        {!isGrok && (
-          <>
-            {/* Image Reference Type selector */}
+        {/* Image Reference Type selector */}
+
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Layers className="h-3 w-3" /> Image Reference Type
@@ -451,135 +358,26 @@ export function VideoGenerator() {
                 </div>
               </div>
             )}
-          </>
-        )}
-
-        {/* Grok-specific controls */}
-        {isGrok && (
-          <div className="space-y-3">
-            {/* Generation Mode */}
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Zap className="h-3 w-3" /> Generation Mode
-              </p>
-              <ToggleGroup
-                type="single"
-                value={grokMode}
-                onValueChange={(v) => v && setGrokMode(v)}
-                className="justify-start gap-1 flex-wrap"
-              >
-                {GROK_MODE_OPTIONS.map((opt) => (
-                  <ToggleGroupItem
-                    key={opt.value}
-                    value={opt.value}
-                    className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-                  >
-                    {opt.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-
-            {/* Orientation */}
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Layers className="h-3 w-3" /> Orientação
-              </p>
-              <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
-                <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {GROK_ASPECT_OPTIONS.map((opt) => {
-                    const Icon = opt.icon;
-                    return (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        <span className="flex items-center gap-2">
-                          <Icon className="h-3.5 w-3.5" /> {opt.label} ({opt.value})
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Duration */}
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Duração
-              </p>
-              <ToggleGroup
-                type="single"
-                value={grokDuration}
-                onValueChange={(v) => v && setGrokDuration(v)}
-                className="justify-start gap-1"
-              >
-                {GROK_DURATION_OPTIONS.map((opt) => (
-                  <ToggleGroupItem
-                    key={opt.value}
-                    value={opt.value}
-                    className="text-xs px-3 h-8 rounded-lg data-[state=on]:bg-primary/20 data-[state=on]:text-primary data-[state=on]:border-primary/30 border border-border/40"
-                  >
-                    {opt.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-
-            {/* Grok Image Reference */}
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <ImageIcon className="h-3 w-3" /> Imagem de Referência <span className="text-muted-foreground/60">(opcional)</span>
-              </p>
-              <input ref={grokFileInputRef} type="file" accept="image/*" onChange={handleGrokFileSelect} className="hidden" />
-              <div className="flex gap-2 items-center">
-                {grokRefPreview ? (
-                  <div className="relative group rounded-xl overflow-hidden border border-border/50 w-24 h-24 bg-muted/20">
-                    <img src={grokRefPreview} alt="Ref Grok" className="w-full h-full object-cover" />
-                    <button
-                      onClick={() => { setGrokRefImage(null); setGrokRefPreview(null); }}
-                      className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => grokFileInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="w-24 h-24 rounded-xl border-2 border-dashed border-border/40 bg-muted/10 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span className="text-[10px]">Select Image</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Bottom toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            {!isGrok && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground">Orientação</span>
-                <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
-                  <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40 min-w-[120px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="16:9">
-                      <span className="flex items-center gap-2"><Monitor className="h-3.5 w-3.5" /> Landscape (16:9)</span>
-                    </SelectItem>
-                    <SelectItem value="9:16">
-                      <span className="flex items-center gap-2"><Smartphone className="h-3.5 w-3.5" /> Portrait (9:16)</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-muted-foreground">Orientação</span>
+              <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
+                <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40 min-w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="16:9">
+                    <span className="flex items-center gap-2"><Monitor className="h-3.5 w-3.5" /> Landscape (16:9)</span>
+                  </SelectItem>
+                  <SelectItem value="9:16">
+                    <span className="flex items-center gap-2"><Smartphone className="h-3.5 w-3.5" /> Portrait (9:16)</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="flex flex-col gap-1">
               <span className="text-[10px] text-muted-foreground">Resolução</span>
@@ -588,9 +386,8 @@ export function VideoGenerator() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {isGrok && <SelectItem value="480p">480p</SelectItem>}
                   <SelectItem value="720p">720p</SelectItem>
-                  {!isGrok && <SelectItem value="1080p">1080p</SelectItem>}
+                  <SelectItem value="1080p">1080p</SelectItem>
                 </SelectContent>
               </Select>
             </div>

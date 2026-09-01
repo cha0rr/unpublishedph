@@ -96,7 +96,7 @@ export function useGenerator(): GeneratorResult {
         const accessToken = sessionData?.session?.access_token;
         if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
 
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-history`, {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/snapgen-history`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -184,7 +184,7 @@ export function useGenerator(): GeneratorResult {
         }
       }
 
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/geminigen-video`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/snapgen-video`, {
         method: "POST",
         headers: {
           apikey: SUPABASE_KEY,

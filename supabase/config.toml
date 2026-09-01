@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.image-reference-proxy]
 verify_jwt = false
+
+[functions.snapgen-video]
+verify_jwt = false
+
+[functions.snapgen-history]
+verify_jwt = false
