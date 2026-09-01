@@ -58,29 +58,27 @@ export function TextToVideoNode({ id, x, y, onRemove }: NodeProps) {
 
       <p className="text-[11px] text-muted-foreground">Modelo: <span className="text-foreground">Veo 3.1 Fast</span></p>
 
-      {(
-
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="9:16">Vertical 9:16</SelectItem>
-              <SelectItem value="16:9">Horizontal 16:9</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="720p">720p</SelectItem>
-              <SelectItem value="1080p">1080p</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="9:16">Vertical 9:16</SelectItem>
+            <SelectItem value="16:9">Horizontal 16:9</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="720p">720p</SelectItem>
+            <SelectItem value="1080p">1080p</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <Button
         onClick={handleGenerate}
-        disabled={!prompt.trim() || isLoading || (isGrok && !isPro)}
+        disabled={!prompt.trim() || isLoading}
+
         className="w-full"
         size="sm"
       >
