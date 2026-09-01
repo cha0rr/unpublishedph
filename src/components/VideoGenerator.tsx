@@ -362,24 +362,22 @@ export function VideoGenerator() {
         {/* Bottom toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            {!isGrok && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-muted-foreground">Orientação</span>
-                <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
-                  <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40 min-w-[120px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="16:9">
-                      <span className="flex items-center gap-2"><Monitor className="h-3.5 w-3.5" /> Landscape (16:9)</span>
-                    </SelectItem>
-                    <SelectItem value="9:16">
-                      <span className="flex items-center gap-2"><Smartphone className="h-3.5 w-3.5" /> Portrait (9:16)</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-muted-foreground">Orientação</span>
+              <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isLoading}>
+                <SelectTrigger className="h-8 text-xs bg-background/40 border-border/40 min-w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="16:9">
+                    <span className="flex items-center gap-2"><Monitor className="h-3.5 w-3.5" /> Landscape (16:9)</span>
+                  </SelectItem>
+                  <SelectItem value="9:16">
+                    <span className="flex items-center gap-2"><Smartphone className="h-3.5 w-3.5" /> Portrait (9:16)</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="flex flex-col gap-1">
               <span className="text-[10px] text-muted-foreground">Resolução</span>
@@ -388,9 +386,12 @@ export function VideoGenerator() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {isGrok && <SelectItem value="480p">480p</SelectItem>}
                   <SelectItem value="720p">720p</SelectItem>
-                  {!isGrok && <SelectItem value="1080p">1080p</SelectItem>}
+                  <SelectItem value="1080p">1080p</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
                 </SelectContent>
               </Select>
             </div>
