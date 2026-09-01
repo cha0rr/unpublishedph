@@ -18,6 +18,18 @@ interface CachedToken {
 }
 
 let cached: CachedToken | null = null;
+let loginInFlight: Promise<string> | null = null;
+
+interface SnapgenLoginErrorDetail {
+  error_code?: string;
+  error_message?: string;
+}
+
+interface SnapgenLoginResponse {
+  access_token?: string;
+  refresh_token?: string;
+  detail?: string | SnapgenLoginErrorDetail;
+}
 
 /** Decodifica o `exp` do JWT sem validar assinatura (só para cache). */
 function readJwtExpiry(token: string): number {
@@ -40,32 +52,35 @@ async function login(): Promise<string> {
     throw new Error("SNAPGEN_EMAIL/SNAPGEN_PASSWORD não configurados.");
   }
 
-  const form = new FormData();
-  form.append("username", email);
-  form.append("password", password);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
-  const res = await fetch(`${SNAPGEN_BASE}/api/login`, {
+  // O frontend oficial da SnapGen usa login-v2 com corpo JSON. O endpoint
+  // legado /api/login devolve "Not found" mesmo para contas válidas.
+  const res = await fetch(`${SNAPGEN_BASE}/api/login-v2`, {
     method: "POST",
-    body: form,
-  });
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: email, password }),
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeoutId));
 
-  const data = await res.json().catch(() => ({} as any));
+  const data: SnapgenLoginResponse = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const raw = typeof data?.detail === "string"
+    const raw = typeof data.detail === "string"
       ? data.detail
-      : data?.detail?.error_message || `HTTP ${res.status}`;
-    // A SnapGen devolve 404 "Not found" quando o e-mail não existe
-    // ou a senha não confere (conta criada via Google não tem senha).
-    const msg = /not found/i.test(raw)
-      ? "e-mail ou senha inválidos (verifique os secrets SNAPGEN_EMAIL/SNAPGEN_PASSWORD; contas criadas com login do Google não possuem senha)"
+      : data.detail?.error_message || `HTTP ${res.status}`;
+    const errorCode = typeof data.detail === "object"
+      ? data.detail?.error_code
+      : undefined;
+    const msg = errorCode === "SIGNIN_WRONG_EMAIL_PASSWORD" ||
+        /not found|password is not correct/i.test(raw)
+      ? "e-mail ou senha inválidos; atualize SNAPGEN_EMAIL e SNAPGEN_PASSWORD com os dados de uma conta SnapGen que possua senha"
       : raw;
     throw new Error(`Falha ao autenticar na SnapGen: ${msg}`);
   }
 
-
-  const token: string | undefined = data?.access_token || data?.token ||
-    data?.data?.access_token || data?.session?.access_token;
+  const token = data.access_token;
 
   if (!token) {
     throw new Error("SnapGen não retornou access_token no login.");
@@ -86,8 +101,18 @@ export async function getSnapgenToken(forceRefresh = false): Promise<string> {
   if (!forceRefresh && cached && cached.expiresAt > Date.now()) {
     return cached.token;
   }
+
+  if (loginInFlight) {
+    return await loginInFlight;
+  }
+
   cached = null;
-  return await login();
+  loginInFlight = login();
+  try {
+    return await loginInFlight;
+  } finally {
+    loginInFlight = null;
+  }
 }
 
 /**
