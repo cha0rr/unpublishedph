@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "snapgen:extract": "cd tools/snapgen-extract && bun run extract",
+    "snapgen:install": "cd tools/snapgen-extract && bun install"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "0.12.15",
