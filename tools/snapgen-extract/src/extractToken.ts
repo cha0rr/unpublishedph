@@ -16,6 +16,7 @@ export interface ExtractedToken {
   token: string;
   expiresAt: number; // epoch ms (0 se não conseguiu inferir)
   source: Source;
+  guardStableId?: string; // valor de localStorage.guard_stable_id, necessário para o x-guard-id
 }
 
 async function tryStorage(
@@ -59,10 +60,16 @@ async function tryStorage(
       }
     }
   }
-  // 2) Última varredura
+  // 2) Varredura profunda: parseia CADA valor do storage como JSON e procura JWT em qualquer campo
   for (const raw of Object.values(dump)) {
-    if (typeof raw === "string" && looksLikeJwt(raw)) {
+    if (typeof raw !== "string" || raw.length < 20) continue;
+    if (looksLikeJwt(raw)) {
       return { token: raw, expiresAt: readExpiresAt(raw, null), source: storageKind };
+    }
+    const parsed = tryParseJson(raw);
+    if (parsed) {
+      const t = deepFindJwt(parsed);
+      if (t) return { token: t, expiresAt: readExpiresAt(t, parsed), source: storageKind };
     }
   }
   return null;
@@ -110,6 +117,7 @@ export async function extractToken(
   client: any,
   snapgenUrl: string,
 ): Promise<ExtractedToken | null> {
+  let token: ExtractedToken | null = null;
   for (const fn of [
     () => tryStorage(client, "localStorage"),
     () => tryStorage(client, "sessionStorage"),
@@ -118,12 +126,22 @@ export async function extractToken(
   ]) {
     try {
       const r = await fn();
-      if (r) return r;
+      if (r) { token = r; break; }
     } catch {
       // continua
     }
   }
-  return null;
+  if (!token) return null;
+  // Lê o guard_stable_id — é o que vincula o token ao guard gerado pela Edge.
+  try {
+    const r = await client.Runtime.evaluate({
+      expression: "localStorage.getItem('guard_stable_id') || ''",
+      returnByValue: true,
+    });
+    const v = (r?.result?.value || "").toString();
+    if (v) token.guardStableId = v;
+  } catch { /* ignore */ }
+  return token;
 }
 
 function tryParseJson(raw: string): any {
@@ -141,6 +159,43 @@ function pickTokenFromObject(obj: any): string | null {
   const candidates = [obj.access_token, obj.token, obj.jwt, obj.session?.access_token];
   for (const c of candidates) {
     if (typeof c === "string" && looksLikeJwt(c)) return c;
+  }
+  return null;
+}
+
+/**
+ * Procura recursivamente em um objeto/array por QUALQUER string que pareça JWT.
+ * Usado como fallback quando o token está aninhado dentro de um JSON de store
+ * (ex: snapgen.ai guarda em `authStore.access_token`).
+ * Limite de profundidade e de nós visitados para não travar em estruturas cíclicas.
+ */
+function deepFindJwt(obj: any, depth = 0, seen: WeakSet<object> = new WeakSet()): string | null {
+  if (depth > 6) return null;
+  if (obj == null) return null;
+  if (typeof obj === "string") {
+    return looksLikeJwt(obj) ? obj : null;
+  }
+  if (typeof obj !== "object") return null;
+  if (seen.has(obj)) return null;
+  seen.add(obj);
+  if (Array.isArray(obj)) {
+    for (const v of obj) {
+      const r = deepFindJwt(v, depth + 1, seen);
+      if (r) return r;
+    }
+    return null;
+  }
+  // Ordem de preferência: campos com nome óbvio de token primeiro
+  const priorityKeys = ["access_token", "token", "jwt", "idToken", "id_token"];
+  for (const k of priorityKeys) {
+    if (k in obj) {
+      const r = deepFindJwt(obj[k], depth + 1, seen);
+      if (r) return r;
+    }
+  }
+  for (const v of Object.values(obj)) {
+    const r = deepFindJwt(v, depth + 1, seen);
+    if (r) return r;
   }
   return null;
 }

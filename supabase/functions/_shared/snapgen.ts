@@ -33,8 +33,14 @@ const GUARD_KEY = "45NPBH$&";
 const GUARD_VERSION = 1;
 const GUARD_ID_LENGTH = 22;
 const GUARD_BUCKET_MS = 60_000;
-/** Sem DOM no servidor, o frontend também usa este valor padrão. */
-const GUARD_DOM_FP = "0".repeat(32);
+/**
+ * Fingerprint de DOM (32 bytes = 64 hex chars). O snapgen.ai envia um valor
+ * específico do navegador do usuário, mas como a Edge Function não tem DOM,
+ * usamos zeros. Se o servidor exigir valor real, a única solução é fazer o
+ * frontend gerar esse fingerprint e mandar junto — mas o algoritmo exato
+ * deles é desconhecido.
+ */
+const GUARD_DOM_FP = "0".repeat(64);
 
 function b64url(input: string): string {
   return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
@@ -62,23 +68,24 @@ function hexToBytes(hex: string): number[] {
   return out;
 }
 
-function cheapHash(text: string): string {
-  let h = 0;
-  for (let i = 0; i < text.length; i++) {
-    h = (h << 5) - h + text.charCodeAt(i);
-    h = h & h;
-  }
-  return Math.abs(h).toString(16).padStart(8, "0");
-}
-
 let cachedStableId: string | null = null;
+
+/**
+ * Define o stableId a ser usado pela Edge. Chamado por `getSnapgenToken()`
+ * após ler `snapgen_guard_stable_id` do banco. Resetar o cache força o
+ * `buildGuardId` a usar o novo valor.
+ */
+export function setGuardStableId(stableId: string | null): void {
+  cachedStableId = stableId && stableId.length > 0 ? stableId : null;
+}
 
 async function getStableId(): Promise<string> {
   if (cachedStableId) return cachedStableId;
+  // Fallback: gera um novo (não vai funcionar contra a API, mas evita crash).
   const rand = Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  const raw = `${rand}.${cheapHash("unknown")}.${cheapHash("0x0")}`;
+  const raw = `${rand}.00000000.00000000`;
   const hashed = await sha256Hex(`${GUARD_SALT}:${raw}`);
   cachedStableId = b64url(hashed).slice(0, GUARD_ID_LENGTH);
   return cachedStableId;
@@ -131,9 +138,10 @@ async function readSnapgenTokenFromDb(forceRefresh: boolean): Promise<CachedToke
   // em memória da própria edge function reduz isso. Em ambiente com
   // invocações concorrentes, o `readInFlight` deduplica.
   const client = await getAdminClient();
-  const [{ data: tokenRow }, { data: expRow }] = await Promise.all([
+  const [{ data: tokenRow }, { data: expRow }, { data: guardRow }] = await Promise.all([
     client.from("app_secrets").select("value").eq("key", "snapgen_access_token").maybeSingle(),
     client.from("app_secrets").select("value").eq("key", "snapgen_token_expires_at").maybeSingle(),
+    client.from("app_secrets").select("value").eq("key", "snapgen_guard_stable_id").maybeSingle(),
   ]);
   const token = tokenRow?.value;
   if (!token) {
@@ -143,6 +151,10 @@ async function readSnapgenTokenFromDb(forceRefresh: boolean): Promise<CachedToke
     );
   }
   const expRaw = Number(expRow?.value || 0);
+  // O stableId do guard é vinculado ao token pelo servidor da snapgen.ai.
+  // Sem ele, o guard gerado pela Edge tem um stableId random e a API
+  // retorna "Invalid guard" / GUARD_NOT_PRESENTED.
+  setGuardStableId(guardRow?.value || null);
   return {
     token,
     // Se o admin gravou exp em epoch ms, honramos; senão fallback de 5 min.

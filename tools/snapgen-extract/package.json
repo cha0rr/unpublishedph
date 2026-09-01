@@ -5,7 +5,8 @@
   "description": "CLI que extrai o JWT da sessão do snapgen.ai a partir do Chrome em modo debug. Imprime o token no terminal para você colar em /admin/snapgen.",
   "type": "module",
   "scripts": {
-    "extract": "bun run src/extract.ts"
+    "extract": "bun run src/extract.ts",
+    "dump": "bun run src/dump.ts"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.33.2"
