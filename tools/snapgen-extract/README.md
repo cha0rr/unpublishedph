@@ -8,15 +8,32 @@ Pequena CLI local que extrai o **JWT da sessão logada do snapgen.ai** a partir 
 
 ### 1. Iniciar o Chrome em modo debug
 
-Abra o **PowerShell** e rode:
+> ⚠️ **Antes de tudo:** se você já tem o Chrome aberto (com seu perfil pessoal), **feche todas as instâncias** dele. O Chrome não aceita rodar duas instâncias com o mesmo perfil. O `--user-data-dir` abaixo cria um perfil dedicado (`.snapgen-bridge`) para esta sessão.
+
+**PowerShell** (`powershell.exe`):
 
 ```powershell
-chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=$env:USERPROFILE\.snapgen-bridge
+& "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$env:USERPROFILE\.snapgen-bridge"
 ```
 
-> Se o seu Chrome principal já estiver aberto, **feche todas as instâncias antes** — o Chrome não aceita duas instâncias com o mesmo perfil. O `--user-data-dir` cria um perfil dedicado para esta sessão.
+**CMD / Prompt de Comando** (`cmd.exe`):
 
-Navegue até https://snapgen.ai/app/video-gen/veo nesse Chrome e faça login (se ainda não estiver logado). Mantenha essa janela aberta.
+```bat
+"%ProgramFiles%\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="%USERPROFILE%\.snapgen-bridge"
+```
+
+**Git Bash / WSL / qualquer shell POSIX**:
+
+```bash
+"/c/Program Files/Google/Chrome/Application/chrome.exe" --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$HOME/.snapgen-bridge"
+```
+
+> 💡 Se você usa **Edge** ao invés de Chrome, troque o caminho por:
+> - PowerShell: `"$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe"`
+> - CMD: `"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"`
+> - Git Bash: `"/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"`
+
+Depois de iniciar, navegue até https://snapgen.ai/app/video-gen/veo nesse Chrome e faça login (se ainda não estiver logado). **Mantenha essa janela aberta** enquanto for usar o Studio Videos.
 
 ### 2. Extrair o JWT
 

@@ -10,14 +10,6 @@ import { Footer } from "@/components/landing/Footer";
 import { Loader2, Save, ArrowLeft, Key, CheckCircle2, AlertTriangle, RefreshCw, TestTube2 } from "lucide-react";
 import { toast } from "sonner";
 
-/**
- * `app_secrets` foi criada depois da última geração de `types.ts`.
- * Usamos um cliente sem tipagem estrita apenas para esta tabela.
- */
-const db = supabase as unknown as {
-  from: (table: string) => any;
-};
-
 interface SecretRow {
   key: string;
   value: string;
@@ -40,9 +32,10 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 const AdminSnapgen = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [secrets, setSecrets] = useState<{ token: SecretRow | null; exp: SecretRow | null }>({
+  const [secrets, setSecrets] = useState<{ token: SecretRow | null; exp: SecretRow | null; guard: SecretRow | null }>({
     token: null,
     exp: null,
+    guard: null,
   });
   const [tokenDraft, setTokenDraft] = useState("");
   const [loading, setLoading] = useState(true);
@@ -60,10 +53,10 @@ const AdminSnapgen = () => {
 
   const fetchSecrets = async () => {
     setLoading(true);
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from("app_secrets")
       .select("key,value,updated_at")
-      .in("key", ["snapgen_access_token", "snapgen_token_expires_at"]);
+      .in("key", ["snapgen_access_token", "snapgen_token_expires_at", "snapgen_guard_stable_id"]);
     if (error) {
       toast.error("Erro ao carregar segredos: " + error.message);
     } else {
@@ -71,6 +64,7 @@ const AdminSnapgen = () => {
       setSecrets({
         token: rows.find((r) => r.key === "snapgen_access_token") || null,
         exp: rows.find((r) => r.key === "snapgen_token_expires_at") || null,
+        guard: rows.find((r) => r.key === "snapgen_guard_stable_id") || null,
       });
     }
     setLoading(false);
@@ -93,7 +87,24 @@ const AdminSnapgen = () => {
       toast.error("Cole um token JWT antes de salvar.");
       return;
     }
-    if (trimmed.split(".").length !== 3) {
+    // Suporta dois formatos:
+    //  1. Só o token (eyJ...); neste caso o guard_stable_id atual do banco é preservado
+    //     e o backend vai usar ele. Se o banco não tiver, vai continuar falhando.
+    //  2. Formato completo vindo do `bun run snapgen:extract`:
+    //       eyJ...
+    //       guard_stable_id: MTUwNzRiZWY3MzUzMjYyZW
+    //     Nesse caso extraímos os dois.
+    const lines = trimmed.split(/\r?\n/);
+    const tokenLine = lines[0].trim();
+    const guardLineRaw = lines
+      .slice(1)
+      .map((l) => l.trim())
+      .find((l) => /^guard_stable_id\s*:/i.test(l));
+    const guardStableId = guardLineRaw
+      ? guardLineRaw.split(":").slice(1).join(":").trim()
+      : null;
+
+    if (tokenLine.split(".").length !== 3) {
       toast.error("O token parece inválido (esperado formato eyJ....eyJ....xxx).");
       return;
     }
@@ -102,25 +113,39 @@ const AdminSnapgen = () => {
     const userId = session?.user?.id || null;
     const expEpochMs = draftExp > 0 ? String(draftExp) : "0";
 
-    const { error: err1 } = await db
+    const { error: err1 } = await supabase
       .from("app_secrets")
       .upsert(
-        { key: "snapgen_access_token", value: trimmed, updated_at: new Date().toISOString(), updated_by: userId },
+        { key: "snapgen_access_token", value: tokenLine, updated_at: new Date().toISOString(), updated_by: userId },
         { onConflict: "key" },
       );
-    const { error: err2 } = await db
+    const { error: err2 } = await supabase
       .from("app_secrets")
       .upsert(
         { key: "snapgen_token_expires_at", value: expEpochMs, updated_at: new Date().toISOString(), updated_by: userId },
         { onConflict: "key" },
       );
+    let err3: any = null;
+    if (guardStableId) {
+      const r = await supabase
+        .from("app_secrets")
+        .upsert(
+          { key: "snapgen_guard_stable_id", value: guardStableId, updated_at: new Date().toISOString(), updated_by: userId },
+          { onConflict: "key" },
+        );
+      err3 = r.error;
+    }
     setSaving(false);
 
-    if (err1 || err2) {
-      toast.error("Erro ao salvar: " + (err1?.message || err2?.message));
+    if (err1 || err2 || err3) {
+      toast.error("Erro ao salvar: " + (err1?.message || err2?.message || err3?.message));
       return;
     }
-    toast.success("Token salvo com sucesso.");
+    toast.success(
+      guardStableId
+        ? "Token + guard_stable_id salvos com sucesso."
+        : "Token salvo (sem guard_stable_id — pode falhar com 'Invalid guard').",
+    );
     setTokenDraft("");
     setTestResult(null);
     fetchSecrets();
@@ -129,12 +154,16 @@ const AdminSnapgen = () => {
   const handleClear = async () => {
     if (!confirm("Remover o token do SnapGen? A geração de vídeos vai parar até você colar um novo.")) return;
     setSaving(true);
-    await db.from("app_secrets").upsert(
+    await supabase.from("app_secrets").upsert(
       { key: "snapgen_access_token", value: "", updated_at: new Date().toISOString() },
       { onConflict: "key" },
     );
-    await db.from("app_secrets").upsert(
+    await supabase.from("app_secrets").upsert(
       { key: "snapgen_token_expires_at", value: "0", updated_at: new Date().toISOString() },
+      { onConflict: "key" },
+    );
+    await supabase.from("app_secrets").upsert(
+      { key: "snapgen_guard_stable_id", value: "", updated_at: new Date().toISOString() },
       { onConflict: "key" },
     );
     setSaving(false);
@@ -269,6 +298,14 @@ const AdminSnapgen = () => {
                 ) : (
                   <div>Sem informação de expiração no JWT.</div>
                 )}
+                <div className="flex items-center gap-2">
+                  guard_stable_id:{" "}
+                  {secrets.guard?.value ? (
+                    <span className="text-foreground font-mono">{secrets.guard.value}</span>
+                  ) : (
+                    <span className="text-yellow-400">⚠ não configurado — a Edge não conseguirá reproduzir o guard, "Invalid guard"</span>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-xs text-muted-foreground">
@@ -283,8 +320,9 @@ const AdminSnapgen = () => {
             <Textarea
               value={tokenDraft}
               onChange={(e) => setTokenDraft(e.target.value)}
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              className="font-mono text-xs min-h-[100px] break-all"
+              placeholder={`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+guard_stable_id: MTUwNzRiZWY3MzUzMjYyZW`}
+              className="font-mono text-xs min-h-[120px] break-all"
               disabled={saving}
             />
             {tokenDraft.trim() && (
@@ -310,6 +348,12 @@ const AdminSnapgen = () => {
                 )}
               </div>
             )}
+            <div className="text-[11px] text-muted-foreground">
+              <strong className="text-foreground">Dica:</strong> cole o <em>output completo</em> do
+              <code className="mx-1 px-1 rounded bg-muted text-foreground">bun run snapgen:extract</code>
+              (token + linha <code>guard_stable_id:</code>). Sem o guard_stable_id, a Edge não consegue
+              reproduzir o <code>x-guard-id</code> e a API retorna "Invalid guard".
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleSave} disabled={saving || !tokenDraft.trim()}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
@@ -342,33 +386,66 @@ const AdminSnapgen = () => {
           </div>
 
           {/* Instruções */}
-          <details className="rounded-xl border border-border bg-card/50 p-4 text-sm">
+          <details className="rounded-xl border border-border bg-card/50 p-4 text-sm" open>
             <summary className="cursor-pointer font-medium text-foreground">
               Como extrair um novo token
             </summary>
-            <ol className="mt-3 space-y-2 list-decimal list-inside text-muted-foreground">
+            <ol className="mt-3 space-y-3 list-decimal list-inside text-muted-foreground">
               <li>
-                Inicie o Chrome em modo debug (perfil dedicado):
-                <pre className="mt-1 p-2 rounded bg-muted text-xs font-mono text-foreground overflow-x-auto">
-                  chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=$env:USERPROFILE\.snapgen-bridge
-                </pre>
+                <strong className="text-foreground">Feche todas as janelas do Chrome/Edge</strong> que
+                estiverem abertas (o Chrome não aceita dois perfis ao mesmo tempo).
               </li>
               <li>
-                Nesse Chrome, abra{" "}
+                <strong className="text-foreground">Inicie o Chrome em modo debug.</strong> Escolha
+                o comando conforme o seu terminal:
+                <div className="mt-2 space-y-1.5">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">PowerShell</span>
+                    <pre className="p-2 rounded bg-muted text-xs font-mono text-foreground overflow-x-auto">
+{`& "$env:ProgramFiles\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$env:USERPROFILE\\.snapgen-bridge"`}
+                    </pre>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">CMD (Prompt de Comando)</span>
+                    <pre className="p-2 rounded bg-muted text-xs font-mono text-foreground overflow-x-auto">
+{`"%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="%USERPROFILE%\\.snapgen-bridge"`}
+                    </pre>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Git Bash / WSL</span>
+                    <pre className="p-2 rounded bg-muted text-xs font-mono text-foreground overflow-x-auto">
+{`"/c/Program Files/Google/Chrome/Application/chrome.exe" --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="$HOME/.snapgen-bridge"`}
+                    </pre>
+                  </div>
+                  <div className="pt-1">
+                    💡 <strong>Atalho:</strong> na pasta{" "}
+                    <code className="px-1 rounded bg-muted text-foreground text-xs">
+                      tools/snapgen-extract/
+                    </code>{" "}
+                    tem os scripts <code>start-chrome.cmd</code> (CMD) e{" "}
+                    <code>start-chrome.ps1</code> (PowerShell) que fazem isso pra você — é só dar
+                    duplo-clique no <code>.cmd</code> ou rodar{" "}
+                    <code>powershell -File start-chrome.ps1</code>.
+                  </div>
+                </div>
+              </li>
+              <li>
+                <strong className="text-foreground">Faça login</strong> no Chrome que abriu, em{" "}
                 <a href="https://snapgen.ai/app/video-gen/veo" target="_blank" rel="noopener noreferrer" className="text-primary underline">
                   snapgen.ai/app/video-gen/veo
-                </a>{" "}
-                e faça login (se necessário).
+                </a>.
               </li>
               <li>
-                Na raiz do projeto, rode:
+                <strong className="text-foreground">Extraia o token</strong> na raiz do projeto:
                 <pre className="mt-1 p-2 rounded bg-muted text-xs font-mono text-foreground overflow-x-auto">
                   bun run snapgen:extract
                 </pre>
-                O token (linha que começa com <code>eyJ…</code>) será impresso no terminal.
+                A linha que começa com <code>eyJ…</code> é o token.
               </li>
-              <li>Copie o token e cole no campo acima. Clique em "Salvar".</li>
-              <li>Use "Testar agora" para confirmar que foi aceito pela API.</li>
+              <li>
+                <strong className="text-foreground">Cole acima</strong> e clique em <em>Salvar</em>.
+                Depois clique em <em>Testar agora</em> pra confirmar.
+              </li>
             </ol>
           </details>
         </motion.div>
