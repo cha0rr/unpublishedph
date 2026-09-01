@@ -173,7 +173,7 @@ export function ImageToVideoNode({ id, x, y, onRemove }: NodeProps) {
 
       <Button
         onClick={handleGenerate}
-        disabled={!prompt.trim() || !refImage || isLoading || linking || (isGrok && !isPro)}
+        disabled={!prompt.trim() || !refImage || isLoading || linking}
         className="w-full"
         size="sm"
       >
