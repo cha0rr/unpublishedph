@@ -151,66 +151,25 @@ export function ImageToVideoNode({ id, x, y, onRemove }: NodeProps) {
         className="resize-none"
       />
 
-      <Select value={model} onValueChange={handleModelChange} disabled={isLoading}>
-        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {MODEL_OPTIONS.map((m) => (
-            <SelectItem key={m.value} value={m.value}>
-              <span className="flex items-center gap-1.5">
-                {m.label}
-                {m.pro && !isPro && <Lock className="h-3 w-3 text-amber-500" />}
-                {m.pro && <span className="text-[10px] text-amber-500">Pro</span>}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <p className="text-[11px] text-muted-foreground">Modelo: <span className="text-foreground">Veo 3.1 Fast</span></p>
 
-      {isGrok ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GROK_ASPECT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={grokDuration} onValueChange={setGrokDuration} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GROK_DURATION_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={grokMode} onValueChange={setGrokMode} disabled={isLoading}>
-            <SelectTrigger className="h-9 col-span-2"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {GROK_MODE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>Modo: {o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="9:16">Vertical 9:16</SelectItem>
-              <SelectItem value="16:9">Horizontal 16:9</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="720p">720p</SelectItem>
-              <SelectItem value="1080p">1080p</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={aspect} onValueChange={setAspect} disabled={isLoading}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="9:16">Vertical 9:16</SelectItem>
+            <SelectItem value="16:9">Horizontal 16:9</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={resolution} onValueChange={setResolution} disabled={isLoading}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="720p">720p</SelectItem>
+            <SelectItem value="1080p">1080p</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
 
       <Button
         onClick={handleGenerate}
