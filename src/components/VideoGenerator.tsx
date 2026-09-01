@@ -56,7 +56,7 @@ export function VideoGenerator() {
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [resolution, setResolution] = useState("720p");
-  const [model, setModel] = useState("veo-3.1-fast");
+  const model = MODEL;
   const [modeImage, setModeImage] = useState<ModeImage>("none");
   const [extendOpen, setExtendOpen] = useState(false);
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
