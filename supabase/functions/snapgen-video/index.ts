@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { snapgenFetch } from '../_shared/snapgen.ts';
+import { snapgenFetch, SNAPGEN_TOKEN_MISSING } from '../_shared/snapgen.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -201,6 +201,16 @@ Deno.serve(async (req) => {
     });
   } catch (error: any) {
     console.error('snapgen-video error:', error?.message);
+    if (typeof error?.message === 'string' && error.message.includes(SNAPGEN_TOKEN_MISSING)) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'A geração de vídeos está temporariamente indisponível. O administrador precisa configurar o token do SnapGen em /admin/snapgen.',
+        snapgen_token_missing: true,
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(JSON.stringify({ success: false, error: error?.message || 'Erro ao gerar vídeo.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

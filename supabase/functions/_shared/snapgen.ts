@@ -1,19 +1,21 @@
 /**
  * Cliente compartilhado da SnapGen (https://api.snapgen.ai).
  *
- * A SnapGen autentica por Bearer JWT de conta. O token expira, então este
- * módulo faz login programático (email/senha guardados como secrets),
- * mantém o JWT em cache na memória da instância da edge function e o
- * renova automaticamente quando expira ou quando a API devolve 401.
+ * O JWT é lido da tabela `app_secrets` no Supabase (campo `snapgen_access_token`).
+ * O admin cola/renova o token manualmente em `/admin/snapgen` no app —
+ * nada de email/senha guardados em secrets, nada de login programático.
  *
  * O token NUNCA é exposto ao frontend.
  */
 
 export const SNAPGEN_BASE = "https://api.snapgen.ai";
 
+/** Mensagem magic para detecção pelo frontend. */
+export const SNAPGEN_TOKEN_MISSING = "nenhum token configurado";
+
 interface CachedToken {
   token: string;
-  /** epoch em ms — renovamos com 60s de folga */
+  /** epoch em ms — renovamos com 60s de folga (ou mais cedo se forceRefresh). */
   expiresAt: number;
 }
 
@@ -104,109 +106,79 @@ export async function buildGuardId(path: string, method: string): Promise<string
 }
 
 let cached: CachedToken | null = null;
-let loginInFlight: Promise<string> | null = null;
+let readInFlight: Promise<CachedToken> | null = null;
 
-interface SnapgenLoginErrorDetail {
-  error_code?: string;
-  error_message?: string;
-}
-
-interface SnapgenLoginResponse {
-  access_token?: string;
-  refresh_token?: string;
-  detail?: string | SnapgenLoginErrorDetail;
-}
-
-/** Decodifica o `exp` do JWT sem validar assinatura (só para cache). */
-function readJwtExpiry(token: string): number {
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return 0;
-    const json = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+/** Cliente Supabase com service_role, criado sob demanda. */
+let adminClientPromise: Promise<any> | null = null;
+function getAdminClient(): Promise<any> {
+  if (!adminClientPromise) {
+    adminClientPromise = import("https://esm.sh/@supabase/supabase-js@2").then(
+      ({ createClient }) => {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (!supabaseUrl || !serviceRoleKey) {
+          throw new Error("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY não configurados.");
+        }
+        return createClient(supabaseUrl, serviceRoleKey);
+      },
     );
-    return typeof json?.exp === "number" ? json.exp * 1000 : 0;
-  } catch {
-    return 0;
   }
+  return adminClientPromise;
 }
 
-async function login(): Promise<string> {
-  const email = Deno.env.get("SNAPGEN_EMAIL");
-  const password = Deno.env.get("SNAPGEN_PASSWORD");
-  if (!email || !password) {
-    throw new Error("SNAPGEN_EMAIL/SNAPGEN_PASSWORD não configurados.");
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15_000);
-
-  // O frontend oficial da SnapGen usa login-v2 com corpo JSON. O endpoint
-  // legado /api/login devolve "Not found" mesmo para contas válidas.
-  const res = await fetch(`${SNAPGEN_BASE}/api/login-v2`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-guard-id": await buildGuardId("/api/login-v2", "POST"),
-    },
-    body: JSON.stringify({ username: email, password }),
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeoutId));
-
-  const data: SnapgenLoginResponse = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const raw = typeof data.detail === "string"
-      ? data.detail
-      : data.detail?.error_message || `HTTP ${res.status}`;
-    const errorCode = typeof data.detail === "object"
-      ? data.detail?.error_code
-      : undefined;
-    const msg = errorCode === "SIGNIN_WRONG_EMAIL_PASSWORD" ||
-        /not found|password is not correct/i.test(raw)
-      ? "e-mail ou senha inválidos; atualize SNAPGEN_EMAIL e SNAPGEN_PASSWORD com os dados de uma conta SnapGen que possua senha"
-      : raw;
-    throw new Error(`Falha ao autenticar na SnapGen: ${msg}`);
-  }
-
-  const token = data.access_token;
-
+async function readSnapgenTokenFromDb(forceRefresh: boolean): Promise<CachedToken> {
+  // Custo de uma query por invocação de edge function é aceitável; o cache
+  // em memória da própria edge function reduz isso. Em ambiente com
+  // invocações concorrentes, o `readInFlight` deduplica.
+  const client = await getAdminClient();
+  const [{ data: tokenRow }, { data: expRow }] = await Promise.all([
+    client.from("app_secrets").select("value").eq("key", "snapgen_access_token").maybeSingle(),
+    client.from("app_secrets").select("value").eq("key", "snapgen_token_expires_at").maybeSingle(),
+  ]);
+  const token = tokenRow?.value;
   if (!token) {
-    throw new Error("SnapGen não retornou access_token no login.");
+    throw new Error(
+      `SnapGen: ${SNAPGEN_TOKEN_MISSING}. ` +
+        `Acesse /admin/snapgen no app e cole o JWT extraído pela ferramenta local.`,
+    );
   }
-
-  const exp = readJwtExpiry(token);
-  cached = {
+  const expRaw = Number(expRow?.value || 0);
+  return {
     token,
-    // fallback: 30 minutos se o JWT não trouxer exp legível
-    expiresAt: exp > 0 ? exp - 60_000 : Date.now() + 30 * 60_000,
-  };
-
-  return token;
+    // Se o admin gravou exp em epoch ms, honramos; senão fallback de 5 min.
+    expiresAt: expRaw > 0 ? expRaw - 60_000 : Date.now() + 5 * 60_000,
+    // Suprime warning de variável não usada (forceRefresh pode ser útil
+    // em versões futuras para bypassar cache externo, por ex. Redis).
+    ...(forceRefresh ? { __force: true } : {}),
+  } as CachedToken;
 }
 
-/** Retorna um JWT válido, reaproveitando o cache quando possível. */
+/** Retorna um JWT válido, reaproveitando o cache em memória. */
 export async function getSnapgenToken(forceRefresh = false): Promise<string> {
   if (!forceRefresh && cached && cached.expiresAt > Date.now()) {
     return cached.token;
   }
-
-  if (loginInFlight) {
-    return await loginInFlight;
+  if (readInFlight) {
+    const c = await readInFlight;
+    return c.token;
   }
-
   cached = null;
-  loginInFlight = login();
-  try {
-    return await loginInFlight;
-  } finally {
-    loginInFlight = null;
-  }
+  readInFlight = readSnapgenTokenFromDb(forceRefresh)
+    .then((c) => {
+      cached = c;
+      return c;
+    })
+    .finally(() => {
+      readInFlight = null;
+    });
+  return (await readInFlight).token;
 }
 
 /**
- * Faz uma requisição autenticada à SnapGen, renovando o token
- * automaticamente uma única vez em caso de 401.
+ * Faz uma requisição autenticada à SnapGen.
+ *
+ * Sem retry em 401: se o token estiver expirado, o admin precisa atualizar
+ * em /admin/snapgen. Re-ler o mesmo token do banco não resolveria.
  */
 export async function snapgenFetch(
   path: string,
@@ -214,25 +186,17 @@ export async function snapgenFetch(
   bodyFactory?: () => BodyInit,
 ): Promise<Response> {
   const method = (init.method || "GET").toUpperCase();
-  const doFetch = async (token: string) => {
-    const guardId = await buildGuardId(path, method);
-    return await fetch(`${SNAPGEN_BASE}${path}`, {
-      ...init,
-      // FormData só pode ser consumida uma vez: recriamos na retentativa.
-      body: bodyFactory ? bodyFactory() : init.body,
-      headers: {
-        ...(init.headers as Record<string, string> | undefined),
-        Authorization: `Bearer ${token}`,
-        "x-guard-id": guardId,
-      },
-    });
-  };
-
-  let res = await doFetch(await getSnapgenToken());
-  if (res.status === 401) {
-    res = await doFetch(await getSnapgenToken(true));
-  }
-  return res;
+  const token = await getSnapgenToken();
+  const guardId = await buildGuardId(path, method);
+  return await fetch(`${SNAPGEN_BASE}${path}`, {
+    ...init,
+    body: bodyFactory ? bodyFactory() : init.body,
+    headers: {
+      ...(init.headers as Record<string, string> | undefined),
+      Authorization: `Bearer ${token}`,
+      "x-guard-id": guardId,
+    },
+  });
 }
 
 /**

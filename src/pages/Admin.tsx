@@ -389,6 +389,9 @@ const Admin = () => {
             <Button size="sm" variant="outline" onClick={() => navigate("/admin/limites")} className="text-xs">
               ⚙️ Limites Diários
             </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate("/admin/snapgen")} className="text-xs">
+              🔑 SnapGen Token
+            </Button>
           </div>
 
           {loading ? (

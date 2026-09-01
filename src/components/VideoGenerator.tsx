@@ -155,6 +155,22 @@ export function VideoGenerator() {
     });
   };
 
+  /**
+   * Detecta quando a edge function devolveu erro de "token não configurado"
+   * e mostra um toast informativo (não pede para o usuário final rodar
+   * ferramenta — isso é responsabilidade do admin).
+   */
+  useEffect(() => {
+    if (state !== "error" || !error) return;
+    if (error.includes("indisponível") || error.includes("temporariamente")) {
+      toast.error(error, {
+        duration: 8000,
+        closeButton: true,
+        description: "Avise o administrador do site.",
+      });
+    }
+  }, [state, error]);
+
 
   const canGenerate = prompt.trim().length > 0 && !isLoading && !isCooling && !isLimitReached;
 
